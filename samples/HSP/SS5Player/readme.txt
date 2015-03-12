@@ -1,318 +1,335 @@
-�ESS5Player for HSP
-���T�v
-	Sprite Studio 5 �ō쐬�����A�j���[�V������HSP�ōĐ�����T���v���v���O�����ł��B
-	
-	SpriteStudio5-SDK(https://github.com/SpriteStudio/SpriteStudio5-SDK)�Ɋ܂܂��
-	Ss5Converter���g�p����sspj����sspb���쐬���܂��B
-	
-	�쐬����ssbp�Ɖ摜�t�@�C�����Q�[���̃��\�[�X�t�H���_�ɒu��SS5PlayerDll���g�p���ēǂݍ��݂܂��B
-	SS5PlayerDll����A�j���[�V�����̃X�e�[�^�X���擾����HSP���ŕ\�����s���܂��B
-	
-	DLL�����ɂ�32�̃A�j���v���C���[�������Ă���A�v���C���[�ԍ����w�肵�Ċe�v���C���[�𑀍삵�܂��B
-	�v���C���[���𑝂₷�ꍇ��SS5PlayerDll.cpp�ɒ�`����Ă���SSPLAYER_MAX��ύX���Ă��������B
-	
-	���T���v���v���O�����̐���
-	���Ή��A�g���r���[�g
-	�@X��]�AY��]�A�J���[�u�����h�A���_�ό`�AX�T�C�Y(�o�͂��Ă��邪�T���v���v���O���������Ή�)�AY�T�C�Y(�o�͂��Ă��邪�T���v���v���O���������Ή�)
-	�@UXX�ړ��AUVY�ړ��AUV��]�AUXX�X�P�[���AUVY�X�P�[���A���[�U�[�f�[�^�A�C���X�^���X�A�j��
-	�T���v���ł̓p�[�c�̃u�����h���@�ɂ͑Ή����Ă��܂���B
-	�f�[�^�͏o�͂��Ă���̂ŁA�K�v�ł���Ίe���Ή����Ă��������B
+============================================================================
+  ssbpLib For HSP
 
-	�T���v���ł�32bit��png���g�p���Ă��܂����A16bit���̉摜���g�p��HSP�̕W�����߂ŕ\������Γ��쑬�x�͊i�i�ɑ����Ȃ�Ǝv���܂��B
-	�K�v�ɉ����ăX�e�[�^�X����\�������쐬���Ă��������B
+  お読みください
 
-	png�̕\����Artlet2D���g�p���Ă��܂��B
+            Copyright(C) Web Technology Corp. All rights reserved.
+============================================================================
 
-	SS5PlayerDll.dll��Visual Studio Express for Windows Desktop�ō쐬����Ă��܂��B
-	�K�v�ɍ��킹��DLL���Ɋ֐���ǉ����Ă��������B
+■概要
+	Sprite Studio 5 で作成したアニメーションをHSPで再生するサンプルプログラムです。
+	
+	SpriteStudio5-SDK(https://github.com/SpriteStudio/SpriteStudio5-SDK)に含まれる
+	Ss5Converterを使用してsspjからsspbを作成します。
+	
+	作成したssbpと画像ファイルをゲームのリソースフォルダに置きSS5PlayerDllを使用して読み込みます。
+	SS5PlayerDllからアニメーションのステータスを取得してHSP側で表示を行います。
+	
+	DLL内部には32個のアニメプレイヤーを持っており、プレイヤー番号を指定して各プレイヤーを操作します。
+	プレイヤー数を増やす場合はSS5PlayerDll.cppに定義されているSSPLAYER_MAXを変更してください。
+	
+	※サンプルプログラムの制限
+	未対応アトリビュート
+	　X回転、Y回転、カラーブレンド、頂点変形、Xサイズ(出力しているがサンプルプログラムが未対応)、Yサイズ(出力しているがサンプルプログラムが未対応)
+	　UXX移動、UVY移動、UV回転、UXXスケール、UVYスケール、ユーザーデータ、インスタンスアニメ
+	サンプルではパーツのブレンド方法には対応していません。
+	データは出力しているので、必要であれば各自対応してください。
 
-��SS5PlayerDll.dll�֐����t�@�����X
+	サンプルでは32bitのpngを使用していますが、16bit等の画像を使用しHSPの標準命令で表示すれば動作速度は格段に早くなると思います。
+	必要に応じてステータスから表示部を作成してください。
+
+	pngの表示にArtlet2Dを使用しています。
+
+	SS5PlayerDll.dllはVisual Studio Express for Windows Desktopで作成されています。
+	必要に合わせてDLL側に関数を追加してください。
+
+■SS5PlayerDll.dll関数リファレンス
 
 	#cfunc SSPlayer_initlize			"SSPlayer_initlize"
-		�E�@�\
-			SS5PlayerDll.dll�̏��������܂�
-			�g�p�O�ɕK���Ăяo���Ă��������B
+		・機能
+			SS5PlayerDll.dllの初期化します
+			使用前に必ず呼び出してください。
 
-		�E����
-			�Ȃ�
+		・引数
+			なし
 
-		�E�߂�l
-			���0
+		・戻り値
+			常に0
 
 	#cfunc SSPlayer_setFps				"SSPlayer_setFps"				int
-		�E�@�\
-			SSPlayer_update���Ăяo�����Ƃ��ɃA�j�����i�ޑ��x���w�肵�܂��B
-			60FPS�œ��삷��ꍇ��60��ݒ肵�Ă��������B
+		・機能
+			SSPlayer_updateを呼び出したときにアニメが進む速度を指定します。
+			60FPSで動作する場合は60を設定してください。
 
-		�E����
-			int 	�FFPS
+		・引数
+			int 	：FPS
 
-		�E�߂�l
-			���0
+		・戻り値
+			常に0
 
 	#cfunc SSPlayer_addData				"SSPlayer_addData"				str 
-		�E�@�\
-			ssbp�t�@�C����ǂݍ���DLL�����ɕێ����܂��B
-			������ssbp�t�@�C����ǂݍ��ݕێ����邱�Ƃ��ł��܂��B
-			���݂��Ȃ��t�@�C�����w�肷��ƃG���[1���������܂��B
+		・機能
+			ssbpファイルを読み込みDLL内部に保持します。
+			複数のssbpファイルを読み込み保持することができます。
+			存在しないファイルを指定するとエラー1が発生します。
 
-		�E����
-			str 	�Fssbp�t�@�C���̃p�X
+		・引数
+			str 	：ssbpファイルのパス
 
-		�E�߂�l
-			���0
+		・戻り値
+			常に0
 
 	#cfunc SSPlayer_getPlayerNum		"SSPlayer_getPlayerNum"		 
-		�E�@�\
-			DLL�œ����ɐ���ł���v���C���[�̐����擾���܂��B
-			32�܂œ����ɃA�j�����Đ����鎖���ł��܂��B
+		・機能
+			DLLで同時に制御できるプレイヤーの数を取得します。
+			32個まで同時にアニメを再生する事ができます。
 
-		�E����
-			�Ȃ�
+		・引数
+			なし
 
-		�E�߂�l
-			�����ɐ���ł���v���C���[��
+		・戻り値
+			同時に制御できるプレイヤー数
 
 	#cfunc SSPlayer_get_texureIndex		"SSPlayer_get_texureIndex" 		int
-		�E�@�\
-			�ǂݍ���sspb�Ŏg�p���Ă���e�N�X�`���ԍ����擾���܂��B
-			�e�N�X�`���ԍ���DLL���Ŋ��蓖�Ă��ԍ��ƂȂ�A�`����s���Ƃ��ɂ��̔ԍ��ŕ\������摜�����肵�܂��B
-			100���܂Ńe�N�X�`���f�[�^�ɕێ����鎖���ł��A������0�Ԃ��珇�Ƀe�N�X�`���ԍ����擾���Ă��������B
-			�e�N�X�`���ԍ���0�Ԃ��犄�蓖��܂��A�擾�����ԍ��̃X�N���[���ɑΉ�����摜��ǂݍ���ł��������B
+		・機能
+			読み込んだsspbで使用しているテクスチャ番号を取得します。
+			テクスチャ番号はDLL内で割り当てた番号となり、描画を行うときにこの番号で表示する画像を決定します。
+			100枚までテクスチャデータに保持する事ができ、引数で0番から順にテクスチャ番号を取得してください。
+			テクスチャ番号は0番から割り当ります、取得した番号のスクリーンに対応する画像を読み込んでください。
 
-		�E����
-			int 	�FDLL�ŕێ����Ă���e�N�X�`���f�[�^�̔ԍ��i0�`99�j
+		・引数
+			int 	：DLLで保持しているテクスチャデータの番号（0～99）
 
-		�E�߂�l
-			�e�N�X�`���Ɋ��蓖�������ԍ��i0�`99�j
+		・戻り値
+			テクスチャに割り当たった番号（0～99）
 
 	#cfunc SSPlayer_get_texureName		"SSPlayer_get_texureName"		int,sptr
-		�E�@�\
-			�ǂݍ���sspb�Ŏg�p���Ă���e�N�X�`�������擾���܂��B
-			DLL�ŕێ����Ă���e�N�X�`���f�[�^����t�@�C�������擾���܂��B
-			100���܂ŕێ����鎖���ł��A������0�Ԃ��珇�Ƀe�N�X�`�������擾���Ă��������B
-			SSPlayer_get_texureIndex�Ŏ擾�����ԍ��̃X�N���[����SSPlayer_get_texureName�Ŏ擾�����摜��ǂݍ���ł��������B
+		・機能
+			読み込んだsspbで使用しているテクスチャ名を取得します。
+			DLLで保持しているテクスチャデータからファイル名を取得します。
+			100枚まで保持する事ができ、引数で0番から順にテクスチャ名を取得してください。
+			SSPlayer_get_texureIndexで取得した番号のスクリーンにSSPlayer_get_texureNameで取得した画像を読み込んでください。
 
-		�E����
-			int 	�FDLL�ŕێ����Ă���e�N�X�`���f�[�^�̔ԍ��i0�`99�j
-			pstr	�F�e�N�X�`���Ɋ��蓖�������t�@�C����
+		・引数
+			int 	：DLLで保持しているテクスチャデータの番号（0～99）
+			pstr	：テクスチャに割り当たったファイル名
 
-		�E�߂�l
-			���0
+		・戻り値
+			常に0
 
 	#cfunc SSPlayer_play				"SSPlayer_play"					int,str,str 
-		�E�@�\
-			�A�j���[�V�������Đ����܂��B
-			sspb���i�g���q�Ȃ��j��ssae��/���[�V�������Ŏw�肵�܂��B
-			���SSPlayer_addData��ssbp��ǂݍ���ł����K�v������܂��B
-			�w�肵��ssbp��DLL�ɓǂݍ��܂�Ă��Ȃ��ꍇ�A�G���[�P���������܂��B
-			�Đ�����SSPlayer_play���Ăяo�����ƂŁA�����v���C���[�ŕʂ̃A�j�����Đ����鎖���ł��܂��B
+		・機能
+			アニメーションを再生します。
+			sspb名（拡張子なし）とssae名/モーション名で指定します。
+			先にSSPlayer_addDataでssbpを読み込んでおく必要があります。
+			指定したssbpがDLLに読み込まれていない場合、エラー１が発生します。
+			再生中にSSPlayer_playを呼び出すことで、同じプレイヤーで別のアニメを再生する事ができます。
 
-		�E����
-			int		�F�v���C���[�ԍ��i0�`31�j
-			str		�Fssbp���i�g���q�Ȃ��j
-			str		�Fssae��/���[�V�������i�Ԃ�/�����Ďw�肵�Ă��������B�j
+		・引数
+			int		：プレイヤー番号（0～31）
+			str		：ssbp名（拡張子なし）
+			str		：ssae名/モーション名（間に/を入れて指定してください。）
 
-		�E�߂�l
-			���0
+		・戻り値
+			常に0
 
 	#cfunc SSPlayer_update				"SSPlayer_update"			 
-		�E�@�\
-			DLL�ŕێ����Ă���32�̃v���C���[�̃X�e�[�^�X���X�V���܂��B
-			SSPlayer_update���SSPlayer_get_partStatus�Ńp�[�c�̃X�e�[�^�X���擾���A
-			�X�e�[�^�X�̓��e�ŕ`����s���̂���{�̗���ɂȂ�܂��B
+		・機能
+			DLLで保持している32個のプレイヤーのステータスを更新します。
+			SSPlayer_update後にSSPlayer_get_partStatusでパーツのステータスを取得し、
+			ステータスの内容で描画を行うのが基本の流れになります。
 
-		�E����
-			�Ȃ�
+		・引数
+			なし
 
-		�E�߂�l
-			���0
+		・戻り値
+			常に0
 
 	#cfunc SSPlayer_get_partNum			"SSPlayer_get_partNum"			int 
-		�E�@�\
-			�A�j���Ɋ܂܂��p�[�c�����擾���܂��B
-			�p�[�c���̓p�[�c�X�e�[�^�X���擾����ꍇ�Ɏg�p���܂��B
+		・機能
+			アニメに含まれるパーツ数を取得します。
+			パーツ数はパーツステータスを取得する場合に使用します。
 
-		�E����
-			int		�F�v���C���[�ԍ��i0�`31�j
+		・引数
+			int		：プレイヤー番号（0～31）
 
-		�E�߂�l
-			�A�j���Ɋ܂܂��p�[�c��
+		・戻り値
+			アニメに含まれるパーツ数
 
 	#cfunc SSPlayer_get_partStatus		"SSPlayer_get_partStatus"		int,int,var 
-		�E�@�\
-			�p�[�c�̃X�e�[�^�X���擾���܂��B
-			�p�[�c�͗D��x���Ƀ\�[�g����Ă���A0�Ԃ̃p�[�c����ԉ��ɂȂ�܂��B
-			SSPlayer_get_partNum�Ŏ擾�����p�[�c�������[�v���ăX�e�[�^�X���擾���Ă��������B
+		・機能
+			パーツのステータスを取得します。
+			パーツは優先度順にソートされており、0番のパーツが一番奥になります。
+			SSPlayer_get_partNumで取得したパーツ数分ループしてステータスを取得してください。
 
-		�E����
-			int		�F�v���C���[�ԍ��i0�`31�j
-			int 	�F�p�[�c�ԍ�
-			var		�F�X�e�[�^�X���󂯎��z��̃|�C���^�idim partstate, 18�j
-						 0�F�e�N�X�`���ԍ�
-						 1�F��\���t���O
-						 2�F�\���ʒuX
-						 3�F�\���ʒuY
-						 4�F�e�N�X�`�����̊J�n�ʒuX
-						 5�F�e�N�X�`�����̊J�n�ʒuY
-						 6�F�摜�̕�
-						 7�F�摜�̍���
-						 8�F�g�嗦X
-						 9�F�g�嗦Y
-						10�F��]�p�x
-						11�F�����x
-						12�F�u�����h���[�h
-						13�F�����]�t���O
-						14�F�c���]�t���O
-						15�FX�T�C�Y
-						16�FY�T�C�Y
-						17�F�����蔼�a
+		・引数
+			int		：プレイヤー番号（0～31）
+			int 	：パーツ番号
+			var		：ステータスを受け取る配列のポインタ（dim partstate, 18）
+						 0：テクスチャ番号
+						 1：非表示フラグ
+						 2：表示位置X
+						 3：表示位置Y
+						 4：テクスチャ内の開始位置X
+						 5：テクスチャ内の開始位置Y
+						 6：画像の幅
+						 7：画像の高さ
+						 8：拡大率X
+						 9：拡大率Y
+						10：回転角度
+						11：透明度
+						12：ブレンドモード
+						13：横反転フラグ
+						14：縦反転フラグ
+						15：Xサイズ
+						16：Yサイズ
+						17：当たり半径
 
-		�E�߂�l
-			���0
+		・戻り値
+			常に0
 
 	#cfunc SSPlayer_setPosition			"SSPlayer_setPosition"			int,int,int 
-		�E�@�\
-			�v���C���[�̈ʒu��ݒ肵�܂��B
+		・機能
+			プレイヤーの位置を設定します。
 
-		�E����
-			int		�F�v���C���[�ԍ��i0�`31�j
-			int 	�F�\���ʒuX
-			int		�F�\���ʒuY
+		・引数
+			int		：プレイヤー番号（0～31）
+			int 	：表示位置X
+			int		：表示位置Y
 
-		�E�߂�l
-			���0
+		・戻り値
+			常に0
 
 	#cfunc SSPlayer_setRotation			"SSPlayer_setRotation"			int,double,double,double 
-		�E�@�\
-			�v���C���[�̉�]��ݒ肵�܂��B
+		・機能
+			プレイヤーの回転を設定します。
 
-		�E����
-			int		�F�v���C���[�ԍ��i0�`31�j
-			double	�FX��]�p�x�i���Ή��ł��������I�ɂ͌v�Z����Ă���̂ŁA0�ȊO��ݒ肷��ƕ\��������܂��j
-			double	�FY��]�p�x�i���Ή��ł��������I�ɂ͌v�Z����Ă���̂ŁA0�ȊO��ݒ肷��ƕ\��������܂��j
-			double	�FZ��]�p�x�i0�`360�j
+		・引数
+			int		：プレイヤー番号（0～31）
+			double	：X回転角度（未対応ですが内部的には計算されているので、0以外を設定すると表示が崩れます）
+			double	：Y回転角度（未対応ですが内部的には計算されているので、0以外を設定すると表示が崩れます）
+			double	：Z回転角度（0～360）
 
-		�E�߂�l
-			���0
+		・戻り値
+			常に0
 
 	#cfunc SSPlayer_setScale			"SSPlayer_setScale"				int,double,double 
-		�E�@�\
-			�v���C���[�̊g�嗦��ݒ肵�܂��B
+		・機能
+			プレイヤーの拡大率を設定します。
 
-		�E����
-			int		�F�v���C���[�ԍ��i0�`31�j
-			double	�FX�g�嗦�i1.0�����{�j
-			double	�FY�g�嗦�i1.0�����{�j
+		・引数
+			int		：プレイヤー番号（0～31）
+			double	：X拡大率（1.0＝等倍）
+			double	：Y拡大率（1.0＝等倍）
 
-		�E�߂�l
-			���0
+		・戻り値
+			常に0
 
 	#cfunc SSPlayer_setAlpha			"SSPlayer_setAlpha"				int,int 
-		�E�@�\
-			�v���C���[�̓����x��ݒ肵�܂��B
+		・機能
+			プレイヤーの透明度を設定します。
 
-		�E����
-			int		�F�v���C���[�ԍ��i0�`31�j
-			int		�F�����x�i0�`255�j
+		・引数
+			int		：プレイヤー番号（0～31）
+			int		：透明度（0～255）
 
-		�E�߂�l
-			���0
+		・戻り値
+			常に0
 
 	#cfunc SSPlayer_setFlip				"SSPlayer_setFlip"				int,int,int 
-		�E�@�\
-			�v���C���[�̔��]��ݒ肵�܂��B
+		・機能
+			プレイヤーの反転を設定します。
 
-		�E����
-			int		�F�v���C���[�ԍ��i0�`31�j
-			int		�FX���]�i0���]�Ȃ��A0�ȊO���]�j
-			int		�FY���]�i0���]�Ȃ��A0�ȊO���]�j
+		・引数
+			int		：プレイヤー番号（0～31）
+			int		：X反転（0反転なし、0以外反転）
+			int		：Y反転（0反転なし、0以外反転）
 
-		�E�߂�l
-			���0
+		・戻り値
+			常に0
 
 	#cfunc SSPlayer_pause				"SSPlayer_pause"				int 
-		�E�@�\
-			�v���C���[�̃A�j���Đ����ꎞ��~���܂��B
-			SSPlayer_pause�ňꎞ��~�����v���C���[��SSPlayer_resume�ōĊJ���鎖���ł��܂��B
-			�ꎞ��~��ԂŁASSPlayer_setFrameNo���s���Đ��t���[�����w�肷��ƃQ�[�����ŕ\���t���[�����Ǘ����鎖���ł��܂��B
+		・機能
+			プレイヤーのアニメ再生を一時停止します。
+			SSPlayer_pauseで一時停止したプレイヤーはSSPlayer_resumeで再開する事ができます。
+			一時停止状態で、SSPlayer_setFrameNoを行い再生フレームを指定するとゲーム側で表示フレームを管理する事ができます。
 
-		�E����
-			int		�F�v���C���[�ԍ��i0�`31�j
+		・引数
+			int		：プレイヤー番号（0～31）
 
-		�E�߂�l
-			���0
+		・戻り値
+			常に0
 
 	#cfunc SSPlayer_resume				"SSPlayer_resume"				int 
-		�E�@�\
-			�v���C���[�̃A�j���Đ����ĊJ���܂��B
-			SSPlayer_pause�ňꎞ��~�����v���C���[��SSPlayer_resume�ōĊJ���鎖���ł��܂��B
+		・機能
+			プレイヤーのアニメ再生を再開します。
+			SSPlayer_pauseで一時停止したプレイヤーはSSPlayer_resumeで再開する事ができます。
 
-		�E����
-			int		�F�v���C���[�ԍ��i0�`31�j
+		・引数
+			int		：プレイヤー番号（0～31）
 
-		�E�߂�l
-			���0
+		・戻り値
+			常に0
 
 	#cfunc SSPlayer_setFrameNo			"SSPlayer_setFrameNo"			int,int 
-		�E�@�\
-			�A�j���̍Đ��ʒu��ݒ肵�܂��B
+		・機能
+			アニメの再生位置を設定します。
 
-		�E����
-			int		�F�v���C���[�ԍ��i0�`31�j
-			int		�F�Đ����s���t���[��
+		・引数
+			int		：プレイヤー番号（0～31）
+			int		：再生を行うフレーム
 
-		�E�߂�l
-			���0
+		・戻り値
+			常に0
 
 	#cfunc SSPlayer_getMaxFrame			"SSPlayer_getMaxFrame"			int 
-		�E�@�\
-			�A�j���̑��t���[�����擾���܂��B
+		・機能
+			アニメの総フレームを取得します。
 
-		�E����
-			int		�F�v���C���[�ԍ��i0�`31�j
+		・引数
+			int		：プレイヤー番号（0～31）
 
-		�E�߂�l
-			�A�j���̑��t���[��
+		・戻り値
+			アニメの総フレーム
 
 	#cfunc SSPlayer_getFrameNo			"SSPlayer_getFrameNo"			int 
-		�E�@�\
-			���ݍĐ����Ă���t���[�����擾���܂��B
+		・機能
+			現在再生しているフレームを取得します。
 
-		�E����
-			int		�F�v���C���[�ԍ��i0�`31�j
+		・引数
+			int		：プレイヤー番号（0～31）
 
-		�E�߂�l
-			���ݍĐ����Ă���t���[��
+		・戻り値
+			現在再生しているフレーム
 
 	#cfunc SSPlayer_get_namePartStatus	"SSPlayer_get_namePartStatus"	int,str,int,var 
-		�E�@�\
-			�p�[�c������p�[�c�X�e�[�^�X���擾���܂��B
-			�Đ����Ă���A�j���ɑ��݂��Ȃ��p�[�c�������Ă������ꍇ�A�e�N�X�`���ԍ���-1�ɂȂ�܂��B
-			���W��T�C�Y���擾���ăG�t�F�N�g���o������R���W�����Ƃ��Ďg�p���l�����܂��B
+		・機能
+			パーツ名からパーツステータスを取得します。
+			再生しているアニメに存在しないパーツ名をしていした場合、テクスチャ番号が-1になります。
+			座標やサイズを取得してエフェクトを出したりコリジョンとして使用が考えられます。
 
-		�E����
-			int		�F�v���C���[�ԍ��i0�`31�j
-			str		�F�p�[�c��
-			int		�F�擾����t���[���i-1�Ō��݂̃t���[���̃X�e�[�^�X���擾����j
-			var		�F�X�e�[�^�X���󂯎��z��̃|�C���^�idim partstate, 18�j
+		・引数
+			int		：プレイヤー番号（0～31）
+			str		：パーツ名
+			int		：取得するフレーム（-1で現在のフレームのステータスを取得する）
+			var		：ステータスを受け取る配列のポインタ（dim partstate, 18）
 
-		�E�߂�l
-			���0
+		・戻り値
+			常に0
 
 	#cfunc SSPlayer_Delete				"SSPlayer_Delete"				 
-		�E�@�\
-			DLL���ŕێ����Ă������������܂��B
-			�A�v���P�[�V�����̏I�����ɌĂяo���Ă��������B
-			�摜�̉���̓Q�[�����ōs���Ă��������B
+		・機能
+			DLL内で保持している情報を解放します。
+			アプリケーションの終了時に呼び出してください。
+			画像の解放はゲーム側で行ってください。
 
-		�E����
-			�Ȃ�
+		・引数
+			なし
 
-		�E�߂�l
-			���0
-
-
+		・戻り値
+			常に0
 
 
+
+============================================================================
+株式会社ウェブテクノロジ
+http://www.webtech.co.jp/
+Copyright(C) Web Technology Corp.
+============================================================================
+
+* OPTPiX SpriteStudio, Web Technologyは、株式会社ウェブテクノロジの登録商標で
+  す。
+* その他の商品名は各社の登録商標または商標です。
+
+[End of TEXT]
 
