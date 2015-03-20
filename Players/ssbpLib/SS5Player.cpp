@@ -835,21 +835,21 @@ void ResourceManager::removeAllData()
 }
 
 //データ名、セル名を指定して、セルで使用しているテクスチャを変更する
-bool ResourceManager::changeTexture(char* dataName, char* callName, long texture)
+bool ResourceManager::changeTexture(char* ssbpName, char* ssceName, long texture)
 {
 	bool rc = false;
 
-	ResourceSet* rs = getData(dataName);
-	rc = rs->cellCache->setCellRefTexture(rs->data, callName, texture);
+	ResourceSet* rs = getData(ssbpName);
+	rc = rs->cellCache->setCellRefTexture(rs->data, ssceName, texture);
 
 	return(rc);
 }
 
 //指定したデータのテクスチャを破棄します
-bool ResourceManager::releseTexture(char* dataName )
+bool ResourceManager::releseTexture(char* ssbpName)
 {
 
-	ResourceSet* rs = getData(dataName);
+	ResourceSet* rs = getData(ssbpName);
 	bool rc = rs->cellCache->releseTexture(rs->data);
 
 	return(rc);

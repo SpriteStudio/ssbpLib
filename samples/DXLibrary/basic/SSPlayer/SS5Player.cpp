@@ -835,21 +835,21 @@ void ResourceManager::removeAllData()
 }
 
 //データ名、セル名を指定して、セルで使用しているテクスチャを変更する
-bool ResourceManager::changeTexture(char* dataName, char* callName, long texture)
+bool ResourceManager::changeTexture(char* ssbpName, char* ssceName, long texture)
 {
 	bool rc = false;
 
-	ResourceSet* rs = getData(dataName);
-	rc = rs->cellCache->setCellRefTexture(rs->data, callName, texture);
+	ResourceSet* rs = getData(ssbpName);
+	rc = rs->cellCache->setCellRefTexture(rs->data, ssceName, texture);
 
 	return(rc);
 }
 
 //指定したデータのテクスチャを破棄します
-bool ResourceManager::releseTexture(char* dataName )
+bool ResourceManager::releseTexture(char* ssbpName)
 {
 
-	ResourceSet* rs = getData(dataName);
+	ResourceSet* rs = getData(ssbpName);
 	bool rc = rs->cellCache->releseTexture(rs->data);
 
 	return(rc);
@@ -1700,7 +1700,7 @@ void Player::setFrame(int frameNo)
 		int cellIndex  = flags & PART_FLAG_CELL_INDEX ? reader.readS16() : init->cellIndex;
 		float x        = flags & PART_FLAG_POSITION_X ? (float)reader.readS16() : (float)init->positionX;
 		float y        = flags & PART_FLAG_POSITION_Y ? (float)-reader.readS16() : (float)-init->positionY;		//上がマイナスなので反転させる
-		float z        = flags & PART_FLAG_POSITION_Z ? (float)reader.readS16() : (float)init->positionZ;		//上がマイナスなので反転させる
+		float z        = flags & PART_FLAG_POSITION_Z ? (float)reader.readS16() : (float)init->positionZ;
 		float anchorX  = flags & PART_FLAG_ANCHOR_X ? reader.readFloat() : init->anchorX;
 		float anchorY  = flags & PART_FLAG_ANCHOR_Y ? reader.readFloat() : init->anchorY;
 		float rotationX = flags & PART_FLAG_ROTATIONX ? -reader.readFloat() : -init->rotationX;

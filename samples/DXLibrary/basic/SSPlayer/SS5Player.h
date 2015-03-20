@@ -26,7 +26,7 @@
   //プレイヤーにリソースを割り当て
   ssplayer->setData("character_template1");					// ssbpファイル名（拡張子不要）
   //再生するモーションを設定
-  ssplayer->play("character_template_3head/stance");		// アニメーション名を指定(ssae名/アニメーション名も可能、詳しくは後述)
+  ssplayer->play("character_template_3head/stance");		// アニメーション名を指定(ssae名/アニメーション名)
 
 
   //表示位置を設定
@@ -307,19 +307,19 @@ public:
 
 	/**
 	* 指定したセルのテクスチャを変更します.
-	* @param  dataName       ssbp名（拡張子を除くファイル名）
-	* @param  callName       ssce名（拡張子を除くファイル名）
+	* @param  ssbpName       ssbp名（拡張子を除くファイル名）
+	* @param  ssceName       ssce名（拡張子を除くファイル名）
 	* @param  texture        変更後のテクスチャハンドル
 	* @return 変更を行ったか
 	*/
-	bool changeTexture(char* dataName, char* callName, long texture);
+	bool changeTexture(char* ssbpName, char* ssceName, long texture);
 
 	/**
 	* 指定したデータのテクスチャを破棄します。
 	* @param  dataName       ssbp名（拡張子を除くファイル名）
 	* @return 成功失敗
 	*/
-	bool releseTexture(char* dataName);
+	bool releseTexture(char* ssbpName);
 
 	/**
 	 * 新たなResourceManagerインスタンスを構築します.
