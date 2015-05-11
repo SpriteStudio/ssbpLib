@@ -175,14 +175,15 @@ namespace ss
 			scaleX = -scaleX;
 		}
 
+		SetDrawBright(state.quad.bl.colors.r, state.quad.bl.colors.g, state.quad.bl.colors.b);
 		DrawRectRotaGraph(
 			(int)x, (int)y,	//この座標が画像の中心になります。
 			(int)state.rect.origin.x, (int)state.rect.origin.y, (int)state.rect.size.width, (int)state.rect.size.height,
 			scaleX, rotationZ,
 			state.texture, TRUE, state.flipX
 			);
-
 		SetDrawBright(255, 255, 255);
+
 		SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 255);	//ブレンドステートを通常へ戻す
 	}
 

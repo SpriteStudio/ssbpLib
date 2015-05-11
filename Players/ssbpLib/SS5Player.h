@@ -816,6 +816,17 @@ public:
 	void  setAlpha(int a);
 
 	/*
+	* アニメの輝度を設定します.
+	* setColor(Color3B)ではなくこちらを使用してください。
+	* 制限としてカラーブレンドが適用されたパーツの色は変更できませんので注意してください。
+	*
+	* @param  r          赤成分(0～255)
+	* @param  g          緑成分(0～255)
+	* @param  b          青成分(0～255)
+	*/
+	void setColor(int r, int g, int b);
+
+	/*
 	* 名前を指定してパーツの再生するインスタンスアニメを変更します。
 	* 指定したパーツがインスタンスパーツでない場合、falseを返します.
 	* 再生するアニメの名前は"ssae名/アニメーション名"として再生してください。
@@ -885,6 +896,9 @@ protected:
 	float				_InstanceRotY;
 	float				_InstanceRotZ;
 	int					_animefps;
+	int					_col_r;
+	int					_col_g;
+	int					_col_b;
 
 	UserData			_userData;
 

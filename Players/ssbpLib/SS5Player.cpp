@@ -1020,6 +1020,9 @@ Player::Player(void)
 	, _InstanceRotY(0.0f)
 	, _InstanceRotZ(0.0f)
 	, _gamefps(1000.0f/60.0f)	//60fps
+	, _col_r(255)
+	, _col_g(255)
+	, _col_b(255)
 {
 	int i;
 	for (i = 0; i < PART_VISIBLE_MAX; i++)
@@ -1651,6 +1654,14 @@ bool Player::changeInstanceAnime(std::string partsname, std::string animename)
 	return (rc);
 }
 
+//アニメーションの色成分を変更します
+void Player::setColor(int r, int g, int b)
+{
+	_col_r = r;
+	_col_g = g;
+	_col_b = b;
+}
+
 void Player::setFrame(int frameNo)
 {
 	if (!_currentAnimeRef) return;
@@ -1918,6 +1929,10 @@ void Player::setFrame(int frameNo)
 		unsigned char alpha = (unsigned char)opacity;
 		SSColor4B color4 = { 0xff, 0xff, 0xff, alpha };
 
+		color4.r = color4.r * _col_r / 255;
+		color4.g = color4.g * _col_g / 255;
+		color4.b = color4.b * _col_b / 255;
+
 		quad.tl.colors =
 		quad.tr.colors =
 		quad.bl.colors =
@@ -1943,6 +1958,11 @@ void Player::setFrame(int frameNo)
 				reader.readColor(color4);
 
 				color4.a = (int)( blend_rate * 255 );	//レートをアルファ値として設定
+
+				color4.r = color4.r * _col_r / 255;
+				color4.g = color4.g * _col_g / 255;
+				color4.b = color4.b * _col_b / 255;
+
 				quad.tl.colors =
 				quad.tr.colors =
 				quad.bl.colors =
@@ -2178,6 +2198,7 @@ void Player::setFrame(int frameNo)
 			//インスタンスパラメータを設定
 			sprite->_ssplayer->set_InstanceAlpha(opacity);
 			sprite->_ssplayer->set_InstanceRotation(rotationX, rotationY, rotationZ);
+			sprite->_ssplayer->setColor(_col_r, _col_g, _col_b);
 
 			//インスタンス用SSPlayerに再生フレームを設定する
 			sprite->_ssplayer->setFrameNo(_time);
