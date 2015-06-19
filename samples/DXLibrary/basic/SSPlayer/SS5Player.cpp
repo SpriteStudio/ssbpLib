@@ -826,11 +826,25 @@ std::string ResourceManager::addData(const std::string& ssbpFilepath, const std:
 
 void ResourceManager::removeData(const std::string& dataKey)
 {
+	ResourceSet* rs = getData(dataKey);
+
+	//テクスチャの解放
+	rs->cellCache->releseTexture(rs->data);
+
+	//バイナリデータの削除
+	delete rs;
 	_dataDic.erase(dataKey);
 }
 
 void ResourceManager::removeAllData()
 {
+	//全リソースの解放
+	while (!_dataDic.empty())
+	{
+		std::map<std::string, ResourceSet*>::iterator it = _dataDic.begin();
+		std::string ssbpName = it->first;
+		removeData(ssbpName);
+	}
 	_dataDic.clear();
 }
 
@@ -1254,7 +1268,8 @@ void Player::update(float dt)
 void Player::updateFrame(float dt)
 {
 	if (!_currentAnimeRef) return;
-	
+	if (!_currentRs->data) return;
+
 	bool playEnd = false;
 	bool toNextFrame = _isPlaying && !_isPausing;
 	if (toNextFrame && (_loop == 0 || _loopCount < _loop))
@@ -1665,6 +1680,7 @@ void Player::setColor(int r, int g, int b)
 void Player::setFrame(int frameNo)
 {
 	if (!_currentAnimeRef) return;
+	if (!_currentRs->data) return;
 
 	bool forceUpdate = false;
 	{
