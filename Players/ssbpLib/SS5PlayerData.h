@@ -46,6 +46,8 @@ struct Cell
 	ss_u16		width;
 	ss_u16		height;
 	ss_s16		reserved;
+	float		pivot_X;
+	float		pivot_Y;
 };
 
 

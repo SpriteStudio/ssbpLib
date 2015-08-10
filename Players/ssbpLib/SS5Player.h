@@ -1,6 +1,12 @@
 /** 
 *  SS5Player.h
 */
+//-----------------------------------------------------------
+// ssbpLib v1.1.0
+//
+// Copyright(C) Web Technology Corp.
+// http://www.webtech.co.jp/
+//-----------------------------------------------------------
 
 
 /************************************************************
@@ -787,15 +793,32 @@ public:
 
 	/**
 	* パーツの名から、パーツ情報を取得します.
+	*
+	* @param  result        パーツ情報を受け取るバッファ
+	* @param  name          取得するパーツ名
+	* @param  frameNo       取得するフレーム番号 -1の場合は現在再生しているフレームが適用される
 	*/
 	bool getPartState(ResluteState& result, const char* name, int frameNo = -1);
 
 	/**
-	* パーツの表示、非表示を設定します.
+	* パーツ名からパーツの表示、非表示を設定します.
+	* コリジョン用のパーツや差し替えグラフィック等、SS5上で表示を行うがゲーム中では非表示にする場合に使用します。
+	* SSの非表示アトリビュート設定するわけではないので注意してください。
 	*/
-	void setPartVisible( int partNo, bool flg );
+	void setPartVisible(std::string partsname, bool flg);
 
-	/* 
+	/**
+	* パーツ名からパーツに割り当たるセルを変更します.
+	* この関数で設定したパーツは参照セルアチリビュートの影響をうけません。
+	* アニメに設定されたセルに戻す場合は、セル名に""を指定してください。
+	*
+	* @param  partsname         パーツ名
+	* @param  sscename          セルマップ名
+	* @param  cellname          表示させたいセル名
+	*/
+	void setPartCell(std::string partsname, std::string sscename, std::string cellname);
+
+	/*
 	* プレイヤー本体の位置を設定します。
 	*/
 	void  setPosition(float x, float y);
@@ -891,6 +914,8 @@ protected:
 	bool				_isPlayFirstUserdataChack;
 	int					_prevDrawFrameNo;
 	bool				_partVisible[PART_VISIBLE_MAX];
+	int					_cellChange[PART_VISIBLE_MAX];
+	int					_partIndex[PART_VISIBLE_MAX];
 	int					_InstanceAlpha;
 	float				_InstanceRotX;
 	float				_InstanceRotY;
@@ -903,7 +928,6 @@ protected:
 	UserData			_userData;
 
 	State				_state;
-	int					_partIndex[PART_VISIBLE_MAX];
 	float				_gamefps;
 };
 

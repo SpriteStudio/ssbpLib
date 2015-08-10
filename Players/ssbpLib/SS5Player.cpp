@@ -14,7 +14,7 @@ namespace ss
  */
 
 static const ss_u32 DATA_ID = 0x42505353;
-static const ss_u32 DATA_VERSION = 1;
+static const ss_u32 DATA_VERSION = 2;
 
 
 /**
@@ -1043,6 +1043,7 @@ Player::Player(void)
 	{
 		_partVisible[i] = true;
 		_partIndex[i] = -1;
+		_cellChange[i] = -1;
 	}
 	_state.init();
 }
@@ -1624,9 +1625,84 @@ int Player::getLabelToFrame(char* findLabelName)
 //特定パーツの表示、非表示を設定します
 //パーツ番号はスプライトスタジオのフレームコントロールに配置されたパーツが
 //プライオリティでソートされた後、上に配置された順にソートされて決定されます。
-void Player::setPartVisible(int partNo, bool flg)
+void Player::setPartVisible(std::string partsname, bool flg)
 {
-	_partVisible[partNo] = flg;
+	bool rc = false;
+	if (_currentAnimeRef)
+	{
+		ToPointer ptr(_currentRs->data);
+
+		const AnimePackData* packData = _currentAnimeRef->animePackData;
+		const PartData* parts = static_cast<const PartData*>(ptr(packData->parts));
+
+		for (int index = 0; index < packData->numParts; index++)
+		{
+			int partIndex = _partIndex[index];
+
+			const PartData* partData = &parts[partIndex];
+			const char* partName = static_cast<const char*>(ptr(partData->name));
+			if (strcmp(partName, partsname.c_str()) == 0)
+			{
+				_partVisible[index] = flg;
+				break;
+			}
+		}
+	}
+}
+
+//パーツに割り当たるセルを変更します
+void Player::setPartCell(std::string partsname, std::string sscename, std::string cellname)
+{
+	bool rc = false;
+	if (_currentAnimeRef)
+	{
+		ToPointer ptr(_currentRs->data);
+
+		int changeCellIndex = -1;
+		if ((sscename != "") && (cellname != ""))
+		{
+			//セルマップIDを取得する
+			//必要あり
+
+
+			const Cell* cells = static_cast<const Cell*>(ptr(_currentRs->data->cells));
+
+			//名前からインデックスの取得
+			int cellindex = -1;
+			for (int i = 0; i < _currentRs->data->numCells; i++)
+			{
+				const Cell* cell = &cells[i];
+				const char* name1 = static_cast<const char*>(ptr(cell->name));
+				const CellMap* cellMap = static_cast<const CellMap*>(ptr(cell->cellMap));
+				const char* name2 = static_cast<const char*>(ptr(cellMap->name));
+				if (strcmp(cellname.c_str(), name1) == 0)
+				{
+					if (strcmp(sscename.c_str(), name2) == 0)
+					{
+						changeCellIndex = i;
+						break;
+					}
+				}
+			}
+		}
+
+		const AnimePackData* packData = _currentAnimeRef->animePackData;
+		const PartData* parts = static_cast<const PartData*>(ptr(packData->parts));
+
+		for (int index = 0; index < packData->numParts; index++)
+		{
+			int partIndex = _partIndex[index];
+
+			const PartData* partData = &parts[partIndex];
+			const char* partName = static_cast<const char*>(ptr(partData->name));
+			if (strcmp(partName, partsname.c_str()) == 0)
+			{
+				//セル番号を設定
+				_cellChange[index] = changeCellIndex;	//上書き解除
+				break;
+			}
+		}
+	}
 }
 
 // インスタンスパーツが再生するアニメを変更します。
@@ -1754,6 +1830,11 @@ void Player::setFrame(int frameNo)
 			//ユーザーが任意に非表示としたパーツは非表示に設定
 			isVisibled = false;
 		}
+		if (_cellChange[index] != -1)
+		{
+			//ユーザーがセルを上書きした
+			cellIndex = _cellChange[index];
+		}
 
 		//固定少数を少数へ戻す
 		x = x / DOT;
@@ -1772,6 +1853,25 @@ void Player::setFrame(int frameNo)
 			//プレイヤーのYフリップ
 			flipY = !flipY;	//フラグ反転
 		}
+
+		//セルの原点設定を反映させる
+		CellRef* cellRef = cellIndex >= 0 ? _currentRs->cellCache->getReference(cellIndex) : nullptr;
+		if (cellRef)
+		{
+			float cpx = 0;
+			float cpy = 0;
+
+			cpx = cellRef->cell->pivot_X;
+			if (flipX) cpx = -cpx;	// 水平フリップによって原点を入れ替える
+			cpy = cellRef->cell->pivot_Y;
+			if (flipY) cpy = -cpy;	// 垂直フリップによって原点を入れ替える
+
+			anchorX += cpx;
+			anchorY += cpy;
+
+		}
+		anchorX += 0.5f;
+		anchorY += 0.5f;
 
 
 		//ステータス保存
@@ -1810,8 +1910,6 @@ void Player::setFrame(int frameNo)
 		sprite->setFlippedX(flipX);
 		sprite->setFlippedY(flipY);
 
-
-		CellRef* cellRef = cellIndex >= 0 ? _currentRs->cellCache->getReference(cellIndex) : NULL;
 		bool setBlendEnabled = true;
 
 		if (cellRef)
