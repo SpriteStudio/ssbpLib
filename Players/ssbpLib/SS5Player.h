@@ -1,12 +1,12 @@
-/** 
-*  SS5Player.h
-*/
 //-----------------------------------------------------------
 // ssbpLib v1.1.0
 //
 // Copyright(C) Web Technology Corp.
 // http://www.webtech.co.jp/
 //-----------------------------------------------------------
+//
+// SS5Player.h
+//
 
 
 /************************************************************
@@ -390,8 +390,8 @@ struct State
 	float x;						/// SS5アトリビュート：X座標
 	float y;						/// SS5アトリビュート：Y座標
 	float z;						/// SS5アトリビュート：Z座標
-	float anchorX;					/// 原点Xオフセット＋セルに設定された原点オフセットX
-	float anchorY;					/// 原点Yオフセット＋セルに設定された原点オフセットY
+	float pivotX;					/// 原点Xオフセット＋セルに設定された原点オフセットX
+	float pivotY;					/// 原点Yオフセット＋セルに設定された原点オフセットY
 	float rotationX;				/// X回転（親子関係計算済）
 	float rotationY;				/// Y回転（親子関係計算済）
 	float rotationZ;				/// Z回転（親子関係計算済）
@@ -427,8 +427,8 @@ struct State
 		x = 0.0f;
 		y = 0.0f;
 		z = 0.0f;
-		anchorX = 0.0f;
-		anchorY = 0.0f;
+		pivotX = 0.0f;
+		pivotY = 0.0f;
 		rotationX = 0.0f;
 		rotationY = 0.0f;
 		rotationZ = 0.0f;
@@ -476,8 +476,8 @@ struct ResluteState
 	float x;						/// SS5アトリビュート：X座標
 	float y;						/// SS5アトリビュート：Y座標
 	float z;						/// SS5アトリビュート：Z座標
-	float anchorX;					/// 原点Xオフセット＋セルに設定された原点オフセットX
-	float anchorY;					/// 原点Yオフセット＋セルに設定された原点オフセットY
+	float pivotX;					/// 原点Xオフセット＋セルに設定された原点オフセットX
+	float pivotY;					/// 原点Yオフセット＋セルに設定された原点オフセットY
 	float rotationX;				/// X回転（親子関係計算済）
 	float rotationY;				/// Y回転（親子関係計算済）
 	float rotationZ;				/// Z回転（親子関係計算済）
@@ -516,8 +516,8 @@ enum {
 	PART_FLAG_POSITION_X		= 1 << 4,		/// X座標
 	PART_FLAG_POSITION_Y		= 1 << 5,		/// Y座標
 	PART_FLAG_POSITION_Z		= 1 << 6,		/// Z座標
-	PART_FLAG_ANCHOR_X			= 1 << 7,		/// 原点オフセットX
-	PART_FLAG_ANCHOR_Y			= 1 << 8,		/// 原点オフセットY
+	PART_FLAG_PIVOT_X			= 1 << 7,		/// 原点オフセットX
+	PART_FLAG_PIVOT_Y			= 1 << 8,		/// 原点オフセットY
 	PART_FLAG_ROTATIONX			= 1 << 9,		/// X回転
 	PART_FLAG_ROTATIONY			= 1 << 10,		/// Y回転
 	PART_FLAG_ROTATIONZ			= 1 << 11,		/// Z回転

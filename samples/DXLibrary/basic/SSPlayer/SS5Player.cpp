@@ -956,8 +956,8 @@ public:
 		setStateValue(_state.x, state.x);
 		setStateValue(_state.y, state.y);
 		setStateValue(_state.z, state.z);
-		setStateValue(_state.anchorX, state.anchorX);
-		setStateValue(_state.anchorY, state.anchorY);
+		setStateValue(_state.pivotX, state.pivotX);
+		setStateValue(_state.pivotY, state.pivotY);
 		setStateValue(_state.rotationX, state.rotationX);
 		setStateValue(_state.rotationY, state.rotationY);
 		setStateValue(_state.rotationZ, state.rotationZ);
@@ -1539,8 +1539,8 @@ bool Player::getPartState(ResluteState& result, const char* name, int frameNo)
 					result.x = sprite->_state.mat[12];
 					result.y = sprite->_state.mat[13];
 					result.z = sprite->_state.z;
-					result.anchorX = sprite->_state.anchorX;					// 原点Xオフセット＋セルに設定された原点オフセットX
-					result.anchorY = sprite->_state.anchorY;					// 原点Yオフセット＋セルに設定された原点オフセットY
+					result.pivotX = sprite->_state.pivotX;					// 原点Xオフセット＋セルに設定された原点オフセットX
+					result.pivotY = sprite->_state.pivotY;					// 原点Yオフセット＋セルに設定された原点オフセットY
 					result.rotationX = sprite->_state.rotationX;				// X回転（親子関係計算済）
 					result.rotationY = sprite->_state.rotationY;				// Y回転（親子関係計算済）
 					result.rotationZ = sprite->_state.rotationZ;				// Z回転（親子関係計算済）
@@ -1804,8 +1804,8 @@ void Player::setFrame(int frameNo)
 		float x        = flags & PART_FLAG_POSITION_X ? (float)reader.readS16() : (float)init->positionX;
 		float y        = flags & PART_FLAG_POSITION_Y ? (float)-reader.readS16() : (float)-init->positionY;		//上がマイナスなので反転させる
 		float z        = flags & PART_FLAG_POSITION_Z ? (float)reader.readS16() : (float)init->positionZ;
-		float anchorX  = flags & PART_FLAG_ANCHOR_X ? reader.readFloat() : init->anchorX;
-		float anchorY  = flags & PART_FLAG_ANCHOR_Y ? reader.readFloat() : init->anchorY;
+		float pivotX   = flags & PART_FLAG_PIVOT_X ? reader.readFloat() : init->pivotX;
+		float pivotY   = flags & PART_FLAG_PIVOT_Y ? -reader.readFloat() : -init->pivotY;
 		float rotationX = flags & PART_FLAG_ROTATIONX ? -reader.readFloat() : -init->rotationX;
 		float rotationY = flags & PART_FLAG_ROTATIONY ? -reader.readFloat() : -init->rotationY;
 		float rotationZ = flags & PART_FLAG_ROTATIONZ ? -reader.readFloat() : -init->rotationZ;
@@ -1866,12 +1866,12 @@ void Player::setFrame(int frameNo)
 			cpy = cellRef->cell->pivot_Y;
 			if (flipY) cpy = -cpy;	// 垂直フリップによって原点を入れ替える
 
-			anchorX += cpx;
-			anchorY += cpy;
+			pivotX += cpx;
+			pivotY += cpy;
 
 		}
-		anchorX += 0.5f;
-		anchorY += 0.5f;
+		pivotX += 0.5f;
+		pivotY += 0.5f;
 
 
 		//ステータス保存
@@ -1880,8 +1880,8 @@ void Player::setFrame(int frameNo)
 		state.x = x;
 		state.y = y;
 		state.z = z;
-		state.anchorX = anchorX;
-		state.anchorY = anchorY;
+		state.pivotX = pivotX;
+		state.pivotY = pivotY;
 		state.rotationX = rotationX;
 		state.rotationY = rotationY;
 		state.rotationZ = rotationZ;
@@ -2433,8 +2433,8 @@ void Player::setFrame(int frameNo)
 			//原点計算を行う
 			float px = 0;
 			float py = 0;
-			float cx = ((sprite->_state.rect.size.width * sprite->_state.scaleX) * -(sprite->_state.anchorX - 0.5f));
-			float cy = ((sprite->_state.rect.size.height * sprite->_state.scaleY) * -(sprite->_state.anchorY - 0.5f));
+			float cx = ((sprite->_state.rect.size.width * sprite->_state.scaleX) * -(sprite->_state.pivotX - 0.5f));
+			float cy = ((sprite->_state.rect.size.height * sprite->_state.scaleY) * -(sprite->_state.pivotY - 0.5f));
 			get_uv_rotation(&cx, &cy, 0, 0, sprite->_state.rotationZ);
 
 			sprite->_state.mat[12] += cx;
