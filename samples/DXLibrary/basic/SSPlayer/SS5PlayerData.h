@@ -21,6 +21,142 @@ typedef unsigned int	ss_u32;
 typedef int				ss_s32;
 typedef int				ss_offset;
 
+struct EffectParticleTurnToDirectionEnabled
+{
+	ss_u32	flag;					//フラグ
+};
+struct EffectParticlePointGravity
+{
+	float	Position_x;				//重力点X
+	float	Position_y;				//重力点Y
+	float	Power;					//パワー
+};
+
+struct EffectParticleElementTransSize
+{
+	float	SizeXMinValue;			//幅倍率最小
+	float	SizeXMaxValue;			//幅倍率最大
+	float	SizeYMinValue;			//高さ倍率最小
+	float	SizeYMaxValue;			//高さ倍率最大
+	float	ScaleFactorMinValue;	//倍率最小
+	float	ScaleFactorMaxValue;	//倍率最大
+};
+
+struct EffectParticleElementSize
+{
+	float	SizeXMinValue;			//幅倍率最小
+	float	SizeXMaxValue;			//幅倍率最大
+	float	SizeYMinValue;			//高さ倍率最小
+	float	SizeYMaxValue;			//高さ倍率最大
+	float	ScaleFactorMinValue;	//倍率最小
+	float	ScaleFactorMaxValue;	//倍率最大
+};
+
+struct EffectParticleElementAlphaFade
+{
+	float	disprangeMinValue;		//表示区間開始
+	float	disprangeMaxValue;		//表示区間終了
+};
+
+struct EffectParticleElementTransColor
+{
+	ss_u32	ColorMinValue;			//設定カラー最小
+	ss_u32	ColorMaxValue;			//設定カラー最大
+};
+
+struct EffectParticleElementInitColor
+{
+	ss_u32	ColorMinValue;			//設定カラー最小
+	ss_u32	ColorMaxValue;			//設定カラー最大
+};
+
+struct EffectParticleElementTangentialAcceleration
+{
+	float	AccelerationMinValue;	//設定加速度最小
+	float	AccelerationMaxValue;	//設定加速度最大
+};
+
+struct EffectParticleElementTransSpeed
+{
+	float	SpeedMinValue;			//速度目標値最小
+	float	SpeedMaxValue;			//速度目標値最大
+};
+
+struct EffectParticleElementRotationTrans
+{
+	float	RotationFactor;			//角度目標加算値
+	float	EndLifeTimePer;			//到達時間
+};
+
+struct EffectParticleElementRotation
+{
+	float	RotationMinValue;		//角度初期値最小
+	float	RotationMaxValue;		//角度初期値最大
+	float	RotationAddMinValue;	//角度初期加算値最小
+	float	RotationAddMaxValue;	//角度初期加算値最大
+};
+
+struct EffectParticleElementPosition
+{
+	float	OffsetXMinValue;		//X座標に加算最小
+	float	OffsetXMaxValue;		//X座標に加算最大
+	float	OffsetYMinValue;		//X座標に加算最小
+	float	OffsetYMaxValue;		//X座標に加算最大
+};
+
+struct EffectParticleElementGravity
+{
+	float	Gravity_x;				//X方向の重力
+	float	Gravity_y;				//Y方向の重力
+};
+
+
+struct EffectParticleElementDelay
+{
+	ss_s32	DelayTime;				//遅延時間
+};
+
+struct EffectParticleElementRndSeedChange
+{
+	ss_s32	Seed;					//上書きするシード値
+};
+
+struct EffectParticleElementBasic
+{
+	ss_s32		priority;			//表示優先度
+	ss_s32		maximumParticle;	//最大パーティクル数
+	ss_s32		attimeCreate;		//一度に作成するパーティクル数
+	ss_s32		interval;			//生成間隔
+	ss_s32		lifetime;			//エミッター生存時間
+	float		speedMinValue;		//初速最小
+	float		speedMaxValue;		//初速最大
+	ss_s32		lifespanMinValue;	//パーティクル生存時間最小
+	ss_s32		lifespanMaxValue;	//パーティクル生存時間最大
+	float		angle;				//射出方向
+	float		angleVariance;		//射出方向範囲
+};
+
+struct EffectNode
+{
+	ss_s16		arrayIndex;		//通し番号
+	ss_s16		parentIndex;	//親の番号
+	ss_s16		type;			//ノードの種類
+	ss_s16		cellIndex;		//セルの番号
+	ss_s16		blendType;		//描画方法
+	ss_s16		numBehavior;	//コマンドパラメータ数
+	ss_offset	Behavior;		//コマンド詳細
+};
+
+struct EffectFile
+{
+	ss_offset	name;			// const char* エフェクトファイル名
+	ss_s16		fps;			//FPS
+	ss_s16		isLockRandSeed;	//乱数を固定するかどうか
+	ss_s16		lockRandSeed;	//固定する場合の乱数の種
+	ss_s16		numNodeList;	//含まれるノード数
+	ss_offset	effectNode;		// const EffectNode*
+};
+
 /**
 * セルマップ
 */
@@ -29,6 +165,8 @@ struct CellMap
 	ss_offset	name;			// const char*
 	ss_offset	imagePath;		// const char*
 	ss_s16		index;
+	ss_s16		wrapmode;		//ラップモード
+	ss_s16		filtermode;		//フィルタモード
 	ss_s16		reserved;
 };
 
@@ -109,6 +247,7 @@ struct PartData
 	ss_s16		boundsType;		/// 当たり判定種類
 	ss_s16		alphaBlendType;	/// BlendType
 	ss_offset	refname;		/// const char*　インスタンスとして配置されるアニメーション名
+	ss_offset	effectfilename;	// const char*　参照するエフェクトファイル名
 };
 
 /**
@@ -134,8 +273,10 @@ struct ProjectData
 	ss_offset	imageBaseDir;	// const char*
 	ss_offset	cells;			// const Cell*
 	ss_offset	animePacks;		// const AnimePackData*
+	ss_offset	effectFileList;		// const EffectFileList*
 	ss_s16		numCells;
 	ss_s16		numAnimePacks;
+	ss_s16		numEffectFileList;	// プロジェクトに登録されているエフェクトファイル数
 };
 
 };	// namespace ss

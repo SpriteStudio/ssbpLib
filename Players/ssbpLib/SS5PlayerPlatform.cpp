@@ -47,7 +47,7 @@ namespace ss
 	/**
 	* テクスチャの読み込み
 	*/
-	long SSTextureLoad(const char* pszFileName )
+	long SSTextureLoad(const char* pszFileName, SsTexWrapMode::_enum  wrapmode, SsTexFilterMode::_enum filtermode)
 	{
 		/**
 		* テクスチャ管理用のユニークな値を返してください。
@@ -59,6 +59,23 @@ namespace ss
 		long rc = 0;
 
 		rc = (long)LoadGraph(pszFileName);
+		//SpriteStudioで設定されたテクスチャ設定を反映させるための分岐です。
+		switch (wrapmode)
+		{
+		case SsTexWrapMode::clamp:	//クランプ
+			break;
+		case SsTexWrapMode::repeat:	//リピート
+			break;
+		case SsTexWrapMode::mirror:	//ミラー
+			break;
+		}
+		switch (filtermode)
+		{
+		case SsTexFilterMode::nearlest:	//ニアレストネイバー
+			break;
+		case SsTexFilterMode::linear:	//リニア、バイリニア
+			break;
+		}
 
 		return rc;
 	}
@@ -103,7 +120,7 @@ namespace ss
 		//頂点変形、Xサイズ、Yサイズ
 		float x = state.mat[12];	/// 表示座標はマトリクスから取得します。
 		float y = state.mat[13];	/// 表示座標はマトリクスから取得します。
-		float rotationZ = RadianToDegree(state.rotationZ);		/// 回転値
+		float rotationZ = SSRadianToDegree(state.rotationZ);		/// 回転値
 		float scaleX = state.scaleX;							/// 拡大率
 		float scaleY = state.scaleY;							/// 拡大率
 

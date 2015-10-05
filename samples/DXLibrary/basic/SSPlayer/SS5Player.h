@@ -74,6 +74,15 @@
 #include <stdarg.h>
 #include <assert.h>
 
+//エフェクト関連
+#include "./Common/loader/ssloader.h"
+#include "./Common/Animator/ssplayer_macro.h"
+#include "./Common/Animator/ssplayer_matrix.h"
+#include "./Common/Animator/ssplayer_effectfunction.h"
+#include "./Common/Animator/ssplayer_cellmap.h"
+#include "./Common/Animator/ssplayer_PartState.h"
+#include "./Common/Animator/MersenneTwister.h"
+
 #pragma warning(disable : 4996)
 
 namespace ss
@@ -86,14 +95,16 @@ class AnimeRef;
 class ResourceSet;
 struct ProjectData;
 class SSSize;
+class Player;
 
 /**
 * 定数
 */
-#define __PI__	(3.14159265358979323846f)
-#define __2PI__	(__PI__ * 2)
-#define RadianToDegree(Radian) ((float)( Radian * __2PI__ )/ 360.0f )
-#define DegreeToRadian(Degree) ((float)( Degree * 360.0f) / __2PI__)
+
+#define __SSPI__	(3.14159265358979323846f)
+#define __SS2PI__	(__SSPI__ * 2)
+#define SSRadianToDegree(Radian) ((float)( Radian * __SS2PI__ )/ 360.0f )
+#define SSDegreeToRadian(Degree) ((float)( Degree * 360.0f) / __SS2PI__)
 
 
 #define SS_SAFE_DELETE(p)            do { if(p) { delete (p); (p) = 0; } } while(0)
@@ -119,133 +130,239 @@ class SSSize;
 
 #define DOT (10.0f)					/// 固定少数の定数 10=1ドット
 #define PART_VISIBLE_MAX (512)		/// １アニメの最大パーツ数
+// エフェクト管理クラスに1パーツで管理するパーティクル数の定義があります。
+// Common\Animator\ssplayer_effect.hの以下の定義を参照して適正な値を設定してください。
+// プレイヤーかエフェクトクラスどちらかのバッファが足りない場合、パーティクルが表示されなくなります。
+// #define SSEFFECTRENDER_EMMITER_MAX 		//エミッターバッファ数
+// #define SSEFFECTRENDER_PARTICLE_MAX		//パーティクルバッファ数
+
 
 /**
-* 座標クラス
+* State
+パーツの情報を格納します。Stateの内容をもとに描画処理を作成してください。
 */
-class SSPoint
+struct State
 {
-public:
-	float x;
-	float y;
+	int flags;						/// このフレームで更新が行われるステータスのフラグ
+	int cellIndex;					/// パーツに割り当てられたセルの番号
+	float x;						/// SS5アトリビュート：X座標
+	float y;						/// SS5アトリビュート：Y座標
+	float z;						/// SS5アトリビュート：Z座標
+	float pivotX;					/// 原点Xオフセット＋セルに設定された原点オフセットX
+	float pivotY;					/// 原点Yオフセット＋セルに設定された原点オフセットY
+	float rotationX;				/// X回転（親子関係計算済）
+	float rotationY;				/// Y回転（親子関係計算済）
+	float rotationZ;				/// Z回転（親子関係計算済）
+	float scaleX;					/// Xスケール（親子関係計算済）
+	float scaleY;					/// Yスケール（親子関係計算済）
+	int opacity;					/// 不透明度（0～255）（親子関係計算済）
+	float size_X;					/// SS5アトリビュート：Xサイズ
+	float size_Y;					/// SS5アトリビュート：Xサイズ
+	float uv_move_X;				/// SS5アトリビュート：UV X移動
+	float uv_move_Y;				/// SS5アトリビュート：UV Y移動
+	float uv_rotation;				/// SS5アトリビュート：UV 回転
+	float uv_scale_X;				/// SS5アトリビュート：UV Xスケール
+	float uv_scale_Y;				/// SS5アトリビュート：UV Yスケール
+	float boundingRadius;			/// SS5アトリビュート：当たり半径
+	int colorBlendFunc;				/// SS5アトリビュート：カラーブレンドのブレンド方法
+	int colorBlendType;				/// SS5アトリビュート：カラーブレンドの単色か頂点カラーか。
+	bool flipX;						/// 横反転（親子関係計算済）
+	bool flipY;						/// 縦反転（親子関係計算済）
+	bool isVisibled;				/// 非表示（親子関係計算済）
+	float instancerotationX;		/// インスタンスパーツに設定されたX回転
+	float instancerotationY;		/// インスタンスパーツに設定されたY回転
+	float instancerotationZ;		/// インスタンスパーツに設定されたZ回転
+	SSV3F_C4B_T2F_Quad quad;		/// 頂点データ、座標、カラー値、UVが含まれる（頂点変形、サイズXY、UV移動XY、UVスケール、UV回転、反転が反映済）
+	long texture;					/// セルに対応したテクスチャ番号（ゲーム側で管理している番号を設定する）
+	SSRect rect;					/// セルに対応したテクスチャ内の表示領域（開始座標、幅高さ）
+	int blendfunc;					/// パーツに設定されたブレンド方法
+	float mat[16];					/// パーツの位置を算出するためのマトリクス（親子関係計算済）
 
-public:
-	SSPoint();
-	SSPoint(float x, float y);
-	SSPoint(const SSPoint& other);
-	SSPoint(const SSSize& size);
-	SSPoint& operator= (const SSPoint& other);
-	SSPoint& operator= (const SSSize& size);
-	SSPoint operator+(const SSPoint& right) const;
-	SSPoint operator-(const SSPoint& right) const;
-	SSPoint operator-() const;
-	SSPoint operator*(float a) const;
-	SSPoint operator/(float a) const;
-	void setPoint(float x, float y);
-	bool equals(const SSPoint& target) const;
-	bool fuzzyEquals(const SSPoint& target, float variance) const;
-	inline float getLength() const {
-		return sqrtf(x*x + y*y);
-	};
-	inline float getLengthSq() const {
-		return dot(*this); //x*x + y*y;
-	};
-	inline float getDistanceSq(const SSPoint& other) const {
-		return (*this - other).getLengthSq();
-	};
-	inline float getDistance(const SSPoint& other) const {
-		return (*this - other).getLength();
-	};
-	inline float getAngle() const {
-		return atan2f(y, x);
-	};
-	float getAngle(const SSPoint& other) const;
-	inline float dot(const SSPoint& other) const {
-		return x*other.x + y*other.y;
-	};
-	inline float cross(const SSPoint& other) const {
-		return x*other.y - y*other.x;
-	};
-	inline SSPoint getPerp() const {
-		return SSPoint(-y, x);
-	};
-	inline SSPoint getRPerp() const {
-		return SSPoint(y, -x);
-	};
-	inline SSPoint project(const SSPoint& other) const {
-		return other * (dot(other) / other.dot(other));
-	};
-	inline SSPoint rotate(const SSPoint& other) const {
-		return SSPoint(x*other.x - y*other.y, x*other.y + y*other.x);
-	};
-	inline SSPoint unrotate(const SSPoint& other) const {
-		return SSPoint(x*other.x + y*other.y, y*other.x - x*other.y);
-	};
-	inline SSPoint normalize() const {
-		float length = getLength();
-		if (length == 0.) return SSPoint(1.f, 0);
-		return *this / getLength();
-	};
-	inline SSPoint lerp(const SSPoint& other, float alpha) const {
-		return *this * (1.f - alpha) + other * alpha;
-	};
-	SSPoint rotateByAngle(const SSPoint& pivot, float angle) const;
-
-	static inline SSPoint forAngle(const float a)
+	void init()
 	{
-		return SSPoint(cosf(a), sinf(a));
+		flags = 0;
+		cellIndex = 0;
+		x = 0.0f;
+		y = 0.0f;
+		z = 0.0f;
+		pivotX = 0.0f;
+		pivotY = 0.0f;
+		rotationX = 0.0f;
+		rotationY = 0.0f;
+		rotationZ = 0.0f;
+		scaleX = 1.0f;
+		scaleY = 1.0f;
+		opacity = 255;
+		size_X = 1.0f;
+		size_Y = 1.0f;
+		uv_move_X = 0.0f;
+		uv_move_Y = 0.0f;
+		uv_rotation = 0.0f;
+		uv_scale_X = 1.0f;
+		uv_scale_Y = 1.0f;
+		boundingRadius = 0.0f;
+		colorBlendFunc = 0;
+		colorBlendType = 0;
+		flipX = false;
+		flipY = false;
+		isVisibled = false;
+		instancerotationX = 0.0f;
+		instancerotationY = 0.0f;
+		instancerotationZ = 0.0f;
+		memset(&quad, 0, sizeof(quad));
+		texture = 0;
+		rect.size.height = 0;
+		rect.size.width = 0;
+		rect.origin.x = 0;
+		rect.origin.y = 0;
+		blendfunc = 0;
+		memset(&mat, 0, sizeof(mat));
 	}
+
+	State() { init(); }
 };
 
 /**
-* サイズクラス
+* CustomSprite
 */
-class SSSize
+class CustomSprite
 {
-public:
-	float width;
-	float height;
+private:
+	static unsigned int ssSelectorLocation;
+	static unsigned int	ssAlphaLocation;
+	static unsigned int	sshasPremultipliedAlpha;
+
+	//	static CCGLProgram* getCustomShaderProgram();
+
+private:
+	//	CCGLProgram*	_defaultShaderProgram;
+	bool				_useCustomShaderProgram;
+	float				_opacity;
+	int					_hasPremultipliedAlpha;
+	int					_colorBlendFuncNo;
+	bool				_flipX;
+	bool				_flipY;
 
 public:
-	SSSize();
-	SSSize(float width, float height);
-	SSSize(const SSSize& other);
-	SSSize(const SSPoint& point);
-	SSSize& operator= (const SSSize& other);
-	SSSize& operator= (const SSPoint& point);
-	SSSize operator+(const SSSize& right) const;
-	SSSize operator-(const SSSize& right) const;
-	SSSize operator*(float a) const;
-	SSSize operator/(float a) const;
-	void setSize(float width, float height);
-	bool equals(const SSSize& target) const;
+	float				_mat[16];
+	State				_state;
+	bool				_isStateChanged;
+	CustomSprite*		_parent;
+	Player*				_ssplayer;
+	float				_liveFrame;
+	SSV3F_C4B_T2F_Quad	_sQuad;
+
+	//エフェクト用パラメータ
+	SsEffectRenderer*	refEffect;
+	SsPartState			partState;
+
+public:
+	CustomSprite();
+	virtual ~CustomSprite();
+
+	static CustomSprite* create();
+
+	void initState()
+	{
+		_state.init();
+		_isStateChanged = true;
+	}
+
+	void setStateValue(float& ref, float value)
+	{
+		if (ref != value)
+		{
+			ref = value;
+			_isStateChanged = true;
+		}
+	}
+
+	void setStateValue(int& ref, int value)
+	{
+		if (ref != value)
+		{
+			ref = value;
+			_isStateChanged = true;
+		}
+	}
+
+	void setStateValue(bool& ref, bool value)
+	{
+		if (ref != value)
+		{
+			ref = value;
+			_isStateChanged = true;
+		}
+	}
+
+	void setStateValue(SSV3F_C4B_T2F_Quad& ref, SSV3F_C4B_T2F_Quad value)
+	{
+		//		if (ref != value)
+		{
+			ref = value;
+			_isStateChanged = true;
+		}
+	}
+
+	void setState(const State& state)
+	{
+		setStateValue(_state.flags, state.flags);
+		setStateValue(_state.cellIndex, state.cellIndex);
+		setStateValue(_state.x, state.x);
+		setStateValue(_state.y, state.y);
+		setStateValue(_state.z, state.z);
+		setStateValue(_state.pivotX, state.pivotX);
+		setStateValue(_state.pivotY, state.pivotY);
+		setStateValue(_state.rotationX, state.rotationX);
+		setStateValue(_state.rotationY, state.rotationY);
+		setStateValue(_state.rotationZ, state.rotationZ);
+		setStateValue(_state.scaleX, state.scaleX);
+		setStateValue(_state.scaleY, state.scaleY);
+		setStateValue(_state.opacity, state.opacity);
+		setStateValue(_state.size_X, state.size_X);
+		setStateValue(_state.size_Y, state.size_Y);
+		setStateValue(_state.uv_move_X, state.uv_move_X);
+		setStateValue(_state.uv_move_Y, state.uv_move_Y);
+		setStateValue(_state.uv_rotation, state.uv_rotation);
+		setStateValue(_state.uv_scale_X, state.uv_scale_X);
+		setStateValue(_state.uv_scale_Y, state.uv_scale_Y);
+		setStateValue(_state.boundingRadius, state.boundingRadius);
+		setStateValue(_state.isVisibled, state.isVisibled);
+		setStateValue(_state.flipX, state.flipX);
+		setStateValue(_state.flipY, state.flipY);
+		setStateValue(_state.blendfunc, state.blendfunc);
+		setStateValue(_state.colorBlendFunc, state.colorBlendFunc);
+		setStateValue(_state.colorBlendType, state.colorBlendType);
+
+		setStateValue(_state.instancerotationX, state.instancerotationX);
+		setStateValue(_state.instancerotationY, state.instancerotationY);
+		setStateValue(_state.instancerotationZ, state.instancerotationZ);
+		setStateValue(_state.quad, state.quad);
+		_state.texture = state.texture;
+		_state.rect = state.rect;
+		memcpy(&_state.mat, &state.mat, sizeof(_state.mat));
+	}
+
+
+	// override
+	virtual void draw(void);
+	virtual void setOpacity(unsigned char opacity);
+
+	// original functions
+	void changeShaderProgram(bool useCustomShaderProgram);
+	bool isCustomShaderProgramEnabled() const;
+	void setColorBlendFunc(int colorBlendFuncNo);
+	SSV3F_C4B_T2F_Quad& getAttributeRef();
+
+	void setFlippedX(bool flip);
+	void setFlippedY(bool flip);
+	bool isFlippedX();
+	bool isFlippedY();
+	void sethasPremultipliedAlpha(int PremultipliedAlpha);
+
+public:
 };
 
-/**
-* 矩形クラス
-*/
-class SSRect
-{
-public:
-	SSPoint origin;
-	SSSize  size;
-
-public:
-	SSRect();
-	SSRect(float x, float y, float width, float height);
-	SSRect(const SSRect& other);
-	SSRect& operator= (const SSRect& other);
-	void setRect(float x, float y, float width, float height);
-	float getMinX() const; /// return the leftmost x-value of current rect
-	float getMidX() const; /// return the midpoint x-value of current rect
-	float getMaxX() const; /// return the rightmost x-value of current rect
-	float getMinY() const; /// return the bottommost y-value of current rect
-	float getMidY() const; /// return the midpoint y-value of current rect
-	float getMaxY() const; /// return the topmost y-value of current rect
-	bool equals(const SSRect& rect) const;
-	bool containsPoint(const SSPoint& point) const;
-	bool intersectsRect(const SSRect& rect) const;
-};
 
 /**
  * ResourceManager
@@ -328,6 +445,14 @@ public:
 	bool releseTexture(char* ssbpName);
 
 	/**
+	* 読み込んでいるssbpからアニメーションの総フレーム数を取得します。
+	* @param  ssbpName       ssbp名（拡張子を除くファイル名）
+	* @param  animeName      ssae/モーション名
+	* @return アニメーションの総フレーム（存在しない場合はアサート）
+	*/
+	int getMaxFrame(std::string ssbpName, std::string animeName);
+
+	/**
 	 * 新たなResourceManagerインスタンスを構築します.
 	 *
 	 * @return ResourceManagerインスタンス
@@ -378,91 +503,29 @@ struct LabelData
 	int			frameNo;		/// Frame no
 };
 
-
-/**
-* State
-  パーツの情報を格納します。Stateの内容をもとに描画処理を作成してください。
-*/
-struct State
+struct Instance
 {
-	int flags;						/// このフレームで更新が行われるステータスのフラグ
-	int cellIndex;					/// パーツに割り当てられたセルの番号
-	float x;						/// SS5アトリビュート：X座標
-	float y;						/// SS5アトリビュート：Y座標
-	float z;						/// SS5アトリビュート：Z座標
-	float pivotX;					/// 原点Xオフセット＋セルに設定された原点オフセットX
-	float pivotY;					/// 原点Yオフセット＋セルに設定された原点オフセットY
-	float rotationX;				/// X回転（親子関係計算済）
-	float rotationY;				/// Y回転（親子関係計算済）
-	float rotationZ;				/// Z回転（親子関係計算済）
-	float scaleX;					/// Xスケール（親子関係計算済）
-	float scaleY;					/// Yスケール（親子関係計算済）
-	int opacity;					/// 不透明度（0～255）（親子関係計算済）
-	float size_X;					/// SS5アトリビュート：Xサイズ
-	float size_Y;					/// SS5アトリビュート：Xサイズ
-	float uv_move_X;				/// SS5アトリビュート：UV X移動
-	float uv_move_Y;				/// SS5アトリビュート：UV Y移動
-	float uv_rotation;				/// SS5アトリビュート：UV 回転
-	float uv_scale_X;				/// SS5アトリビュート：UV Xスケール
-	float uv_scale_Y;				/// SS5アトリビュート：UV Yスケール
-	float boundingRadius;			/// SS5アトリビュート：当たり半径
-	int colorBlendFunc;				/// SS5アトリビュート：カラーブレンドのブレンド方法
-	int colorBlendType;				/// SS5アトリビュート：カラーブレンドの単色か頂点カラーか。
-	bool flipX;						/// 横反転（親子関係計算済）
-	bool flipY;						/// 縦反転（親子関係計算済）
-	bool isVisibled;				/// 非表示（親子関係計算済）
-	float instancerotationX;		/// インスタンスパーツに設定されたX回転
-	float instancerotationY;		/// インスタンスパーツに設定されたY回転
-	float instancerotationZ;		/// インスタンスパーツに設定されたZ回転
-	SSV3F_C4B_T2F_Quad quad;		/// 頂点データ、座標、カラー値、UVが含まれる（頂点変形、サイズXY、UV移動XY、UVスケール、UV回転、反転が反映済）
-	long texture;					/// セルに対応したテクスチャ番号（ゲーム側で管理している番号を設定する）
-	SSRect rect;					/// セルに対応したテクスチャ内の表示領域（開始座標、幅高さ）
-	int blendfunc;					/// パーツに設定されたブレンド方法
-	float mat[16];					/// パーツの位置を算出するためのマトリクス（親子関係計算済）
-
-	void init()
+	int			refStartframe;		//開始フレーム
+	int			refEndframe;		//終了フレーム
+	float		refSpeed;			//再生速度
+	int			refloopNum;			//ループ回数
+	bool		infinity;			//無限ループ
+	bool		reverse;			//逆再選
+	bool		pingpong;			//往復
+	bool		independent;		//独立動作
+	void clear(void)
 	{
-		flags = 0;
-		cellIndex = 0;
-		x = 0.0f;
-		y = 0.0f;
-		z = 0.0f;
-		pivotX = 0.0f;
-		pivotY = 0.0f;
-		rotationX = 0.0f;
-		rotationY = 0.0f;
-		rotationZ = 0.0f;
-		scaleX = 1.0f;
-		scaleY = 1.0f;
-		opacity = 255;
-		size_X = 1.0f;
-		size_Y = 1.0f;
-		uv_move_X = 0.0f;
-		uv_move_Y = 0.0f;
-		uv_rotation = 0.0f;
-		uv_scale_X = 1.0f;
-		uv_scale_Y = 1.0f;
-		boundingRadius = 0.0f;
-		colorBlendFunc = 0;
-		colorBlendType = 0;
-		flipX = false;
-		flipY = false;
-		isVisibled = false;
-		instancerotationX = 0.0f;
-		instancerotationY = 0.0f;
-		instancerotationZ = 0.0f;
-		memset(&quad, 0, sizeof(quad) );
-		texture = 0;
-		rect.size.height = 0;
-		rect.size.width = 0;
-		rect.origin.x = 0;
-		rect.origin.y = 0;
-		blendfunc = 0;
-		memset(&mat, 0, sizeof(mat));
+		refStartframe = 0;			//開始フレーム
+		refEndframe = 1;			//終了フレーム
+		refSpeed = 1;				//再生速度
+		refloopNum = 1;				//ループ回数
+		infinity = false;			//無限ループ
+		reverse = false;			//逆再選
+		pingpong = false;			//往復
+		independent = false;		//独立動作
 	}
-
-	State() { init(); }
 };
+
 
 /**
 * ResluteState
@@ -578,6 +641,7 @@ enum
 	PARTTYPE_NORMAL,		/// 通常パーツ。領域を持つ。画像は無くてもいい。
 	PARTTYPE_TEXT,			/// テキスト(予約　未実装）
 	PARTTYPE_INSTANCE,		/// インスタンス。他アニメ、パーツへの参照。シーン編集モードの代替になるもの
+	PARTTYPE_EFFECT,		// ss5.5対応エフェクトパーツ
 	PARTTYPE_NUM
 };
 
@@ -607,6 +671,33 @@ enum BlendType
 	BLEND_SUB		///< 3 減算
 };
 
+/*
+Common\Loader\sstypes.hに実際の定義があります。
+/// テクスチャラップモード
+namespace SsTexWrapMode
+{
+	enum _enum
+	{
+		invalid = -1,	/// なし
+		clamp,			/// クランプする
+		repeat,			/// リピート
+		mirror,			/// ミラー
+		num
+	};
+};
+
+/// テクスチャフィルターモード 画素補間方法
+namespace SsTexFilterMode
+{
+	enum _enum
+	{
+		invalid = -1,
+		nearlest,	///< ニアレストネイバー
+		linear,		///< リニア、バイリニア
+		num
+	};
+};
+*/
 /**
  * Player
  */
@@ -652,37 +743,37 @@ public:
 	void releaseAnime();
 
 	/**
-	 * アニメーションの再生を開始します.
-	 *
-	 * @param  packName      パック名(ssae）
-	 * @param  animeName     再生するアニメーション名
-	 * @param  loop          再生ループ数の指定. 省略時は0
-	 * @param  startFrameNo  再生を開始するフレームNoの指定. 省略時は0
-	 */
-	void play(const std::string& packName, const std::string& animeName, int loop = 0, int startFrameNo = 0);
+	* アニメーションの再生を開始します.
+	*
+	* @param  ssaeName      パック名(ssae名）
+	* @param  motionName    再生するモーション名
+	* @param  loop          再生ループ数の指定. 省略時は0
+	* @param  startFrameNo  再生を開始するフレームNoの指定. 省略時は0
+	*/
+	void play(const std::string& ssaeName, const std::string& motionName, int loop = 0, int startFrameNo = 0);
 
 	/**
-	 * アニメーションの再生を開始します.
-	 * アニメーション名から再生するデータを選択します.
-	 * "ssae名/アニメーション名" という指定が可能です.
-	 * sample.ssaeのanime_1を指定する場合、sample/anime_1となります.
-	 * ※アニメーション名のみで指定した場合、同名のアニメーションが複数存在時にどのアニメーションが選択されるかは不定です.
-	 *
-	 * @param  animeName     再生するアニメーション名
-	 * @param  loop          再生ループ数の指定. 省略時は0
-	 * @param  startFrameNo  再生を開始するフレームNoの指定. 省略時は0
-	 */
+	* アニメーションの再生を開始します.
+	* アニメーション名から再生するデータを選択します.
+	* "ssae名/モーション名で指定してください.
+	* sample.ssaeのanime_1を指定する場合、sample/anime_1となります.
+	* ※ver1.1からモーション名のみで指定する事はできなくなりました。
+	*
+	* @param  animeName     再生するアニメーション名
+	* @param  loop          再生ループ数の指定. 省略時は0
+	* @param  startFrameNo  再生を開始するフレームNoの指定. 省略時は0
+	*/
 	void play(const std::string& animeName, int loop = 0, int startFrameNo = 0);
 
 	/**
 	 * 再生を中断します.
 	 */
-	void pause();
+	void animePause();
 
 	/**
 	 * 再生を再開します.
 	 */
-	void resume();
+	void animeResume();
 
 	/**
 	 * 再生を停止します.
@@ -783,6 +874,10 @@ public:
 
 	/**
 	* indexからパーツ名を取得します.
+	*
+	* @param  result        パーツ情報を受け取るバッファ
+	* @param  name          取得するパーツ名
+	* @param  frameNo       取得するフレーム番号 -1の場合は現在再生しているフレームが適用される
 	*/
 	const char* getPartName(int partId) const;
 
@@ -852,10 +947,43 @@ public:
 	/*
 	* 名前を指定してパーツの再生するインスタンスアニメを変更します。
 	* 指定したパーツがインスタンスパーツでない場合、falseを返します.
+	* インスタンスパーツ名はディフォルトでは「ssae名:モーション名」とつけられています。
 	* 再生するアニメの名前は"ssae名/アニメーション名"として再生してください。
 	* 現在再生しているアニメを指定することは入れ子となり無限ループとなるためできません。
+	*
+	* インスタンスキーを手動で設定する事が出来ます。
+	* アニメーションに合わせて開始フレーム、終了フレーム等のインスタンスアトリビュート情報を設定してください。
+	* 終了フレーム最大値は総フレーム-1になります。
+	* 上書きフラグがfalseの場合、SS上に設定されたインスタンスアトリビュートの設定を使用します。
+	* 使用例：
+	* ss::Instance param;
+	* param.clear();
+	* param.refEndframe = resman->getMaxFrame("ssbp名","ssae名/モーション名") - 1;	//アニメーションの長さを取得
+	* param.infinity = true;														//無限ループを設定
+	* ssplayer->changeInstanceAnime("再生しているアニメーションに含まれるインスタンスパーツ名", "ssae名/モーション名", true, param);
+	*
+	* @param  partsname			SS上のパーツ名
+	* @param  animeName			参照するアニメ名
+	* @param  overWrite			インスタンスキーの上書きフラグ
+	* @param  keyParam			インスタンスキーのパラメータ
 	*/
-	bool changeInstanceAnime(std::string partsname, std::string animeName);
+	bool changeInstanceAnime(std::string partsname, std::string animeName, bool overWrite, Instance keyParam);
+
+	/*
+	* プレイヤーにインスタンスパラメータを設定します。
+	*
+	* @param  overWrite			インスタンスキーの上書きフラグ
+	* @param  keyParam			インスタンスキーのパラメータ
+	*/
+	void setInstanceParam(bool overWrite, Instance keyParam);
+
+	/*
+	* プレイヤーからインスタンスパラメータを取得します。
+	*
+	* @param  overWrite			インスタンスキーの上書きフラグ
+	* @param  keyParam			インスタンスキーのパラメータ
+	*/
+	void getInstanceParam(bool *overWrite, Instance *keyParam);
 
 	/*
 	* プレイヤー本体の反転を設定します。
@@ -895,6 +1023,7 @@ protected:
 	void get_uv_rotation(float *u, float *v, float cu, float cv, float deg);
 	void set_InstanceAlpha(int alpha);
 	void set_InstanceRotation(float rotX, float rotY, float rotZ);
+	void effectReload(void);
 
 protected:
 	ResourceManager*	_resman;
@@ -924,6 +1053,8 @@ protected:
 	int					_col_r;
 	int					_col_g;
 	int					_col_b;
+	bool				_instanceOverWrite;		//インスタンス情報を上書きするか？
+	Instance			_instanseParam;			//インスタンスパラメータ
 
 	UserData			_userData;
 
