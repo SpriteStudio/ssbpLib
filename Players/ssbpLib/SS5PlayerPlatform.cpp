@@ -201,7 +201,7 @@ namespace ss
 			);
 		SetDrawBright(255, 255, 255);
 
-		SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 255);	//ブレンドステートを通常へ戻す
+		SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);	//ブレンドステートを通常へ戻す
 	}
 
 	/**

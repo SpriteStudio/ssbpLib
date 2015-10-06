@@ -1697,6 +1697,7 @@ bool Player::getPartState(ResluteState& result, const char* name, int frameNo)
 				{
 					//必要に応じて取得するパラメータを追加してください。
 					//当たり判定などのパーツに付属するフラグを取得する場合は　partData　のメンバを参照してください。
+					//親から継承したスケールを反映させる場合はxスケールは_mat.m[0]、yスケールは_mat.m[5]をかけて使用してください。
 					CustomSprite* sprite = static_cast<CustomSprite*>(_parts.at(partIndex));
 					result.x = sprite->_state.mat[12];
 					result.y = sprite->_state.mat[13];
@@ -1708,8 +1709,8 @@ bool Player::getPartState(ResluteState& result, const char* name, int frameNo)
 					result.x = sprite->_state.mat[12];
 					result.y = sprite->_state.mat[13];
 					result.z = sprite->_state.z;
-					result.pivotX = sprite->_state.pivotX;					// 原点Xオフセット＋セルに設定された原点オフセットX
-					result.pivotY = sprite->_state.pivotY;					// 原点Yオフセット＋セルに設定された原点オフセットY
+					result.pivotX = sprite->_state.pivotX;						// 原点Xオフセット＋セルに設定された原点オフセットX
+					result.pivotY = sprite->_state.pivotY;						// 原点Yオフセット＋セルに設定された原点オフセットY
 					result.rotationX = sprite->_state.rotationX;				// X回転（親子関係計算済）
 					result.rotationY = sprite->_state.rotationY;				// Y回転（親子関係計算済）
 					result.rotationZ = sprite->_state.rotationZ;				// Z回転（親子関係計算済）
@@ -1984,7 +1985,11 @@ void Player::setFrame(int frameNo)
 		int flags      = reader.readU32();
 		int cellIndex  = flags & PART_FLAG_CELL_INDEX ? reader.readS16() : init->cellIndex;
 		float x        = flags & PART_FLAG_POSITION_X ? (float)reader.readS16() : (float)init->positionX;
+#ifdef UP_MINUS
 		float y        = flags & PART_FLAG_POSITION_Y ? (float)-reader.readS16() : (float)-init->positionY;		//上がマイナスなので反転させる
+#else
+		float y        = flags & PART_FLAG_POSITION_Y ? (float)reader.readS16() : (float)init->positionY;
+#endif
 		float z        = flags & PART_FLAG_POSITION_Z ? (float)reader.readS16() : (float)init->positionZ;
 		float pivotX   = flags & PART_FLAG_PIVOT_X ? reader.readFloat() : init->pivotX;
 		float pivotY   = flags & PART_FLAG_PIVOT_Y ? -reader.readFloat() : -init->pivotY;

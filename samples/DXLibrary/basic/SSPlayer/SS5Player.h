@@ -136,6 +136,8 @@ class Player;
 // #define SSEFFECTRENDER_EMMITER_MAX 		//エミッターバッファ数
 // #define SSEFFECTRENDER_PARTICLE_MAX		//パーティクルバッファ数
 
+//上方向がマイナスの場合は有効
+#define UP_MINUS
 
 /**
 * State
