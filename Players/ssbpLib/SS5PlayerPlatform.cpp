@@ -109,6 +109,16 @@ namespace ss
 		return true;
 	}
 
+	//DXライブラリ用頂点バッファ作成関数
+	VERTEX_3D vertex3Dfrom(const ss::SSV3F_C4B_T2F &vct)
+	{
+		VERTEX_3D v = {
+			{ vct.vertices.x, vct.vertices.y, vct.vertices.z },
+			vct.colors.b, vct.colors.g, vct.colors.r, vct.colors.a,
+			vct.texCoords.u, vct.texCoords.v
+		};
+		return v;
+	}
 	/**
 	* スプライトの表示
 	*/
@@ -120,7 +130,7 @@ namespace ss
 		//頂点変形、Xサイズ、Yサイズ
 		float x = state.mat[12];	/// 表示座標はマトリクスから取得します。
 		float y = state.mat[13];	/// 表示座標はマトリクスから取得します。
-		float rotationZ = SSRadianToDegree(state.rotationZ);		/// 回転値
+		float rotationZ = state.rotationZ;		/// 回転値
 		float scaleX = state.scaleX;							/// 拡大率
 		float scaleY = state.scaleY;							/// 拡大率
 
@@ -178,28 +188,74 @@ namespace ss
 			case BLEND_SUB:		///< 3 減算
 				break;
 			}
+//			DrawModiGraph
 
 		}
 
+#ifdef UP_MINUS
 		/**
-		* DXライブラリはXとY同時拡大なので、とりあえずXスケールを使用する
-		* DXライブラリはY反転できないので未対応
+		* DXライブラリのスプライト表示機能ではXとY同時拡大なので、とりあえずXスケールを使用する
+		* Y反転できないので未対応
 		* DrawRectRotaGraphはxとyが中心になるように、テクスチャの矩形を表示します。
+		* DXライブラリのスプライト表示機能は上方向がマイナスになります。
 		*/
-		//反転時はスケールが-となるので、反転フラグを使用してスケールを元に戻す
-		if (scaleX < 0.0f )
-		{
-			scaleX = -scaleX;
-		}
-
 		SetDrawBright(state.quad.bl.colors.r, state.quad.bl.colors.g, state.quad.bl.colors.b);
 		DrawRectRotaGraph(
 			(int)x, (int)y,	//この座標が画像の中心になります。
 			(int)state.rect.origin.x, (int)state.rect.origin.y, (int)state.rect.size.width, (int)state.rect.size.height,
-			scaleX, rotationZ,
-			state.texture, TRUE, state.flipX
+			scaleX, SSRadianToDegree(rotationZ),
+			state.texture.handle, TRUE, state.flipX
 			);
 		SetDrawBright(255, 255, 255);
+#else
+		/**
+		* DXライブラリの3D機能を使用してスプライトを表示します。
+		* DXライブラリの3D機能は上方向がプラスになります。
+		* 3Dを使用する場合頂点情報を使用して再現すると頂点変形やUV系のアトリビュートを反映させる事ができます。
+		*/
+		//描画用頂点情報を作成
+		SSV3F_C4B_T2F_Quad quad;
+		quad = state.quad;
+		quad.tl.vertices.x *= scaleX;
+		quad.tl.vertices.y *= scaleY;
+		quad.tr.vertices.x *= scaleX;
+		quad.tr.vertices.y *= scaleY;
+		quad.bl.vertices.x *= scaleX;
+		quad.bl.vertices.y *= scaleY;
+		quad.br.vertices.x *= scaleX;
+		quad.br.vertices.y *= scaleY;
+
+		//頂点の回転、3D描画はY方向が逆なので角度をマイナスで計算する
+		get_uv_rotation(&quad.tl.vertices.x, &quad.tl.vertices.y, 0, 0, rotationZ);
+		get_uv_rotation(&quad.tr.vertices.x, &quad.tr.vertices.y, 0, 0, rotationZ);
+		get_uv_rotation(&quad.bl.vertices.x, &quad.bl.vertices.y, 0, 0, rotationZ);
+		get_uv_rotation(&quad.br.vertices.x, &quad.br.vertices.y, 0, 0, rotationZ);
+
+		quad.tl.vertices.x += x;
+		quad.tl.vertices.y += y;
+		quad.tr.vertices.x += x;
+		quad.tr.vertices.y += y;
+		quad.bl.vertices.x += x;
+		quad.bl.vertices.y += y;
+		quad.br.vertices.x += x;
+		quad.br.vertices.y += y;
+
+		//頂点カラーにアルファを設定
+		quad.tl.colors.a = quad.bl.colors.a * state.opacity / 255;
+		quad.tr.colors.a = quad.bl.colors.a * state.opacity / 255;
+		quad.bl.colors.a = quad.bl.colors.a * state.opacity / 255;
+		quad.br.colors.a = quad.bl.colors.a * state.opacity / 255;
+
+		//DXライブラリ用の頂点バッファを作成する
+		VERTEX_3D vertex[4] = {
+			vertex3Dfrom(quad.tl),
+			vertex3Dfrom(quad.bl),
+			vertex3Dfrom(quad.tr),
+			vertex3Dfrom(quad.br)
+		};
+		//3Dプリミティブの表示
+		DrawPolygon3DBase(vertex, 4, DX_PRIMTYPE_TRIANGLESTRIP, state.texture.handle, true);
+#endif
 
 		SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);	//ブレンドステートを通常へ戻す
 	}

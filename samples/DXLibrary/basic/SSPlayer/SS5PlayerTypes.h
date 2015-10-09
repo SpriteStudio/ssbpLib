@@ -414,6 +414,13 @@ typedef struct _SSV3F_C4B_T2F_Quad
 	SSV3F_C4B_T2F    br;
 } SSV3F_C4B_T2F_Quad;
 
+//テクスチャデータ
+struct TextuerData
+{
+	long handle;
+	int size_w;
+	int size_h;
+};
 
 
 };	// namespace ss

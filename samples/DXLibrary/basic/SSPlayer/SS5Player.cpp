@@ -67,6 +67,20 @@ static std::string Format(const char* format, ...){
 	return ret;
 }
 
+//座標回転処理
+//指定した座標を中心に回転後した座標を取得します
+void get_uv_rotation(float *u, float *v, float cu, float cv, float deg)
+{
+	float dx = *u - cu; // 中心からの距離(X)
+	float dy = *v - cv; // 中心からの距離(Y)
+
+	float tmpX = (dx * cosf(SSRadianToDegree(deg))) - (dy * sinf(SSRadianToDegree(deg))); // 回転
+	float tmpY = (dx * sinf(SSRadianToDegree(deg))) + (dy * cosf(SSRadianToDegree(deg)));
+
+	*u = (cu + tmpX); // 元の座標にオフセットする
+	*v = (cv + tmpY);
+
+}
 
 
 
@@ -150,7 +164,7 @@ private:
 struct CellRef
 {
 	const Cell* cell;
-	long texture;
+	TextuerData texture;
 	SSRect rect;
 	std::string texname;
 };
@@ -209,7 +223,7 @@ public:
 			if (strcmp(cellName, name) == 0)
 			{
 				CellRef* ref = getReference(i);
-				ref->texture = texture;
+				ref->texture.handle = texture;
 				rc = true;
 			}
 		}
@@ -230,10 +244,10 @@ public:
 			const CellMap* cellMap = static_cast<const CellMap*>(ptr(cell->cellMap));
 			{
 				CellRef* ref = _refs.at(i);
-				if (ref->texture != -1 )
+				if (ref->texture.handle != -1 )
 				{
-					SSTextureRelese(ref->texture);
-					ref->texture = -1;
+					SSTextureRelese(ref->texture.handle);
+					ref->texture.handle = -1;
 					rc = true;
 				}
 			}
@@ -282,10 +296,10 @@ protected:
 		for (int i = 0; i < _refs.size(); i++)
 		{
 			CellRef* ref = _refs.at(i);
-			if (ref->texture)
+			if (ref->texture.handle != -1 )
 			{
-				SSTextureRelese(ref->texture);
-				ref->texture = -1;
+				SSTextureRelese(ref->texture.handle);
+				ref->texture.handle = -1;
 			}
 			delete ref;
 		}
@@ -316,14 +330,22 @@ protected:
 		//テクスチャの読み込み
 		long tex = SSTextureLoad(path.c_str(), wrapmode, filtermode);
 		SSLOG("load: %s", path.c_str());
-		_textures.push_back(tex);
+		TextuerData texdata;
+		texdata.handle = tex;
+		int w;
+		int h;
+		SSGetTextureSize(texdata.handle, w, h);
+		texdata.size_w = w;
+		texdata.size_h = h;
+
+		_textures.push_back(texdata);
 		_texname.push_back(path);
 
 	}
 
 protected:
 	std::vector<std::string>			_texname;
-	std::vector<long>					_textures;
+	std::vector<TextuerData>			_textures;
 	std::vector<CellRef*>				_refs;
 };
 
@@ -1992,11 +2014,21 @@ void Player::setFrame(int frameNo)
 #endif
 		float z        = flags & PART_FLAG_POSITION_Z ? (float)reader.readS16() : (float)init->positionZ;
 		float pivotX   = flags & PART_FLAG_PIVOT_X ? reader.readFloat() : init->pivotX;
-		float pivotY   = flags & PART_FLAG_PIVOT_Y ? -reader.readFloat() : -init->pivotY;
+#ifdef UP_MINUS
+		float pivotY = flags & PART_FLAG_PIVOT_Y ? -reader.readFloat() : -init->pivotY;
+#else
+		float pivotY = flags & PART_FLAG_PIVOT_Y ? reader.readFloat() : init->pivotY;
+#endif
+#ifdef UP_MINUS
 		float rotationX = flags & PART_FLAG_ROTATIONX ? -reader.readFloat() : -init->rotationX;
 		float rotationY = flags & PART_FLAG_ROTATIONY ? -reader.readFloat() : -init->rotationY;
 		float rotationZ = flags & PART_FLAG_ROTATIONZ ? -reader.readFloat() : -init->rotationZ;
-		float scaleX   = flags & PART_FLAG_SCALE_X ? reader.readFloat() : init->scaleX;
+#else
+		float rotationX = flags & PART_FLAG_ROTATIONX ? reader.readFloat() : init->rotationX;
+		float rotationY = flags & PART_FLAG_ROTATIONY ? reader.readFloat() : init->rotationY;
+		float rotationZ = flags & PART_FLAG_ROTATIONZ ? reader.readFloat() : init->rotationZ;
+#endif
+		float scaleX = flags & PART_FLAG_SCALE_X ? reader.readFloat() : init->scaleX;
 		float scaleY   = flags & PART_FLAG_SCALE_Y ? reader.readFloat() : init->scaleY;
 		int opacity    = flags & PART_FLAG_OPACITY ? reader.readU16() : init->opacity;
 		float size_X   = flags & PART_FLAG_SIZE_X ? reader.readFloat() : init->size_X;
@@ -2121,7 +2153,7 @@ void Player::setFrame(int frameNo)
 		}
 		else
 		{
-			state.texture = -1;
+			state.texture.handle = -1;
 			//セルが無く通常パーツ、ヌルパーツの時は非表示にする
 			if ((partData->type == PARTTYPE_NORMAL) || (partData->type == PARTTYPE_NULL))
 			{
@@ -2137,37 +2169,49 @@ void Player::setFrame(int frameNo)
 		if (cellRef)
 		{
 			//頂点を設定する
-			float x1 = 0;
-			float y1 = 0;
-			float x2 = x1 + cellRef->rect.size.width;
-			float y2 = y1 + cellRef->rect.size.height;
+			float width_h = cellRef->rect.size.width / 2;
+			float height_h = cellRef->rect.size.height / 2;
+			float x1 = -width_h;
+			float y1 = -height_h;
+			float x2 = width_h;
+			float y2 = height_h;
+
+#ifdef UP_MINUS
+			quad.tl.vertices.x = x1;
+			quad.tl.vertices.y = y1;
+			quad.tr.vertices.x = x2;
+			quad.tr.vertices.y = y1;
 			quad.bl.vertices.x = x1;
-			quad.bl.vertices.y = y1;
+			quad.bl.vertices.y = y2;
 			quad.br.vertices.x = x2;
-			quad.br.vertices.y = y1;
+			quad.br.vertices.y = y2;
+#else
 			quad.tl.vertices.x = x1;
 			quad.tl.vertices.y = y2;
 			quad.tr.vertices.x = x2;
 			quad.tr.vertices.y = y2;
-
+			quad.bl.vertices.x = x1;
+			quad.bl.vertices.y = y1;
+			quad.br.vertices.x = x2;
+			quad.br.vertices.y = y1;
+#endif
 			//UVを設定する
-			int atlasWidth = 0;
-			int atlasHeight = 0;
-			SSGetTextureSize(state.texture, atlasWidth, atlasHeight);
+			int atlasWidth = state.texture.size_w;
+			int atlasHeight = state.texture.size_h;
 			float left, right, top, bottom;
 			left = cellRef->rect.origin.x / (float)atlasWidth;
-			right = (cellRef->rect.origin.x + cellRef->rect.size.height) / (float)atlasWidth;
+			right = (cellRef->rect.origin.x + cellRef->rect.size.width) / (float)atlasWidth;
 			top = cellRef->rect.origin.y / (float)atlasHeight;
-			bottom = (cellRef->rect.origin.y + cellRef->rect.size.width) / (float)atlasHeight;
+			bottom = (cellRef->rect.origin.y + cellRef->rect.size.height) / (float)atlasHeight;
 
-			quad.bl.texCoords.u = left;
-			quad.bl.texCoords.v = top;
-			quad.br.texCoords.u = left;
-			quad.br.texCoords.v = bottom;
-			quad.tl.texCoords.u = right;
+			quad.tl.texCoords.u = left;
 			quad.tl.texCoords.v = top;
 			quad.tr.texCoords.u = right;
-			quad.tr.texCoords.v = bottom;
+			quad.tr.texCoords.v = top;
+			quad.bl.texCoords.u = left;
+			quad.bl.texCoords.v = bottom;
+			quad.br.texCoords.u = right;
+			quad.br.texCoords.v = bottom;
 		}
 
 		//サイズ設定
@@ -2233,7 +2277,7 @@ void Player::setFrame(int frameNo)
 		
 		//頂点情報の取得
 		unsigned char alpha = (unsigned char)opacity;
-		SSColor4B color4 = { 0xff, 0xff, 0xff, alpha };
+		SSColor4B color4 = { 0xff, 0xff, 0xff, 0xff };
 
 		color4.r = color4.r * _col_r / 255;
 		color4.g = color4.g * _col_g / 255;
@@ -2258,16 +2302,18 @@ void Player::setFrame(int frameNo)
 			sprite->_state.colorBlendFunc = funcNo;
 			sprite->_state.colorBlendType = cb_flags;
 
+			//ssbpではカラーブレンドのレート（％）は使用できません。
+			//制限となります。
 			if (cb_flags & VERTEX_FLAG_ONE)
 			{
 				blend_rate = reader.readFloat();
 				reader.readColor(color4);
 
-				color4.a = (int)( blend_rate * 255 );	//レートをアルファ値として設定
 
 				color4.r = color4.r * _col_r / 255;
 				color4.g = color4.g * _col_g / 255;
 				color4.b = color4.b * _col_b / 255;
+				color4.a = color4.a * alpha / 255;
 
 				quad.tl.colors =
 				quad.tr.colors =
@@ -2280,28 +2326,24 @@ void Player::setFrame(int frameNo)
 				{
 					blend_rate = reader.readFloat();
 					reader.readColor(color4);
-					color4.a = (int)(blend_rate * 255);	//レートをアルファ値として設定
 					quad.tl.colors = color4;
 				}
 				if (cb_flags & VERTEX_FLAG_RT)
 				{
 					blend_rate = reader.readFloat();
 					reader.readColor(color4);
-					color4.a = (int)(blend_rate * 255);	//レートをアルファ値として設定
 					quad.tr.colors = color4;
 				}
 				if (cb_flags & VERTEX_FLAG_LB)
 				{
 					blend_rate = reader.readFloat();
 					reader.readColor(color4);
-					color4.a = (int)(blend_rate * 255);	//レートをアルファ値として設定
 					quad.bl.colors = color4;
 				}
 				if (cb_flags & VERTEX_FLAG_RB)
 				{
 					blend_rate = reader.readFloat();
 					reader.readColor(color4);
-					color4.a = (int)(blend_rate * 255);	//レートをアルファ値として設定
 					quad.br.colors = color4;
 				}
 			}
@@ -2594,7 +2636,6 @@ void Player::setFrame(int frameNo)
 				{
 					sprite->_state.scaleY = -sprite->_state.scaleY;	//フラグ反転
 				}
-				sprite->_state.opacity = (sprite->_state.opacity * _state.opacity * _InstanceAlpha) / 255 / 255;
 			}
 			TranslationMatrix(t, sprite->_state.x, sprite->_state.y, 0.0f);
 			MultiplyMatrix(t, mat, mat);
@@ -2629,8 +2670,9 @@ void Player::setFrame(int frameNo)
 
 				sprite->_state.scaleX *= parent->_state.scaleX;
 				sprite->_state.scaleY *= parent->_state.scaleY;
-				sprite->_state.opacity = ( sprite->_state.opacity * parent->_state.opacity ) / 255;
 
+				//ルートパーツのアルファ値を反映させる
+				sprite->_state.opacity = (sprite->_state.opacity * _state.opacity * _InstanceAlpha) / 255 / 255;
 				//インスタンスパーツの親を設定
 				if (sprite->_ssplayer)
 				{
@@ -2644,12 +2686,15 @@ void Player::setFrame(int frameNo)
 			float px = 0;
 			float py = 0;
 			float cx = ((sprite->_state.rect.size.width * sprite->_state.scaleX) * -(sprite->_state.pivotX - 0.5f));
+#ifdef UP_MINUS
 			float cy = ((sprite->_state.rect.size.height * sprite->_state.scaleY) * -(sprite->_state.pivotY - 0.5f));
+#else
+			float cy = ((sprite->_state.rect.size.height * sprite->_state.scaleY) * +(sprite->_state.pivotY - 0.5f));
+#endif
 			get_uv_rotation(&cx, &cy, 0, 0, sprite->_state.rotationZ);
 
 			sprite->_state.mat[12] += cx;
 			sprite->_state.mat[13] += cy;
-
 			sprite->_isStateChanged = false;
 		}
 	}
@@ -2750,7 +2795,7 @@ void Player::draw()
 		}
 		else
 		{
-			if ((sprite->_state.texture != -1) && (sprite->_state.isVisibled == true))
+			if ((sprite->_state.texture.handle != -1) && (sprite->_state.isVisibled == true))
 			{
 				SSDrawSprite(sprite->_state);
 			}
@@ -2843,18 +2888,6 @@ void Player::checkUserData(int frameNo)
 
 }
 
-void Player::get_uv_rotation(float *u, float *v, float cu, float cv, float deg)
-{
-	float dx = *u - cu; // 中心からの距離(X)
-	float dy = *v - cv; // 中心からの距離(Y)
-
-	float tmpX = (dx * cosf(SSRadianToDegree(deg))) - (dy * sinf(SSRadianToDegree(deg))); // 回転
-	float tmpY = (dx * sinf(SSRadianToDegree(deg))) + (dy * cosf(SSRadianToDegree(deg)));
-
-	*u = (cu + tmpX); // 元の座標にオフセットする
-	*v = (cv + tmpY);
-
-}
 //エフェクトのリロード処理
 void Player::effectReload(void)
 {

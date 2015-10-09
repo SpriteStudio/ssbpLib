@@ -53,14 +53,17 @@
 
 
   終了処理で resman、player を delete してください。
-  //テクスチャの解放
-  resman->releseTexture("character_template1");
   //SS5Playerの削除
   delete (ssplayer);
   delete (resman);
 
+  ssbpLibの制限
+  カラーブレンドのレート（％）は使用できません。
+  SpriteStuduioのカラーブレンドは特殊な計算を行っているため
+  専用のシェーダーを用意しないと再現できないと思います。
+  このサンプルでは一般的な頂点カラー変更（カラーブレンドの乗算に相当）のみ対応しています。
+  X、Y回転は内部では座標を計算していますが描画には反映させていません。
 *************************************************************/
-
 
 #ifndef SS5Player_h
 #define SS5Player_h
@@ -96,6 +99,9 @@ class ResourceSet;
 struct ProjectData;
 class SSSize;
 class Player;
+
+//関数定義
+extern void get_uv_rotation(float *u, float *v, float cu, float cv, float deg);
 
 /**
 * 定数
@@ -136,8 +142,14 @@ class Player;
 // #define SSEFFECTRENDER_EMMITER_MAX 		//エミッターバッファ数
 // #define SSEFFECTRENDER_PARTICLE_MAX		//パーティクルバッファ数
 
-//上方向がマイナスの場合は有効
-#define UP_MINUS
+//座標系の設定：上方向がマイナスの場合は有効
+//このサンプルでは有効にするとDXライブラリのスプライト表示機能を使用して描画します。
+//スプライト機能を使用する場合、拡大率や反転に制限が付きます。
+//無効にした場合は上方向をプラスとして計算を行います。
+//このサンプルでは3D機能を使用して描画します。
+//それぞれのプラットフォームに合わせた座標系で使用してください。
+//#define UP_MINUS
+
 
 /**
 * State
@@ -175,7 +187,7 @@ struct State
 	float instancerotationY;		/// インスタンスパーツに設定されたY回転
 	float instancerotationZ;		/// インスタンスパーツに設定されたZ回転
 	SSV3F_C4B_T2F_Quad quad;		/// 頂点データ、座標、カラー値、UVが含まれる（頂点変形、サイズXY、UV移動XY、UVスケール、UV回転、反転が反映済）
-	long texture;					/// セルに対応したテクスチャ番号（ゲーム側で管理している番号を設定する）
+	TextuerData texture;			/// セルに対応したテクスチャ番号（ゲーム側で管理している番号を設定する）
 	SSRect rect;					/// セルに対応したテクスチャ内の表示領域（開始座標、幅高さ）
 	int blendfunc;					/// パーツに設定されたブレンド方法
 	float mat[16];					/// パーツの位置を算出するためのマトリクス（親子関係計算済）
@@ -212,7 +224,9 @@ struct State
 		instancerotationY = 0.0f;
 		instancerotationZ = 0.0f;
 		memset(&quad, 0, sizeof(quad));
-		texture = 0;
+		texture.handle = 0;
+		texture.size_w = 0;
+		texture.size_h = 0;
 		rect.size.height = 0;
 		rect.size.width = 0;
 		rect.origin.x = 0;
@@ -505,6 +519,7 @@ struct LabelData
 	int			frameNo;		/// Frame no
 };
 
+//インスタンスデータ
 struct Instance
 {
 	int			refStartframe;		//開始フレーム
@@ -1022,7 +1037,6 @@ protected:
 	void updateFrame(float dt);
 	void setFrame(int frameNo);
 	void checkUserData(int frameNo);
-	void get_uv_rotation(float *u, float *v, float cu, float cv, float deg);
 	void set_InstanceAlpha(int alpha);
 	void set_InstanceRotation(float rotX, float rotY, float rotZ);
 	void effectReload(void);

@@ -26,7 +26,6 @@ static  int seed_table[] =
 	6399, 6938, 7553, 8280, 8510, 8641, 8893, 9043, 31043,
 };
 //--------
-void get_uv_rotation(float *u, float *v, float cu, float cv, float deg);
 
 
 
@@ -429,7 +428,11 @@ void	SsEffectRenderParticle::update(float delta)
 //------------------------------------------------------------------------------
 void	SsEffectRenderParticle::updateDelta(float delta)
 {
-	_rotation+=( _rotationAdd*delta );
+#ifdef UP_MINUS
+	_rotation -= (_rotationAdd*delta);
+#else
+	_rotation += (_rotationAdd*delta);
+#endif
 
 	_exsitTime+=delta;
 	_life = _lifetime - _exsitTime;
@@ -495,7 +498,7 @@ void	SsEffectRenderParticle::draw(SsEffectRenderer* render)
 
 	if ( this->parentEmitter == NULL  )return;
 	if ( refBehavior == NULL ) return;
-	if (dispCell->refCell.texture == NULL) return;
+	if (dispCell->refCell.cellIndex == -1) return;
 
 	float		matrix[4 * 4];	///< 行列
 	IdentityMatrix( matrix );
@@ -513,7 +516,7 @@ void	SsEffectRenderParticle::draw(SsEffectRenderer* render)
 	TranslationMatrixM(matrix, _position.x, _position.y, 0.0f);
 #endif
 
-	RotationXYZMatrixM( matrix , 0 , 0 , DegreeToRadian(-_rotation)+direction);
+	RotationXYZMatrixM( matrix , 0 , 0 , DegreeToRadian(_rotation)+direction);
 
     ScaleMatrixM(  matrix , _size.x, _size.y, 1.0f );
 
@@ -532,6 +535,51 @@ void	SsEffectRenderParticle::draw(SsEffectRenderer* render)
 	}
 	state.texture = dispCell->refCell.texture;	//テクスチャID	
 	state.rect = dispCell->refCell.rect;		//セルの矩形をコピー	
+	float width_h = state.rect.size.width / 2;
+	float height_h = state.rect.size.height / 2;
+	float x1 = -width_h;
+	float y1 = -height_h;
+	float x2 = width_h;
+	float y2 = height_h;
+
+#ifdef UP_MINUS
+	state.quad.tl.vertices.x = x1;
+	state.quad.tl.vertices.y = y1;
+	state.quad.tr.vertices.x = x2;
+	state.quad.tr.vertices.y = y1;
+	state.quad.bl.vertices.x = x1;
+	state.quad.bl.vertices.y = y2;
+	state.quad.br.vertices.x = x2;
+	state.quad.br.vertices.y = y2;
+#else
+	state.quad.tl.vertices.x = x1;
+	state.quad.tl.vertices.y = y2;
+	state.quad.tr.vertices.x = x2;
+	state.quad.tr.vertices.y = y2;
+	state.quad.bl.vertices.x = x1;
+	state.quad.bl.vertices.y = y1;
+	state.quad.br.vertices.x = x2;
+	state.quad.br.vertices.y = y1;
+#endif
+
+	//UVを設定する
+	int atlasWidth = state.texture.size_w;
+	int atlasHeight = state.texture.size_h;
+	float left, right, top, bottom;
+	left = state.rect.origin.x / (float)atlasWidth;
+	right = (state.rect.origin.x + state.rect.size.width) / (float)atlasWidth;
+	top = state.rect.origin.y / (float)atlasHeight;
+	bottom = (state.rect.origin.y + state.rect.size.height) / (float)atlasHeight;
+
+	state.quad.tl.texCoords.u = left;
+	state.quad.tl.texCoords.v = top;
+	state.quad.tr.texCoords.u = right;
+	state.quad.tr.texCoords.v = top;
+	state.quad.bl.texCoords.u = left;
+	state.quad.bl.texCoords.v = bottom;
+	state.quad.br.texCoords.u = right;
+	state.quad.br.texCoords.v = bottom;
+
 	//ブレンドタイプを設定
 	if (dispCell->blendType == SsRenderBlendType::Mix)
 	{
@@ -551,105 +599,34 @@ void	SsEffectRenderParticle::draw(SsEffectRenderer* render)
 	state.quad.tl.colors.g = g;
 	state.quad.tl.colors.b = b;
 	state.quad.tl.colors.a = a;
-	state.quad.tr = state.quad.tl;
-	state.quad.bl = state.quad.tl;
-	state.quad.br = state.quad.tl;
+	state.quad.tr.colors = state.quad.bl.colors = state.quad.br.colors = state.quad.tl.colors;
 	state.opacity = a;							//透明度を設定
 
-	state.rotationZ += -_rotation + RadianToDegree(direction);		//回転
+	state.rotationZ += _rotation + RadianToDegree(direction);		//回転
 	state.scaleX *= _size.x;		//スケール
 	state.scaleY *= _size.y;		//スケール
+
+	if ((state.scaleX * state.scaleY) < 0)	//スケールのどちらかが-の場合は回転方向を逆にする
+	{
+		state.rotationZ = -state.rotationZ;
+	}
 
 	//原点計算を行う
 	float px = 0;
 	float py = 0;
 	float cx = ((state.rect.size.width * state.scaleX) * -(dispCell->refCell.pivot_X));
+#ifdef UP_MINUS
 	float cy = ((state.rect.size.height * state.scaleY) * -(dispCell->refCell.pivot_Y));
+#else
+	float cy = ((state.rect.size.height * state.scaleY) * +(dispCell->refCell.pivot_Y));
+#endif
 	get_uv_rotation(&cx, &cy, 0, 0, state.rotationZ);
 
 	state.mat[12] += cx;
 	state.mat[13] += cy;
 
-	SSDrawSprite(state);
-
-/*
-	sprite->setPosition(cocos2d::CCPoint(_position.x, _position.y));
-	sprite->setScaleX(_size.x);
-	sprite->setScaleY(_size.y);
-	sprite->setRotation(-_rotation + RadianToDegree(-direction));
-
-	//テクスチャ、カラーブレンド
-	sprite->setTexture(dispCell->refCell.texture);
-	cocos2d::CCRect rect = dispCell->refCell.rect;
-	sprite->setTextureRect(rect);
-	cocos2d::ccBlendFunc blendFunc = sprite->getBlendFunc();
-	switch (dispCell->blendType)		//ブレンド表示
-	{
-	case SsRenderBlendType::_enum::Mix:
-		//通常
-		if (!dispCell->refCell.texture->hasPremultipliedAlpha())
-		{
-			blendFunc.src = GL_SRC_ALPHA;
-			blendFunc.dst = GL_ONE_MINUS_SRC_ALPHA;
-		}
-		else
-		{
-			blendFunc.src = GL_ONE;
-			blendFunc.dst = GL_ONE_MINUS_SRC_ALPHA;
-		}
-		break;
-	case SsRenderBlendType::_enum::Add:
-		//加算
-		blendFunc.src = GL_SRC_ALPHA;
-		blendFunc.dst = GL_ONE;
-		break;
-	}
-	sprite->setBlendFunc(blendFunc);
-	//プレイヤー側のセルを参照する
-	//原点
-	float pivotX = dispCell->refCell.pivot_X + 0.5f;
-	float pivotY = 1.0f - ( dispCell->refCell.pivot_Y + 0.5f );
-	sprite->setAnchorPoint(cocos2d::CCPoint(pivotX, 1.0f - pivotY));	//cocosは下が-なので座標を反転させる
-
-	cocos2d::ccV3F_C4B_T2F_Quad& quad = sprite->getAttributeRef();
-	if (render->_isContentScaleFactorAuto == true)
-	{
-		//ContentScaleFactor対応
-		float cScale = cocos2d::CCDirector::sharedDirector()->getContentScaleFactor();
-		quad.tl.texCoords.u /= cScale;
-		quad.tr.texCoords.u /= cScale;
-		quad.bl.texCoords.u /= cScale;
-		quad.br.texCoords.u /= cScale;
-		quad.tl.texCoords.v /= cScale;
-		quad.tr.texCoords.v /= cScale;
-		quad.bl.texCoords.v /= cScale;
-		quad.br.texCoords.v /= cScale;
-	}
-
-	//カラー変更
-	GLubyte r = (GLubyte)(fcolor.r * 255.0f);
-	GLubyte g = (GLubyte)(fcolor.g * 255.0f);
-	GLubyte b = (GLubyte)(fcolor.b * 255.0f);
-	GLubyte a = (GLubyte)(fcolor.a * 255.0f);
-	sprite->setOpacity(a);
-	cocos2d::ccColor3B color3 = { r, g, b };
-	sprite->setColor(color3);
-*/
+	SSDrawSprite(state);	//描画
 }
-
-void get_uv_rotation(float *u, float *v, float cu, float cv, float deg)
-{
-	float dx = *u - cu; // 中心からの距離(X)
-	float dy = *v - cv; // 中心からの距離(Y)
-
-	float tmpX = (dx * cosf(SSRadianToDegree(deg))) - (dy * sinf(SSRadianToDegree(deg))); // 回転
-	float tmpY = (dx * sinf(SSRadianToDegree(deg))) + (dy * cosf(SSRadianToDegree(deg)));
-
-	*u = (cu + tmpX); // 元の座標にオフセットする
-	*v = (cv + tmpY);
-
-}
-
 //--------------------------------------------------------------------------------------
 //
 //--------------------------------------------------------------------------------------
