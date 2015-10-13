@@ -21,7 +21,7 @@ static u8 GetRandamNumberRange(SsEffectRenderEmitter* e, u8 a, u8 b)
 
 
 	if (diff == 0) return min;
-	return min + (e->MT.genrand_uint32() % diff);
+	return min + (e->MT->genrand_uint32() % diff);
 
 }
 
@@ -45,7 +45,7 @@ float frand(unsigned v) {
 static float VarianceCalc(SsEffectRenderEmitter* e, float base, float variance)
 {
 
-	unsigned long r = e->MT.genrand_uint32();
+	unsigned long r = e->MT->genrand_uint32();
 
 	float len = variance - base;
 
@@ -56,7 +56,7 @@ static float VarianceCalc(SsEffectRenderEmitter* e, float base, float variance)
 
 static float VarianceCalcFin(SsEffectRenderEmitter* e, float base, float variance)
 {
-	unsigned long r = e->MT.genrand_uint32();
+	unsigned long r = e->MT->genrand_uint32();
 
 	return base + (-variance + variance* (frand(r) * 2.0f));
 

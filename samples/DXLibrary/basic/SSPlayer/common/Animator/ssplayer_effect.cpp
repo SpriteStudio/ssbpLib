@@ -189,13 +189,14 @@ bool particleDeleteAll(SsEffectRenderAtom* d)
 void	SsEffectRenderEmitter::setMySeed( unsigned int seed )
 {
 
-	if ( seed > 31 ){
-		this->MT.init_genrand( seed );
+	if (seed > 31){
+		this->MT->init_genrand(seed);
 
-	}else{
-		this->MT.init_genrand( seed_table[seed] );
 	}
-	myseed = seed ;
+	else{
+		this->MT->init_genrand(seed_table[seed]);
+	}
+	myseed = seed;
 }
 
 
