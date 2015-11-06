@@ -57,6 +57,8 @@
   delete (ssplayer);
   delete (resman);
 
+  使用するアニメーションに合わせて Playerクラス定義部分にある設定用定数を変更してください。
+
   ssbpLibの制限
   カラーブレンドのレート（％）は使用できません。
   SpriteStuduioのカラーブレンドは特殊な計算を行っているため
@@ -76,6 +78,7 @@
 #include <string>
 #include <stdarg.h>
 #include <assert.h>
+#include <time.h>
 
 //エフェクト関連
 #include "./Common/loader/ssloader.h"
@@ -132,23 +135,6 @@ extern void get_uv_rotation(float *u, float *v, float cu, float cv, float deg);
 	#define SS_ASSERT2(cond, msg) ((void)(cond))
 	#define SSLOGERROR(format,...)  do {} while (0)
 #endif
-
-
-#define DOT (10.0f)					/// 固定少数の定数 10=1ドット
-#define PART_VISIBLE_MAX (512)		/// １アニメの最大パーツ数
-// エフェクト管理クラスに1パーツで管理するパーティクル数の定義があります。
-// Common\Animator\ssplayer_effect.hの以下の定義を参照して適正な値を設定してください。
-// プレイヤーかエフェクトクラスどちらかのバッファが足りない場合、パーティクルが表示されなくなります。
-// #define SSEFFECTRENDER_EMMITER_MAX 		//エミッターバッファ数
-// #define SSEFFECTRENDER_PARTICLE_MAX		//パーティクルバッファ数
-
-//座標系の設定：上方向がマイナスの場合は有効
-//このサンプルでは有効にするとDXライブラリのスプライト表示機能を使用して描画します。
-//スプライト機能を使用する場合、拡大率や反転に制限が付きます。
-//無効にした場合は上方向をプラスとして計算を行います。
-//このサンプルでは3D機能を使用して描画します。
-//それぞれのプラットフォームに合わせた座標系で使用してください。
-//#define UP_MINUS
 
 
 /**
@@ -715,6 +701,42 @@ namespace SsTexFilterMode
 	};
 };
 */
+
+#define DOT (10.0f)					/// 固定少数の定数 10=1ドット
+
+
+//------------------------------------------------------------------------------
+//プレイヤーの設定定義
+//使用するアニメーションに合わせて設定してください。
+
+
+//プレイヤーで扱えるアニメに含まれるパーツの最大数
+//数が大きくなるとプレイヤー生成時に負荷がかかります。
+#define PART_VISIBLE_MAX (512)
+
+
+// エフェクト機能を使用する場合は
+// Common/Animator/ssplayer_effect.h
+// に定義されているエフェクトクラスの管理するバッファ定数も参照してください。
+// エフェクトクラスのバッファが足りない場合、パーティクルが表示されなくなります。
+//#define SSEFFECTRENDER_EMMITER_MAX (128)		//１パーツが管理するエミッターバッファ数
+//#define SSEFFECTRENDER_PARTICLE_MAX (512)		//１パーツが管理するパーティクルバッファ数
+
+
+//座標系の設定：上方向がマイナスの場合は有効
+//このサンプルでは有効にするとDXライブラリのスプライト表示機能を使用して描画します。
+//スプライト機能を使用する場合、拡大率や反転に制限が付きます。
+//無効にした場合は上方向をプラスとして計算を行います。
+//このサンプルでは3D機能を使用して描画します。
+//それぞれのプラットフォームに合わせた座標系で使用してください。
+//DXライブラリで使用する場合はUP_MINUSを無効にしたままsetPositionで
+//画面サイズから引いた座標を設定して運用するといいと思います。
+//#define UP_MINUS
+
+
+//------------------------------------------------------------------------------
+
+
 /**
  * Player
  */
@@ -1039,7 +1061,6 @@ protected:
 	void checkUserData(int frameNo);
 	void set_InstanceAlpha(int alpha);
 	void set_InstanceRotation(float rotX, float rotY, float rotZ);
-	void effectReload(void);
 
 protected:
 	ResourceManager*	_resman;

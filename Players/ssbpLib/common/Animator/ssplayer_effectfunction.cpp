@@ -251,8 +251,7 @@ public:
 	{
 		ParticleElementPosition* source = static_cast<ParticleElementPosition*>(ele);
 		p->_position.x = p->_baseEmiterPosition.x + VarianceCalc(e, source->OffsetX.getMinValue(), source->OffsetX.getMaxValue());
-//		p->_position.y = p->_baseEmiterPosition.y + VarianceCalc(e, source->OffsetY.getMinValue(), source->OffsetY.getMaxValue());
-		p->_position.y = p->_baseEmiterPosition.y - VarianceCalc(e, source->OffsetY.getMinValue(), source->OffsetY.getMaxValue()); //上がマイナスなので反転
+		p->_position.y = p->_baseEmiterPosition.y + VarianceCalc(e, source->OffsetY.getMinValue(), source->OffsetY.getMaxValue());
 	}
 
 	virtual void	updateParticle(SsEffectElementBase* ele, SsEffectRenderEmitter* e, SsEffectRenderParticle* particle){}
