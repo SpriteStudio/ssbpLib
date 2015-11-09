@@ -1642,7 +1642,6 @@ void Player::setPartsParentage()
 				sprite->refEffect->setEffectData(effectmodel);
 //				sprite->refEffect->setEffectSprite(&_effectSprite);	//エフェクトクラスに渡す都合上publicにしておく
 //				sprite->refEffect->setEffectSpriteCount(&_effectSpriteCount);	//エフェクトクラスに渡す都合上publicにしておく
-				srand((unsigned)time(NULL));
 				sprite->refEffect->setSeed(rand());
 				sprite->refEffect->reload();
 				sprite->refEffect->stop();
@@ -2716,7 +2715,6 @@ void Player::setFrame(int frameNo)
 				if (sprite->refEffect->getPlayStatus() == true)
 				{
 					//毎回行うと負荷がかかるので、前回が再生中であればリセット
-					srand((unsigned)time(NULL));
 					sprite->refEffect->setSeed(rand());
 					sprite->refEffect->reload();
 					sprite->refEffect->stop();
@@ -2750,7 +2748,6 @@ void Player::setFrame(int frameNo)
 					else
 					{
 						//アニメーションループ時
-						srand((unsigned)time(NULL));
 						sprite->refEffect->setSeed(rand());
 						sprite->refEffect->reload();
 						sprite->refEffect->play();
