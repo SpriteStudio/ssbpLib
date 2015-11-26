@@ -15,7 +15,7 @@ namespace ss
  */
 
 static const ss_u32 DATA_ID = 0x42505353;
-static const ss_u32 DATA_VERSION = 2;
+static const ss_u32 DATA_VERSION = 3;
 
 
 /**
@@ -1770,6 +1770,40 @@ bool Player::getPartState(ResluteState& result, const char* name, int frameNo)
 					result.part_type = partData->type;							//パーツ種別
 					result.part_boundsType = partData->boundsType;				//当たり判定種類
 					result.part_alphaBlendType = partData->alphaBlendType;		// BlendType
+					//ラベルカラー
+					std::string colorName = static_cast<const char*>(ptr(partData->colorLabel));
+					if (colorName == COLORLABELSTR_NONE)
+					{
+						result.part_labelcolor = COLORLABEL_NONE;
+					}
+					if (colorName == COLORLABELSTR_RED)
+					{
+						result.part_labelcolor = COLORLABEL_RED;
+					}
+					if (colorName == COLORLABELSTR_ORANGE)
+					{
+						result.part_labelcolor = COLORLABEL_ORANGE;
+					}
+					if (colorName == COLORLABELSTR_YELLOW)
+					{
+						result.part_labelcolor = COLORLABEL_YELLOW;
+					}
+					if (colorName == COLORLABELSTR_GREEN)
+					{
+						result.part_labelcolor = COLORLABEL_GREEN;
+					}
+					if (colorName == COLORLABELSTR_BLUE)
+					{
+						result.part_labelcolor = COLORLABEL_BLUE;
+					}
+					if (colorName == COLORLABELSTR_VIOLET)
+					{
+						result.part_labelcolor = COLORLABEL_VIOLET;
+					}
+					if (colorName == COLORLABELSTR_GRAY)
+					{
+						result.part_labelcolor = COLORLABEL_GRAY;
+					}
 
 					rc = true;
 					break;

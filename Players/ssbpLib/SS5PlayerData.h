@@ -202,6 +202,8 @@ struct AnimationData
 	ss_s16		numFrames;
 	ss_s16		fps;
 	ss_s16		labelNum;
+	ss_s16		canvasSizeW;	//基準枠幅
+	ss_s16		canvasSizeH;	//基準枠高さ
 };
 
 
@@ -248,6 +250,7 @@ struct PartData
 	ss_s16		alphaBlendType;	/// BlendType
 	ss_offset	refname;		/// const char*　インスタンスとして配置されるアニメーション名
 	ss_offset	effectfilename;	// const char*　参照するエフェクトファイル名
+	ss_offset	colorLabel;		// const char*	カラーラベル
 };
 
 /**

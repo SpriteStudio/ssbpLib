@@ -10,6 +10,9 @@
 
 
 /************************************************************
+対応するssbpフォーマットはバージョン3です。
+Ss5ConverterのフォーマットバージョンはSpriteStudioSDKを参照してください。
+https://github.com/SpriteStudio/SpriteStudio5-SDK/wiki/%E3%82%B3%E3%83%B3%E3%83%90%E3%83%BC%E3%82%BF%E3%81%AE%E4%BD%BF%E3%81%84%E6%96%B9
 
 - Quick start
  
@@ -564,9 +567,10 @@ struct ResluteState
 	bool flipY;						/// 縦反転（親子関係計算済）
 	bool isVisibled;				/// 非表示（親子関係計算済）
 
-	int	part_type;					//パーツ種別
-	int	part_boundsType;			//当たり判定種類
-	int	part_alphaBlendType;		// BlendType
+	int	part_type;					/// パーツ種別
+	int	part_boundsType;			/// 当たり判定種類
+	int	part_alphaBlendType;		/// BlendType
+	int	part_labelcolor;			/// ラベルカラー
 };
 
 /**
@@ -704,6 +708,26 @@ namespace SsTexFilterMode
 
 #define DOT (10.0f)					/// 固定少数の定数 10=1ドット
 
+//カラーラベル定数
+#define COLORLABELSTR_NONE		""
+#define COLORLABELSTR_RED		"Red"
+#define COLORLABELSTR_ORANGE	"Orange"
+#define COLORLABELSTR_YELLOW	"Yellow"
+#define COLORLABELSTR_GREEN		"Green"
+#define COLORLABELSTR_BLUE		"Blue"
+#define COLORLABELSTR_VIOLET	"Violet"
+#define COLORLABELSTR_GRAY		"Gray"
+enum
+{
+	COLORLABEL_NONE,		///< 0 なし
+	COLORLABEL_RED,			///< 1 赤
+	COLORLABEL_ORANGE,		///< 2 オレンジ
+	COLORLABEL_YELLOW,		///< 3 黄色
+	COLORLABEL_GREEN,		///< 4 緑
+	COLORLABEL_BLUE,		///< 5 青
+	COLORLABEL_VIOLET,		///< 6 紫
+	COLORLABEL_GRAY,		///< 7 灰色
+};
 
 //------------------------------------------------------------------------------
 //プレイヤーの設定定義
