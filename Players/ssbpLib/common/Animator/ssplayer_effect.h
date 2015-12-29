@@ -386,9 +386,14 @@ public:
 // パーツ単位でバッファを作成するので、バッファ数を多く設定すると
 // アニメーション再生時にバッファ確保の時間が長くなります。
 //----------------------------------------------------------------
+//SpriteStudio本体の設定
+//#define SSEFFECTRENDER_EMMITER_MAX (1024)
+//#define SSEFFECTRENDER_PARTICLE_MAX (4096)
 #define SSEFFECTRENDER_EMMITER_MAX (128)		//エミッターバッファ数
 #define SSEFFECTRENDER_PARTICLE_MAX (512)	//パーティクルバッファ数
-#define SSEFFECTRENDER_BACTH_MAX (16)		//ノード階層最大値（固定）
+//-------------------------------------------------------------
+
+#define SSEFFECTRENDER_BACTH_MAX (256)		//ノード階層最大値（固定）
 
 
 
@@ -504,6 +509,8 @@ public:
 	void	setParentAnimeState( SsPartState* state ){ parentState = state; }
 
 	SsEffectRenderAtom* CreateAtom( unsigned int seed , SsEffectRenderAtom* parent , SsEffectNode* node );
+	SsEffectDrawBatch*	findBatchList(SsEffectNode* n);
+	SsEffectDrawBatch*	findBatchListSub(SsEffectNode* n);
 
 
 	//cocos側のエフェクトスプライトを設定する
