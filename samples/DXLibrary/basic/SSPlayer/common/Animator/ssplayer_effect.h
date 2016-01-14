@@ -1,4 +1,4 @@
-#ifndef __SSPLAYER_EFFECT__
+﻿#ifndef __SSPLAYER_EFFECT__
 #define __SSPLAYER_EFFECT__
 
 #include <list>
@@ -387,10 +387,12 @@ public:
 // アニメーション再生時にバッファ確保の時間が長くなります。
 //----------------------------------------------------------------
 //SpriteStudio本体の設定
-//#define SSEFFECTRENDER_EMMITER_MAX (1024)
-//#define SSEFFECTRENDER_PARTICLE_MAX (4096)
-#define SSEFFECTRENDER_EMMITER_MAX (128)		//エミッターバッファ数
-#define SSEFFECTRENDER_PARTICLE_MAX (512)	//パーティクルバッファ数
+#define SSEFFECTRENDER_EMMITER_MAX (1024)
+#define SSEFFECTRENDER_PARTICLE_MAX (4096)
+//初期化が重い場合は定数を減らしてみてください。
+//バッファ不足によりエフェクトが再現できない場合があります。
+//#define SSEFFECTRENDER_EMMITER_MAX (128)		//エミッターバッファ数
+//#define SSEFFECTRENDER_PARTICLE_MAX (512)	//パーティクルバッファ数
 //-------------------------------------------------------------
 
 #define SSEFFECTRENDER_BACTH_MAX (256)		//ノード階層最大値（固定）

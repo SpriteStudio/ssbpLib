@@ -1,4 +1,4 @@
-/**
+﻿/**
 *  SS5PlayerData.h
 */
 
@@ -100,8 +100,8 @@ struct EffectParticleElementPosition
 {
 	float	OffsetXMinValue;		//X座標に加算最小
 	float	OffsetXMaxValue;		//X座標に加算最大
-	float	OffsetYMinValue;		//X座標に加算最小
-	float	OffsetYMaxValue;		//X座標に加算最大
+	float	OffsetYMinValue;		//Y座標に加算最小
+	float	OffsetYMaxValue;		//Y座標に加算最大
 };
 
 struct EffectParticleElementGravity
