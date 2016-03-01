@@ -2836,9 +2836,12 @@ void Player::draw()
 		CustomSprite* sprite = static_cast<CustomSprite*>(_parts.at(partIndex));
 		if (sprite->_ssplayer)
 		{
-			//インスタンスパーツの場合は子供のプレイヤーを再生
-			sprite->_ssplayer->update(0);
-			sprite->_ssplayer->draw();
+			if ((sprite->_state.isVisibled == true) && (sprite->_state.opacity > 0))
+			{
+				//インスタンスパーツの場合は子供のプレイヤーを再生
+				sprite->_ssplayer->update(0);
+				sprite->_ssplayer->draw();
+			}
 		}
 		else
 		{
@@ -2849,9 +2852,12 @@ void Player::draw()
 			}
 			else
 			{
-				if ((sprite->_state.texture.handle != -1) && (sprite->_state.isVisibled == true))
+				if (sprite->_state.texture.handle != -1)
 				{
-					SSDrawSprite(sprite->_state);
+					if ((sprite->_state.isVisibled == true) && (sprite->_state.opacity > 0))
+					{
+						SSDrawSprite(sprite->_state);
+					}
 				}
 			}
 		}
