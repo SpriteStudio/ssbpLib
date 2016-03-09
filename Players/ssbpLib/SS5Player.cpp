@@ -1206,7 +1206,6 @@ Player::Player(void)
 	: _resman(NULL)
 	, _currentRs(NULL)
 	, _currentAnimeRef(NULL)
-
 	, _frameSkipEnabled(true)
 	, _playingFrame(0.0f)
 	, _step(1.0f)
@@ -1224,6 +1223,9 @@ Player::Player(void)
 	, _col_g(255)
 	, _col_b(255)
 	, _instanceOverWrite(false)
+	, _motionBlendPlayer(NULL)
+	, _blendTime(0.0f)
+	, _blendTimeMax(0.0f)
 {
 	int i;
 	for (i = 0; i < PART_VISIBLE_MAX; i++)
@@ -1237,6 +1239,12 @@ Player::Player(void)
 
 Player::~Player()
 {
+	if (_motionBlendPlayer)
+	{
+		delete (_motionBlendPlayer);
+		_motionBlendPlayer = NULL;
+	}
+
 	releaseParts();
 	releaseData();
 	releaseResourceManager();
@@ -1413,6 +1421,41 @@ void Player::play(AnimeRef* animeRef, int loop, int startFrameNo)
 	setFrame((int)_playingFrame);
 }
 
+//モーションブレンドしつつ再生
+void Player::motionBlendPlay(const std::string& animeName, int loop, int startFrameNo, float blendTime)
+{
+	if (_currentAnimename != "")
+	{
+		//現在のアニメーションをブレンド用プレイヤーで再生
+		if (_motionBlendPlayer == NULL)
+		{
+			_motionBlendPlayer = ss::Player::create();
+		}
+		int loopnum = _loop;
+		if (_loop > 0)
+		{
+			loopnum = _loop - _loopCount;
+		}
+		_motionBlendPlayer->setData(_currentdataKey);        // ssbpファイル名（拡張子不要）
+		_motionBlendPlayer->play(_currentAnimename, loopnum, getFrameNo());
+		_motionBlendPlayer->setStep(_step);
+		if (_loop > 0)
+		{
+			if (_loop == _loopCount)	//アニメは最後まで終了している
+			{
+				_motionBlendPlayer->animePause();
+			}
+		}
+		_blendTime = 0;
+		_blendTimeMax = blendTime;
+
+	}
+	play(animeName, loop, startFrameNo);
+
+}
+
+
+
 void Player::animePause()
 {
 	_isPausing = true;
@@ -1535,11 +1578,26 @@ void Player::updateFrame(float dt)
 		}
 		
 		_playingFrame = static_cast<float>(currentFrameNo) + nextFrameDecimal;
+
+
 	}
 	else
 	{
 		//アニメを手動で更新する場合
 		checkUserData(getFrameNo());
+	}
+	//モーションブレンド用アップデート
+	if (_motionBlendPlayer)
+	{
+		_motionBlendPlayer->update(dt);
+		_blendTime = _blendTime + dt;
+		if (_blendTime >= _blendTimeMax)
+		{
+			_blendTime = _blendTimeMax;
+			//プレイヤーを削除する
+			delete (_motionBlendPlayer);
+			_motionBlendPlayer = NULL;
+		}
 	}
 
 	setFrame(getFrameNo());
@@ -2008,6 +2066,20 @@ void Player::setColor(int r, int g, int b)
 	_col_b = b;
 }
 
+//スプライト情報の取得
+CustomSprite* Player::getSpriteData(int partIndex)
+{
+	CustomSprite* sprite = NULL;
+	if (_parts.size() < partIndex)
+	{
+	}
+	else
+	{
+		sprite = static_cast<CustomSprite*>(_parts.at(partIndex));
+	}
+	return(sprite);
+}
+
 void Player::setFrame(int frameNo)
 {
 	if (!_currentAnimeRef) return;
@@ -2139,6 +2211,23 @@ void Player::setFrame(int frameNo)
 		pivotX += 0.5f;
 		pivotY += 0.5f;
 
+		//モーションブレンド
+		if (_motionBlendPlayer)
+		{
+			CustomSprite* blendSprite = _motionBlendPlayer->getSpriteData(partIndex);
+			if (blendSprite)
+			{ 
+				float percent = _blendTime / _blendTimeMax;
+				x = parcentVal(x, blendSprite->_orgState.x, percent);
+				y = parcentVal(y, blendSprite->_orgState.y, percent);
+				scaleX = parcentVal(scaleX, blendSprite->_orgState.scaleX, percent);
+				scaleY = parcentVal(scaleY, blendSprite->_orgState.scaleY, percent);
+				rotationX = parcentValRot(rotationX, blendSprite->_orgState.rotationX, percent);
+				rotationY = parcentValRot(rotationY, blendSprite->_orgState.rotationY, percent);
+				rotationZ = parcentValRot(rotationZ, blendSprite->_orgState.rotationZ, percent);
+			}
+
+		}
 
 		//ステータス保存
 		state.flags = flags;
@@ -2619,6 +2708,7 @@ void Player::setFrame(int frameNo)
 
 		//スプライトステータスの保存
 		sprite->setState(state);
+		sprite->_orgState = sprite->_state;
 
 	}
 
@@ -2825,7 +2915,14 @@ void Player::setFrame(int frameNo)
 void Player::draw()
 {
 	if (!_currentAnimeRef) return;
-
+/*
+	// for debug start
+	if (_motionBlendPlayer)
+	{
+		_motionBlendPlayer->draw();
+	}
+	// for debug end
+*/
 	ToPointer ptr(_currentRs->data);
 	const AnimePackData* packData = _currentAnimeRef->animePackData;
 
@@ -2998,6 +3095,55 @@ void Player::setGameFPS(float fps)
 {
 	_gamefps = fps;
 }
+
+//割合に応じた中間値を取得します
+float Player::parcentVal(float val1, float val2, float parcent)
+{
+	float sa = val1 - val2;
+	float newval = val2 + (sa * parcent);
+	return (newval);
+}
+float Player::parcentValRot(float val1, float val2, float parcent)
+{
+	int ival1 = (int)(val1 * 10.0f) % 3600;
+	int ival2 = (int)(val2 * 10.0f) % 3600;
+	if (ival1 < 0)
+	{
+		ival1 += 3600;
+	}
+	if (ival2 < 0)
+	{
+		ival2 += 3600;
+	}
+	int islr = ival1 - ival2;
+	if (islr < 0)
+	{
+		islr += 3600;
+	}
+	int inewval;
+	if (islr == 0)
+	{
+		inewval = ival1;
+	}
+	else
+	{
+		if (islr > 1800)
+		{
+			int isa = 3600 - islr;
+			inewval = ival2 - ((float)isa * parcent);
+		}
+		else
+		{
+			int isa = islr;
+			inewval = ival2 + ((float)isa * parcent);
+		}
+	}
+
+
+	float newval = inewval / 10;
+	return (newval);
+}
+
 
 
 /**
