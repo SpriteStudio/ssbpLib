@@ -216,10 +216,10 @@ struct AnimationInitialData
 	ss_s16		dummy;
 	ss_u32		flags;
 	ss_s16		cellIndex;
-	ss_s16		positionX;
-	ss_s16		positionY;
-	ss_s16		positionZ;
 	ss_u16		opacity;
+	float		positionX;
+	float		positionY;
+	float		positionZ;
 	float		pivotX;
 	float		pivotY;
 	float		rotationX;

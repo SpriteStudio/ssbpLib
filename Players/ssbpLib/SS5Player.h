@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------
-// ssbpLib v1.2.2
+// ssbpLib v1.3.0
 //
 // Copyright(C) Web Technology Corp.
 // http://www.webtech.co.jp/
@@ -10,7 +10,7 @@
 
 
 /************************************************************
-対応するssbpフォーマットはバージョン3です。
+対応するssbpフォーマットはバージョン4です。
 Ss5ConverterのフォーマットバージョンはSpriteStudioSDKを参照してください。
 https://github.com/SpriteStudio/SpriteStudio5-SDK/wiki/%E3%82%B3%E3%83%B3%E3%83%90%E3%83%BC%E3%82%BF%E3%81%AE%E4%BD%BF%E3%81%84%E6%96%B9
 
@@ -708,8 +708,6 @@ namespace SsTexFilterMode
 	};
 };
 */
-
-#define DOT (10.0f)					/// 固定少数の定数 10=1ドット
 
 //カラーラベル定数
 #define COLORLABELSTR_NONE		""

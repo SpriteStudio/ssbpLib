@@ -15,7 +15,7 @@ namespace ss
  */
 
 static const ss_u32 DATA_ID = 0x42505353;
-static const ss_u32 DATA_VERSION = 3;
+static const ss_u32 DATA_VERSION = 4;
 
 
 /**
@@ -40,6 +40,9 @@ static void splitPath(std::string& directoty, std::string& filename, const std::
 }
 
 // printf 形式のフォーマット
+#ifndef va_copy
+#    define va_copy(dest, src) ((dest) = (src))
+#endif
 static std::string Format(const char* format, ...){
 
 	static std::vector<char> tmp(1000);
@@ -2030,7 +2033,7 @@ bool Player::changeInstanceAnime(std::string partsname, std::string animename, b
 					if (_currentAnimename != animename)
 					{
 						sprite->_ssplayer->play(animename);
-						setInstanceParam(overWrite, keyParam);	//インスタンスパラメータの設定
+						sprite->_ssplayer->setInstanceParam(overWrite, keyParam);	//インスタンスパラメータの設定
 						sprite->_ssplayer->animeResume();		//アニメ切り替え時にがたつく問題の対応
 						sprite->_liveFrame = 0;					//独立動作の場合再生位置をリセット
 						rc = true;
@@ -2125,13 +2128,13 @@ void Player::setFrame(int frameNo)
 		// optional parameters
 		int flags      = reader.readU32();
 		int cellIndex  = flags & PART_FLAG_CELL_INDEX ? reader.readS16() : init->cellIndex;
-		float x        = flags & PART_FLAG_POSITION_X ? (float)reader.readS16() : (float)init->positionX;
+		float x        = flags & PART_FLAG_POSITION_X ? reader.readFloat() : init->positionX;
 #ifdef UP_MINUS
-		float y        = flags & PART_FLAG_POSITION_Y ? (float)-reader.readS16() : (float)-init->positionY;		//上がマイナスなので反転させる
+		float y        = flags & PART_FLAG_POSITION_Y ? -reader.readFloat() : -init->positionY;		//上がマイナスなので反転させる
 #else
-		float y        = flags & PART_FLAG_POSITION_Y ? (float)reader.readS16() : (float)init->positionY;
+		float y        = flags & PART_FLAG_POSITION_Y ? reader.readFloat() : init->positionY;
 #endif
-		float z        = flags & PART_FLAG_POSITION_Z ? (float)reader.readS16() : (float)init->positionZ;
+		float z        = flags & PART_FLAG_POSITION_Z ? reader.readFloat() : init->positionZ;
 		float pivotX   = flags & PART_FLAG_PIVOT_X ? reader.readFloat() : init->pivotX;
 #ifdef UP_MINUS
 		float pivotY = flags & PART_FLAG_PIVOT_Y ? -reader.readFloat() : -init->pivotY;
@@ -2173,11 +2176,6 @@ void Player::setFrame(int frameNo)
 			//ユーザーがセルを上書きした
 			cellIndex = _cellChange[index];
 		}
-
-		//固定少数を少数へ戻す
-		x = x / DOT;
-		y = y / DOT;
-		z = z / DOT;
 
 		_partIndex[index] = partIndex;
 
@@ -2558,7 +2556,7 @@ void Player::setFrame(int frameNo)
 		{
 			bool overWrite;
 			Instance keyParam;
-			getInstanceParam(&overWrite, &keyParam);
+			sprite->_ssplayer->getInstanceParam(&overWrite, &keyParam);
 			//描画
 			int refKeyframe = 0;
 			int refStartframe = 0;
