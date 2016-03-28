@@ -40,6 +40,9 @@ static void splitPath(std::string& directoty, std::string& filename, const std::
 }
 
 // printf 形式のフォーマット
+#ifndef va_copy
+#    define va_copy(dest, src) ((dest) = (src))
+#endif
 static std::string Format(const char* format, ...){
 
 	static std::vector<char> tmp(1000);
@@ -1614,6 +1617,15 @@ void Player::updateFrame(float dt)
 
 void Player::allocParts(int numParts, bool useCustomShaderProgram)
 {
+	for (int i = 0; i < _parts.size(); i++)
+	{
+		CustomSprite* sprite = _parts.at(i);
+		if (sprite)
+		{
+			delete sprite;
+			sprite = 0;
+		}
+	}
 	_parts.clear();	//すべてのパーツを消す
 	{
 		// パーツ数だけCustomSpriteを作成する
@@ -2030,7 +2042,7 @@ bool Player::changeInstanceAnime(std::string partsname, std::string animename, b
 					if (_currentAnimename != animename)
 					{
 						sprite->_ssplayer->play(animename);
-						setInstanceParam(overWrite, keyParam);	//インスタンスパラメータの設定
+						sprite->_ssplayer->setInstanceParam(overWrite, keyParam);	//インスタンスパラメータの設定
 						sprite->_ssplayer->animeResume();		//アニメ切り替え時にがたつく問題の対応
 						sprite->_liveFrame = 0;					//独立動作の場合再生位置をリセット
 						rc = true;
@@ -2558,7 +2570,7 @@ void Player::setFrame(int frameNo)
 		{
 			bool overWrite;
 			Instance keyParam;
-			getInstanceParam(&overWrite, &keyParam);
+			sprite->_ssplayer->getInstanceParam(&overWrite, &keyParam);
 			//描画
 			int refKeyframe = 0;
 			int refStartframe = 0;
@@ -3171,7 +3183,11 @@ CustomSprite::CustomSprite():
 {}
 
 CustomSprite::~CustomSprite()
-{}
+{
+	//エフェクトクラスがある場合は解放する
+	SS_SAFE_DELETE(refEffect);
+	SS_SAFE_DELETE(_ssplayer);
+}
 
 /*
 CCGLProgram* CustomSprite::getCustomShaderProgram()
