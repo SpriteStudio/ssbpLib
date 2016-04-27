@@ -8,7 +8,8 @@ namespace ss
 
 
 class SsAnimeDecoder;
-class SsEffectRenderer;
+//class SsEffectRenderer;
+class SsEffectRenderV2;
 
 
 ///パーツの状態を保持するクラスです。
@@ -28,6 +29,7 @@ struct SsPartState
 	void	destroy();
 	void	init();
 //	bool	inherits_(SsAttributeKind::_enum kind) const {return inheritRates[(int)kind] != 0.f;}
+	void	reset();
 
 };
 

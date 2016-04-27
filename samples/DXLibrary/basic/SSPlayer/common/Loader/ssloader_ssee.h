@@ -30,8 +30,7 @@ public:
 		if (ctop == 0)
 		{
 			ctop = c;
-		}
-		else{
+		}else{
 			ctop->addSiblingEnd(c);
 		}
 		c->parent = this;
@@ -42,8 +41,7 @@ public:
 		{
 			c->prev = this;
 			next = c;
-		}
-		else{
+		}else{
 			next->addSiblingEnd(c);
 		}
 
@@ -130,6 +128,10 @@ public:
 	//アクセス
 	SsEffectNode* GetRoot(){ return root; }
 
+	const std::vector<SsEffectNode*>& getNodeList()
+	{
+		return nodeList;
+	}
 };
 
 
