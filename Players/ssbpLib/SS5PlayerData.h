@@ -21,9 +21,13 @@ typedef unsigned int	ss_u32;
 typedef int				ss_s32;
 typedef int				ss_offset;
 
+struct EffectParticleInfiniteEmitEnabled
+{
+	ss_s32	flag;					//ダミーデータ
+};
 struct EffectParticleTurnToDirectionEnabled
 {
-	ss_u32	flag;					//フラグ
+	float	Rotation;				//方向オフセット
 };
 struct EffectParticlePointGravity
 {
@@ -204,6 +208,8 @@ struct AnimationData
 	ss_s16		labelNum;
 	ss_s16		canvasSizeW;	//基準枠幅
 	ss_s16		canvasSizeH;	//基準枠高さ
+	float		canvasPvotX;	//基準枠位置
+	float		canvasPvotY;	//基準枠位置
 };
 
 
@@ -235,6 +241,17 @@ struct AnimationInitialData
 	float		uv_scale_X;
 	float		uv_scale_Y;
 	float		boundingRadius;
+	//インスタンスアトリビュート
+	int			instanceValue_curKeyframe;
+	int			instanceValue_startFrame;
+	int			instanceValue_endFrame;
+	int			instanceValue_loopNum;
+	float		instanceValue_speed;
+	int			instanceValue_loopflag;
+	//エフェクトアトリビュート
+	int			effectValue_startTime;
+	float		effectValue_speed;
+	int			effectValue_loopflag;
 };
 
 /**

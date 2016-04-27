@@ -89,7 +89,7 @@ https://github.com/SpriteStudio/SpriteStudio5-SDK/wiki/%E3%82%B3%E3%83%B3%E3%83%
 #include "./Common/Animator/ssplayer_effectfunction.h"
 #include "./Common/Animator/ssplayer_cellmap.h"
 #include "./Common/Animator/ssplayer_PartState.h"
-#include "./Common/Animator/MersenneTwister.h"
+//#include "./Common/Animator/MersenneTwister.h"
 
 #pragma warning(disable : 4996)
 
@@ -179,6 +179,17 @@ struct State
 	SSRect rect;					/// セルに対応したテクスチャ内の表示領域（開始座標、幅高さ）
 	int blendfunc;					/// パーツに設定されたブレンド方法
 	float mat[16];					/// パーツの位置を算出するためのマトリクス（親子関係計算済）
+	//インスタンスアトリビュート
+	int			instanceValue_curKeyframe;
+	int			instanceValue_startFrame;
+	int			instanceValue_endFrame;
+	int			instanceValue_loopNum;
+	float		instanceValue_speed;
+	int			instanceValue_loopflag;
+	//エフェクトアトリビュート
+	int			effectValue_startTime;
+	float		effectValue_speed;
+	int			effectValue_loopflag;
 
 	void init()
 	{
@@ -221,6 +232,15 @@ struct State
 		rect.origin.y = 0;
 		blendfunc = 0;
 		memset(&mat, 0, sizeof(mat));
+		instanceValue_curKeyframe = 0;
+		instanceValue_startFrame = 0;
+		instanceValue_endFrame = 0;
+		instanceValue_loopNum = 0;
+		instanceValue_speed = 0;
+		instanceValue_loopflag = 0;
+		effectValue_startTime = 0;
+		effectValue_speed = 0;
+		effectValue_loopflag = 0;
 	}
 
 	State() { init(); }
@@ -257,12 +277,15 @@ public:
 	SSV3F_C4B_T2F_Quad	_sQuad;
 
 	//エフェクト用パラメータ
-	SsEffectRenderer*	refEffect;
+	SsEffectRenderV2*	refEffect;
 	SsPartState			partState;
 
 	//モーションブレンド用ステータス
 	State				_orgState;
 
+	//エフェクト制御用ワーク
+	bool effectAttrInitialized;
+	float effectTimeTotal;
 
 public:
 	CustomSprite();
@@ -349,6 +372,16 @@ public:
 		_state.texture = state.texture;
 		_state.rect = state.rect;
 		memcpy(&_state.mat, &state.mat, sizeof(_state.mat));
+
+		setStateValue(_state.instanceValue_curKeyframe, state.instanceValue_curKeyframe);
+		setStateValue(_state.instanceValue_startFrame, state.instanceValue_startFrame);
+		setStateValue(_state.instanceValue_endFrame, state.instanceValue_endFrame);
+		setStateValue(_state.instanceValue_loopNum, state.instanceValue_loopNum);
+		setStateValue(_state.instanceValue_speed, state.instanceValue_speed);
+		setStateValue(_state.instanceValue_loopflag, state.instanceValue_loopflag);
+		setStateValue(_state.effectValue_startTime, state.effectValue_startTime);
+		setStateValue(_state.effectValue_speed, state.effectValue_speed);
+		setStateValue(_state.effectValue_loopflag, state.effectValue_loopflag);
 	}
 
 
@@ -611,11 +644,7 @@ enum {
 	PART_FLAG_BOUNDINGRADIUS	= 1 << 24,		/// 当たり半径
 
 	PART_FLAG_INSTANCE_KEYFRAME = 1 << 25,		/// インスタンス
-	PART_FLAG_INSTANCE_START	= 1 << 26,		/// インスタンス：開始フレーム
-	PART_FLAG_INSTANCE_END		= 1 << 27,		/// インスタンス：終了フレーム
-	PART_FLAG_INSTANCE_SPEED	= 1 << 28,		/// インスタンス：再生速度
-	PART_FLAG_INSTANCE_LOOP		= 1 << 29,		/// インスタンス：ループ回数
-	PART_FLAG_INSTANCE_LOOP_FLG = 1 << 30,		/// インスタンス：ループ設定
+	PART_FLAG_EFFECT_KEYFRAME   = 1 << 26,		/// エフェクト
 
 	NUM_PART_FLAGS
 };
@@ -639,6 +668,11 @@ enum {
 	INSTANCE_LOOP_FLAG_REVERSE = 1 << 1,
 	INSTANCE_LOOP_FLAG_PINGPONG = 1 << 2,
 	INSTANCE_LOOP_FLAG_INDEPENDENT = 1 << 3,
+};
+
+//エフェクトアトリビュートのループフラグ
+enum {
+	EFFECT_LOOP_FLAG_INFINITY = 1 << 0,
 };
 
 /**
@@ -1078,6 +1112,35 @@ public:
 	void getInstanceParam(bool *overWrite, Instance *keyParam);
 
 	/*
+	* アニメーションのループ範囲（再生位置）を上書きします。
+	*
+	* @param  frame			開始フレーム（-1で上書き解除）
+	*/
+	void setStartFrame(int frame);
+
+	/*
+	* アニメーションのループ範囲（終了位置）を上書きします。
+	* SpriteStudioのフレーム数+1を設定してください。
+	*
+	* @param  frame			終了フレーム（-1で上書き解除）
+	*/
+	void setEndFrame(int frame);
+
+	/*
+	* アニメーションのループ範囲（再生位置）を上書きします。
+	*
+	* @param  labelname			開始フレームとなるラベル名（""で上書き解除）
+	*/
+	void setStartFrameToLabelName(char *findLabelName);
+
+	/*
+	* アニメーションのループ範囲（終了位置）を上書きします。
+	*
+	* @param  labelname			終了フレームとなるラベル名（""で上書き解除）
+	*/
+	void setEndFrameToLabelName(char *findLabelName);
+
+	/*
 	* プレイヤー本体の反転を設定します。
 	*/
 	void  setFlip(bool flipX, bool flipY);
@@ -1159,6 +1222,8 @@ protected:
 	int					_col_b;
 	bool				_instanceOverWrite;		//インスタンス情報を上書きするか？
 	Instance			_instanseParam;			//インスタンスパラメータ
+	int					_startFrameOverWrite;	//開始フレームの上書き設定
+	int					_endFrameOverWrite;		//終了フレームの上書き設定
 
 	UserData			_userData;
 

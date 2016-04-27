@@ -39,6 +39,7 @@ namespace SsEffectFunctionType
 		TransSize,
 		PointGravity,
 		TurnToDirectionEnabled,
+		InfiniteEmitEnabled,
 	};
 }
 
@@ -76,10 +77,10 @@ public:
         type = VarianceValue::MinMax;
 	}
 
-	void	setPlusMinus( mytype v  )
+	void	setPlusMinus( mytype v1  )
 	{
-		value = -v;
-		subvalue = v;
+		value = -v1;
+		subvalue = v1;
         type = VarianceValue::PlusMinus;
 	}
 
@@ -648,8 +649,10 @@ public:
 class  ParticleTurnToDirectionEnabled : public SsEffectElementBase
 {
 public:
+	float Rotation;
 
 	ParticleTurnToDirectionEnabled()
+		: Rotation(0.0f)
 	{
 		setType( SsEffectFunctionType::TurnToDirectionEnabled );
 	}
@@ -657,7 +660,23 @@ public:
 };
 
 
+//--------------------------------------------------------------------------------------
+class  ParticleInfiniteEmitEnabled : public SsEffectElementBase
+{
+public:
 
+	ParticleInfiniteEmitEnabled()
+	{
+		setType(SsEffectFunctionType::InfiniteEmitEnabled);
+	}
+	virtual ~ParticleInfiniteEmitEnabled() {}
+/*
+	SSSERIALIZE_BLOCK
+	{
+
+	}
+*/
+};
 
 };
 
