@@ -1146,11 +1146,6 @@ public:
 	void  setFlip(bool flipX, bool flipY);
 
 	/*
-	* ゲームのフレームレートを設定します。ディフォルトは60FPS。
-	*/
-	void setGameFPS(float fps);
-
-	/*
 	* パーツ番号に対応したスプライト情報を取得します。
 	* 
 	* @param  partIndex			パーツ番号
@@ -1181,7 +1176,7 @@ protected:
 
 	void play(AnimeRef* animeRef, int loop, int startFrameNo);
 	void updateFrame(float dt);
-	void setFrame(int frameNo);
+	void setFrame(int frameNo, float dt);
 	void checkUserData(int frameNo);
 	void set_InstanceAlpha(int alpha);
 	void set_InstanceRotation(float rotX, float rotY, float rotZ);
@@ -1224,11 +1219,11 @@ protected:
 	Instance			_instanseParam;			//インスタンスパラメータ
 	int					_startFrameOverWrite;	//開始フレームの上書き設定
 	int					_endFrameOverWrite;		//終了フレームの上書き設定
+	int					_seedOffset;			//エフェクトシードオフセット
 
 	UserData			_userData;
 
 	State				_state;
-	float				_gamefps;
 };
 
 

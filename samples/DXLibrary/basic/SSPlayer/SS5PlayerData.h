@@ -157,6 +157,8 @@ struct EffectFile
 	ss_s16		fps;			//FPS
 	ss_s16		isLockRandSeed;	//乱数を固定するかどうか
 	ss_s16		lockRandSeed;	//固定する場合の乱数の種
+	ss_s16		layoutScaleX;	//レイアウトスケールX
+	ss_s16		layoutScaleY;	//レイアウトスケールY
 	ss_s16		numNodeList;	//含まれるノード数
 	ss_offset	effectNode;		// const EffectNode*
 };

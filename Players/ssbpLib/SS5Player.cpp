@@ -792,6 +792,9 @@ protected:
 			effectmodel->isLockRandSeed = effectFile->isLockRandSeed;  // ランダムシードを固定するか否か
 			effectmodel->fps = effectFile->fps;             //
 			effectmodel->effectName = effectFileName;
+			effectmodel->layoutScaleX = effectFile->layoutScaleX;	//レイアウトスケールX
+			effectmodel->layoutScaleY = effectFile->layoutScaleY;	//レイアウトスケールY
+
 
 
 			SSLOG("effect key: %s", effectFileName.c_str());
@@ -1233,7 +1236,6 @@ Player::Player(void)
 	, _InstanceRotX(0.0f)
 	, _InstanceRotY(0.0f)
 	, _InstanceRotZ(0.0f)
-	, _gamefps(1000.0f/60.0f)	//60fps
 	, _col_r(255)
 	, _col_g(255)
 	, _col_b(255)
@@ -1243,6 +1245,7 @@ Player::Player(void)
 	, _blendTimeMax(0.0f)
 	,_startFrameOverWrite(-1)	//開始フレームの上書き設定
 	,_endFrameOverWrite(-1)		//終了フレームの上書き設定
+	, _seedOffset(0)
 {
 	int i;
 	for (i = 0; i < PART_VISIBLE_MAX; i++)
@@ -1437,7 +1440,7 @@ void Player::play(AnimeRef* animeRef, int loop, int startFrameNo)
 	setStartFrame(-1);
 	setEndFrame(-1);
 
-	setFrame((int)_playingFrame);
+	setFrame((int)_playingFrame, 0);
 }
 
 //モーションブレンドしつつ再生
@@ -1570,6 +1573,7 @@ void Player::updateFrame(float dt)
 					}
 					
 					incFrameNo = startFrame;
+					_seedOffset++;	//シードオフセットを加算
 				}
 				currentFrameNo = incFrameNo;
 
@@ -1599,6 +1603,7 @@ void Player::updateFrame(float dt)
 					}
 				
 					decFrameNo = numFrames - 1;
+					_seedOffset++;	//シードオフセットを加算
 				}
 				currentFrameNo = decFrameNo;
 				
@@ -1631,7 +1636,7 @@ void Player::updateFrame(float dt)
 		}
 	}
 
-	setFrame(getFrameNo());
+	setFrame(getFrameNo(), dt);
 	
 	if (playEnd)
 	{
@@ -1814,7 +1819,7 @@ bool Player::getPartState(ResluteState& result, const char* name, int frameNo)
 			{
 				//取得する再生フレームのデータが違う場合プレイヤーを更新する
 				//パーツステータスの更新
-				setFrame(frameNo);
+				setFrame(frameNo, 0);
 			}
 
 			ToPointer ptr(_currentRs->data);
@@ -1914,7 +1919,7 @@ bool Player::getPartState(ResluteState& result, const char* name, int frameNo)
 			{
 				//取得する再生フレームのデータが違う場合プレイヤーの状態をもとに戻す
 				//パーツステータスの更新
-				setFrame(getFrameNo());
+				setFrame(getFrameNo(), 0);
 			}
 		}
 	}
@@ -2152,7 +2157,7 @@ CustomSprite* Player::getSpriteData(int partIndex)
 	return(sprite);
 }
 
-void Player::setFrame(int frameNo)
+void Player::setFrame(int frameNo, float dt)
 {
 	if (!_currentAnimeRef) return;
 	if (!_currentRs->data) return;
@@ -2701,8 +2706,7 @@ void Player::setFrame(int frameNo)
 			//独立動作の場合
 			if (independent)
 			{
-				float fdt = 1.0f / _gamefps;	//ゲームFPSからアニメーション時間を求める
-				float delta = fdt / (1.0f / _animefps);						//	独立動作時は親アニメのfpsを使用する
+				float delta = dt / (1.0f / _animefps);						//	独立動作時は親アニメのfpsを使用する
 //				float delta = fdt / (1.0f / sprite->_ssplayer->_animefps);
 
 				sprite->_liveFrame += delta;
@@ -2941,8 +2945,7 @@ void Player::setFrame(int frameNo)
 					//独立動作
 					if (sprite->effectAttrInitialized)
 					{
-						float fdt = 1.0f / _gamefps;								//ゲームFPSからアニメーション時間を求める
-						float delta = fdt / (1.0f / _animefps);						//	独立動作時は親アニメのfpsを使用する
+						float delta = dt / (1.0f / _animefps);						//	独立動作時は親アニメのfpsを使用する
 						sprite->effectTimeTotal += delta * refSpeed;
 						sprite->refEffect->setLoop(true);
 						sprite->refEffect->setFrame(sprite->effectTimeTotal);
@@ -2962,6 +2965,8 @@ void Player::setFrame(int frameNo)
 							_time = _time + refStartframe;
 							_time *= refSpeed;
 							sprite->effectTimeTotal = _time;
+
+							sprite->refEffect->setSeedOffset(_seedOffset);
 							sprite->refEffect->setFrame(_time);
 							sprite->refEffect->play();
 							sprite->refEffect->update();
@@ -3225,11 +3230,6 @@ void  Player::setFlip(bool flipX, bool flipY)
 {
 	_state.flipX = flipX;
 	_state.flipY = flipY;
-}
-
-void Player::setGameFPS(float fps)
-{
-	_gamefps = fps;
 }
 
 //割合に応じた中間値を取得します

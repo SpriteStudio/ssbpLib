@@ -72,8 +72,7 @@ void	SsEffectEmitter::updateParticle(float time, particleDrawData* p, bool recal
 
 
 	//自身のシード値、エミッターのシード値、親パーティクルのＩＤをシード値とする
-	rand.init_genrand(( pseed + emitterSeed + p->pid ));
-
+	rand.init_genrand((pseed + emitterSeed + p->pid + seedOffset));
 
 	float rad = particle.angle + (rand.genrand_float32() * (particle.angleVariance ) - particle.angleVariance/2.0f);
 	//float speed = rand.genrand_float32() * particle.speed;
@@ -367,6 +366,7 @@ void	SsEffectEmitter::precalculate2()
 		delete[] seedList;
 	}
 
+	particleListBufferSize = emitter.emitmax;
 	seedList = new unsigned long[particleListBufferSize];
 
 	rand.init_genrand((emitterSeed));
@@ -479,9 +479,9 @@ void	SsEffectRenderV2::drawSprite(
 
 
 #ifdef UP_MINUS
-	TranslationMatrixM(matrix, _position.x, -_position.y, 0.0f);	//上がマイナスなので反転する
+	TranslationMatrixM(matrix, _position.x * layoutScale.x, -_position.y * layoutScale.y, 0.0f);	//上がマイナスなので反転する
 #else
-	TranslationMatrixM(matrix, _position.x, _position.y, 0.0f);
+	TranslationMatrixM(matrix, _position.x * layoutScale.x, _position.y * layoutScale.y, 0.0f);	//レイアウトスケールの反映
 #endif
 
 	RotationXYZMatrixM( matrix , 0 , 0 , DegreeToRadian(_rotation)+direction );
@@ -659,17 +659,10 @@ void SsEffectRenderV2::particleDraw(SsEffectEmitter* e , double time , SsEffectE
 			SsFColor fcolor;
 			fcolor.fromARGB(lp.color.toARGB());
 
-#if 0
-			SsRenderBlendType btype = e->refData->blendType;
-			drawSprite( e->refCell , SsVector2(lp.x,lp.y) , lp.scale,
-				lp.rot , lp.direc , fcolor , btype );
-#endif
 			drawSprite( &e->dispCell ,
 						SsVector2(lp.x,lp.y),
 						lp.scale,
 						lp.rot , lp.direc , fcolor , e->refData->blendType );
-
-
 
 
 		}
@@ -687,8 +680,6 @@ void	SsEffectRenderV2::initEmitter( SsEffectEmitter* e , SsEffectNode* node)
 {
 
 	e->refData = node->GetMyBehavior();
-    //e->refData->setup();	////セルマップのロードを行う
-
 /*
 	e->refCell = e->refData->refCell;
 
@@ -713,11 +704,9 @@ void	SsEffectRenderV2::initEmitter( SsEffectEmitter* e , SsEffectNode* node)
 	e->dispCell.refCell = e->refData->refCell;
 	e->dispCell.blendType = e->refData->blendType;
 
-	//e->refData->initializeParticle( e );
 	SsEffectFunctionExecuter::initializeEffect( e->refData , e );
 
 	e->emitterSeed = this->mySeed;
-
 
 	if ( e->particle.userOverrideRSeed )
 	{
@@ -761,26 +750,21 @@ void	SsEffectRenderV2::update()
 {
 
 	if ( !m_isPlay ) return;
-	//if ( !m_isPause ) return;
 
 	targetFrame = nowFrame;
 
 	if ( !this->Infinite )
 	{
-		if ( this->isloop() )
+		if (this->isloop()) //自動ループの場合
 		{
-			if ( targetFrame > getEffectTimeLength() )
+			if (nowFrame > getEffectTimeLength())
 			{
-				targetFrame = (int)((int)targetFrame % getEffectTimeLength());
+				targetFrame = (int)((int)nowFrame % getEffectTimeLength());
+				int l = (nowFrame / getEffectTimeLength());
+				setSeedOffset(l);
 			}
 		}
 	}
-/*
-	if ( isIntFrame )
-	{
-    	targetFrame = (int)nowFrame;
-	}
-*/
 }
 
 void	SsEffectRenderV2::draw()
@@ -792,13 +776,12 @@ void	SsEffectRenderV2::draw()
 	{
 
 		SsEffectEmitter* e = updateList[i];
+		e->setSeedOffset(seedOffset);
 
 		if ( e->_parent )
 		{
-
 			//グローバルの時間で現在親がどれだけ生成されているのかをチェックする
 			e->_parent->updateEmitter(targetFrame);
-
 
 			int loopnum =  e->_parent->getParticleIDMax();
 			for ( int n = 0 ; n < loopnum ; n ++ )
@@ -843,12 +826,13 @@ void    SsEffectRenderV2::reload()
 	stop();
 	clearEmitterList();
 
-
 	SsEffectNode* root = this->effectData->GetRoot();
 
     //this->effectData->updateNodeList();//ツールじゃないので要らない
     const std::vector<SsEffectNode*>& list = this->effectData->getNodeList();
 
+	layoutScale.x = (float)(this->effectData->layoutScaleX) / 100.0f;
+	layoutScale.y = (float)(this->effectData->layoutScaleY) / 100.0f;
 
 	bool _Infinite = false;
 	//パラメータを取得

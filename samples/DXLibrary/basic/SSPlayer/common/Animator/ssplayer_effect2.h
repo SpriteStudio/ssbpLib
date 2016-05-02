@@ -264,14 +264,11 @@ public:
 	xorshift32			rand;
 
 
-	int				emitterSeed;
+	int					emitterSeed;
+	int					seedOffset;
 
 	//生成用のリングバッファ
-	//particleRingBuffer<particleLifeSt>	_tempbuf;
-
-//	emitPattern*    	_emitpattern;
 	std::vector<emitPattern>    	_emitpattern;
-
 
     particleExistSt*     particleExistList;
 
@@ -287,8 +284,6 @@ public:
 	SsVector2   				position;
 //	SsEffectEmitter*			_child;
 	SsEffectEmitter*			_parent;
-
-
 
     int							_parentIndex;
 
@@ -309,9 +304,16 @@ public:
 	{
 		emitterSeed = SEED_MAGIC;
 	}
-	virtual ~SsEffectEmitter(){}
+	virtual ~SsEffectEmitter()
+	{
+		delete[] particleExistList;
+		delete[] seedList;
 
+	}
 
+	void	setSeedOffset(int offset) {
+		seedOffset = offset;
+	}
 
 //	const particleLifeSt*	getParticleDataFromID(int id) { return &particleList[id]; }
 
@@ -358,6 +360,7 @@ public:
 	u32				mySeed;
 
 	SsVector3		layoutPosition;
+	SsVector2		layoutScale;
 
 	float			nowFrame;
 	float			targetFrame;
@@ -375,7 +378,8 @@ public:
 	bool			m_isPause;
 	bool			m_isLoop;
 
-//	SsCellMapList*	curCellMapManager;/// セルマップのリスト（アニメデコーダーからもらう
+	int				seedOffset;
+	//	SsCellMapList*	curCellMapManager;/// セルマップのリスト（アニメデコーダーからもらう
 
 	//親になるスプライト
 	bool _isContentScaleFactorAuto;
@@ -393,12 +397,8 @@ protected:
 
 
 public:
-	SsEffectRenderV2() : effectTimeLength(0) ,isIntFrame(true)
-		, _isContentScaleFactorAuto(true)
-		, _parentSprite(0)
-	{}
-
-	virtual ~SsEffectRenderV2(){}
+	SsEffectRenderV2() : effectTimeLength(0), isIntFrame(true), seedOffset(0), _parentSprite(0), _isContentScaleFactorAuto(false){}
+	virtual ~SsEffectRenderV2() {}
 
 	virtual void    play(){ m_isPause = false;m_isPlay=true; }
 	virtual void	stop(){ m_isPlay = false;}
@@ -439,11 +439,9 @@ public:
 
 //	void	setCellmapManager( SsCellMapList* plist ) { curCellMapManager = plist; }
 
-//	virtual void 	debugDraw();
 	bool	getPlayStatus(void){
 		return(m_isPlay);
 	}
-
 
 	void	drawSprite(
 			SsCellValue*		dispCell,
@@ -454,6 +452,16 @@ public:
 			SsFColor	_color,
 			SsRenderBlendType::_enum blendType
 		);
+
+	void	setSeedOffset(int offset) {
+		if (effectData->isLockRandSeed)
+		{
+			seedOffset = 0;
+		}
+		else {
+			seedOffset = offset;
+		}
+	}
 
 	//親になるスプライトを設定する
 	void setContentScaleEneble(bool eneble) { _isContentScaleFactorAuto = eneble; }

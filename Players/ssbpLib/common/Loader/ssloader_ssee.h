@@ -110,8 +110,10 @@ public:
 	int			lockRandSeed; 	 // ランダムシード固定値
 	bool    	isLockRandSeed;  // ランダムシードを固定するか否か
 	int			fps;             //
-	SsString	   bgcolor;
-	SsString			effectName;
+	SsString	bgcolor;
+	SsString	effectName;
+	int			layoutScaleX;
+	int			layoutScaleY;
 
 public:
 	SsEffectModel() : root(0)
