@@ -210,6 +210,7 @@ struct AnimationData
 	ss_s16		labelNum;
 	ss_s16		canvasSizeW;	//基準枠幅
 	ss_s16		canvasSizeH;	//基準枠高さ
+	ss_s16		dummy;			//ダミーデータ
 	float		canvasPvotX;	//基準枠位置
 	float		canvasPvotY;	//基準枠位置
 };
