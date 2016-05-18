@@ -397,7 +397,7 @@ protected:
 
 
 public:
-	SsEffectRenderV2() : effectTimeLength(0), isIntFrame(true), seedOffset(0), _parentSprite(0), _isContentScaleFactorAuto(false){}
+	SsEffectRenderV2() : effectTimeLength(0), isIntFrame(true), seedOffset(0), mySeed(0), _parentSprite(0), _isContentScaleFactorAuto(false){}
 	virtual ~SsEffectRenderV2() {}
 
 	virtual void    play(){ m_isPause = false;m_isPlay=true; }

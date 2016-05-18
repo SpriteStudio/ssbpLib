@@ -1440,7 +1440,7 @@ void Player::play(AnimeRef* animeRef, int loop, int startFrameNo)
 	setStartFrame(-1);
 	setEndFrame(-1);
 
-	setFrame((int)_playingFrame, 0);
+	setFrame((int)_playingFrame);
 }
 
 //モーションブレンドしつつ再生
@@ -1819,7 +1819,7 @@ bool Player::getPartState(ResluteState& result, const char* name, int frameNo)
 			{
 				//取得する再生フレームのデータが違う場合プレイヤーを更新する
 				//パーツステータスの更新
-				setFrame(frameNo, 0);
+				setFrame(frameNo);
 			}
 
 			ToPointer ptr(_currentRs->data);
@@ -1919,7 +1919,7 @@ bool Player::getPartState(ResluteState& result, const char* name, int frameNo)
 			{
 				//取得する再生フレームのデータが違う場合プレイヤーの状態をもとに戻す
 				//パーツステータスの更新
-				setFrame(getFrameNo(), 0);
+				setFrame(getFrameNo());
 			}
 		}
 	}
@@ -2908,12 +2908,17 @@ void Player::setFrame(int frameNo, float dt)
 		}
 	}
 
-	// エフェクトのアップデート
+	// 特殊パーツのアップデート
 	for (int partIndex = 0; partIndex < packData->numParts; partIndex++)
 	{
 		const PartData* partData = &parts[partIndex];
 		CustomSprite* sprite = static_cast<CustomSprite*>(_parts.at(partIndex));
 
+		//インスタンスパーツのアップデート
+		if (sprite->_ssplayer)
+		{
+			sprite->_ssplayer->update(dt);
+		}
 		//エフェクトのアップデート
 		if (sprite->refEffect)
 		{
@@ -2925,7 +2930,7 @@ void Player::setFrame(int frameNo, float dt)
 			bool independent = false;
 
 			int lflags = sprite->_state.effectValue_loopflag;
-			if (lflags & EFFECT_LOOP_FLAG_INFINITY)
+			if (lflags & EFFECT_LOOP_FLAG_INDEPENDENT)
 			{
 				independent = true;
 			}
@@ -2976,76 +2981,6 @@ void Player::setFrame(int frameNo, float dt)
 			}
 		}
 	}
-
-
-
-
-#if 0
-			if (sprite->_state.isVisibled == false)
-			{
-				//パーツが非表示の場合はエフェクトをリセットする
-				if (sprite->refEffect->getPlayStatus() == true)
-				{
-					//毎回行うと負荷がかかるので、前回が再生中であればリセット
-					sprite->refEffect->setSeed(getRandomSeed());
-					sprite->refEffect->reload();
-					sprite->refEffect->stop();
-				}
-			}
-			else{
-				//パーツのステータスの更新
-				sprite->partState.alpha = sprite->_state.opacity / 255.0f;
-				int matindex = 0;
-				for (matindex = 0; matindex < 16; matindex++)
-				{
-					sprite->partState.matrix[matindex] = sprite->_mat[matindex];
-				}
-
-				//エフェクトアップデート
-				if (frameNo != _prevDrawFrameNo)
-				{
-					sprite->refEffect->setLoop(false);
-					int fdt = 1;
-					if (_prevDrawFrameNo < frameNo)			//差分フレームを計算
-					{
-						fdt = (frameNo - _prevDrawFrameNo) * 2;
-						if (sprite->refEffect->getPlayStatus() == false)
-						{
-							sprite->refEffect->play();
-							//前回エフェクトの更新をしていない場合は初回を0でアップデートする
-							sprite->refEffect->update(0.0f); //先頭フレームは0でアップデートする
-							fdt = fdt - 1;
-						}
-					}
-					else
-					{
-						//アニメーションループ時
-						sprite->refEffect->setSeed(getRandomSeed());
-						sprite->refEffect->reload();
-						sprite->refEffect->play();
-						sprite->refEffect->update(0.0f); //先頭フレームは0でアップデートする
-						fdt = frameNo * 2;
-						if (frameNo > 0)
-						{
-							fdt = fdt - 1;
-						}
-						else
-						{
-							fdt = 0;
-						}
-
-					}
-					int f = 0;
-					for (f = 0; f < fdt; f++)
-					{
-						sprite->refEffect->update(0.5f); //先頭から今のフレーム
-					}
-				}
-			}
-		}
-	}
-#endif
-
 	_prevDrawFrameNo = frameNo;	//再生したフレームを保存
 }
 
@@ -3074,7 +3009,6 @@ void Player::draw()
 			if ((sprite->_state.isVisibled == true) && (sprite->_state.opacity > 0))
 			{
 				//インスタンスパーツの場合は子供のプレイヤーを再生
-				sprite->_ssplayer->update(0);
 				sprite->_ssplayer->draw();
 			}
 		}

@@ -672,7 +672,7 @@ enum {
 
 //エフェクトアトリビュートのループフラグ
 enum {
-	EFFECT_LOOP_FLAG_INFINITY = 1 << 0,
+	EFFECT_LOOP_FLAG_INDEPENDENT = 1 << 0,
 };
 
 /**
@@ -1167,7 +1167,7 @@ protected:
 
 	void play(AnimeRef* animeRef, int loop, int startFrameNo);
 	void updateFrame(float dt);
-	void setFrame(int frameNo, float dt);
+	void setFrame(int frameNo, float dt = 0.0f);
 	void checkUserData(int frameNo);
 	void set_InstanceAlpha(int alpha);
 	void set_InstanceRotation(float rotX, float rotY, float rotZ);
