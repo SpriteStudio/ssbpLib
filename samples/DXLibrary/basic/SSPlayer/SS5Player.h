@@ -187,6 +187,7 @@ struct State
 	float		instanceValue_speed;
 	int			instanceValue_loopflag;
 	//エフェクトアトリビュート
+	int			effectValue_curKeyframe;
 	int			effectValue_startTime;
 	float		effectValue_speed;
 	int			effectValue_loopflag;
@@ -238,6 +239,7 @@ struct State
 		instanceValue_loopNum = 0;
 		instanceValue_speed = 0;
 		instanceValue_loopflag = 0;
+		effectValue_curKeyframe = 0;
 		effectValue_startTime = 0;
 		effectValue_speed = 0;
 		effectValue_loopflag = 0;
@@ -379,6 +381,7 @@ public:
 		setStateValue(_state.instanceValue_loopNum, state.instanceValue_loopNum);
 		setStateValue(_state.instanceValue_speed, state.instanceValue_speed);
 		setStateValue(_state.instanceValue_loopflag, state.instanceValue_loopflag);
+		setStateValue(_state.effectValue_curKeyframe, state.effectValue_curKeyframe);
 		setStateValue(_state.effectValue_startTime, state.effectValue_startTime);
 		setStateValue(_state.effectValue_speed, state.effectValue_speed);
 		setStateValue(_state.effectValue_loopflag, state.effectValue_loopflag);
