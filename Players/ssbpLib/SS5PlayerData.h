@@ -252,6 +252,7 @@ struct AnimationInitialData
 	float		instanceValue_speed;
 	int			instanceValue_loopflag;
 	//エフェクトアトリビュート
+	int			effectValue_curKeyframe;
 	int			effectValue_startTime;
 	float		effectValue_speed;
 	int			effectValue_loopflag;
