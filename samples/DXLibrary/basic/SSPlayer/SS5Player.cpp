@@ -2430,6 +2430,7 @@ void Player::setFrame(int frameNo, float dt)
 			quad.br.vertices.y = y1;
 #endif
 			//UVを設定する
+/*
 			int atlasWidth = state.texture.size_w;
 			int atlasHeight = state.texture.size_h;
 			float left, right, top, bottom;
@@ -2446,6 +2447,26 @@ void Player::setFrame(int frameNo, float dt)
 			quad.bl.texCoords.v = bottom;
 			quad.br.texCoords.u = right;
 			quad.br.texCoords.v = bottom;
+*/
+			quad.tl.texCoords.u = 0;
+			quad.tl.texCoords.v = 0;
+			quad.tr.texCoords.u = 0;
+			quad.tr.texCoords.v = 0;
+			quad.bl.texCoords.u = 0;
+			quad.bl.texCoords.v = 0;
+			quad.br.texCoords.u = 0;
+			quad.br.texCoords.v = 0;
+			if (cellRef)
+			{
+				quad.tl.texCoords.u = cellRef->cell->u1;
+				quad.tl.texCoords.v = cellRef->cell->v1;
+				quad.tr.texCoords.u = cellRef->cell->u2;
+				quad.tr.texCoords.v = cellRef->cell->v1;
+				quad.bl.texCoords.u = cellRef->cell->u1;
+				quad.bl.texCoords.v = cellRef->cell->v2;
+				quad.br.texCoords.u = cellRef->cell->u2;
+				quad.br.texCoords.v = cellRef->cell->v2;
+			}
 		}
 
 		//サイズ設定

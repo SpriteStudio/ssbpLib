@@ -192,6 +192,10 @@ struct Cell
 	ss_s16		reserved;
 	float		pivot_X;		//原点補正
 	float		pivot_Y;		//原点補正
+	float		u1;				//セルのUV
+	float		v1;				//セルのUV
+	float		u2;				//セルのUV
+	float		v2;				//セルのUV
 };
 
 
