@@ -297,10 +297,10 @@ struct ProjectData
 {
 	ss_u32		dataId;
 	ss_u32		version;
-	ss_u32		flags;
-	ss_offset	imageBaseDir;	// const char*
-	ss_offset	cells;			// const Cell*
-	ss_offset	animePacks;		// const AnimePackData*
+	ss_u32		flags;				// プロジェクト設定
+	ss_offset	imageBaseDir;		// const char*
+	ss_offset	cells;				// const Cell*
+	ss_offset	animePacks;			// const AnimePackData*
 	ss_offset	effectFileList;		// const EffectFileList*
 	ss_s16		numCells;
 	ss_s16		numAnimePacks;

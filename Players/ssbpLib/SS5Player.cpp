@@ -1232,10 +1232,6 @@ Player::Player(void)
 	, _isPlaying(false)
 	, _isPausing(false)
 	, _prevDrawFrameNo(-1)
-	, _InstanceAlpha(255)
-	, _InstanceRotX(0.0f)
-	, _InstanceRotY(0.0f)
-	, _InstanceRotZ(0.0f)
 	, _col_r(255)
 	, _col_g(255)
 	, _col_b(255)
@@ -1246,6 +1242,8 @@ Player::Player(void)
 	,_startFrameOverWrite(-1)	//開始フレームの上書き設定
 	,_endFrameOverWrite(-1)		//終了フレームの上書き設定
 	, _seedOffset(0)
+	, _rootPartFunctionAsVer4(false)
+	, _dontUseMatrixForTransform(false)
 {
 	int i;
 	for (i = 0; i < PART_VISIBLE_MAX; i++)
@@ -1385,6 +1383,20 @@ void Player::setData(const std::string& dataKey)
 //		releaseData();
 		_currentRs = rs;
 	}
+
+	//Ver4互換設定
+	_rootPartFunctionAsVer4 = false;			
+	_dontUseMatrixForTransform = false;			
+#ifdef	USE_VER4TRANSFORM
+	if ((rs->data->flags & HEAD_FLAG_rootPartFunctionAsVer4) != 0)
+	{
+		_rootPartFunctionAsVer4 = true;			//不透明度・反転・非表示アトリビュートの継承方法をVer.4と同様にする
+	}
+	if ((rs->data->flags & HEAD_FLAG_dontUseMatrixForTransform) != 0)
+	{
+		_dontUseMatrixForTransform = true;		//親子の座標変換にマトリックスを使用しない（Ver4互換）
+	}
+#endif
 }
 
 void Player::releaseData()
@@ -1909,6 +1921,19 @@ bool Player::getPartState(ResluteState& result, const char* name, int frameNo)
 					{
 						result.part_labelcolor = COLORLABEL_GRAY;
 					}
+					if (_dontUseMatrixForTransform == true)
+					{
+						//SS4互換対応
+						//SS4はマトリクスを使用していないので独自の計算結果を反映させる
+						result.x = sprite->_temp_position.x;							//画面上のX座標を取得
+						result.y = sprite->_temp_position.y;							//画面上のY座標を取得
+						result.z = sprite->_state.z;									// Z座標アトリビュートを取得
+						result.rotationZ = sprite->_temp_rotation.z;					// Z回転（親子関係計算済）
+						result.scaleX = sprite->_temp_scale.x;							// Xスケール（親子関係計算済）
+						result.scaleY = sprite->_temp_scale.y;							// Yスケール（親子関係計算済）
+						result.size_X = sprite->_state.size_X * sprite->_temp_scale.x;	// SS5アトリビュート：Xサイズ
+						result.size_Y = sprite->_state.size_Y * sprite->_temp_scale.y;	// SS5アトリビュート：Yサイズ
+					}
 
 					rc = true;
 					break;
@@ -2341,9 +2366,6 @@ void Player::setFrame(int frameNo, float dt)
 		state.isVisibled = isVisibled;
 		state.flipX = flipX;
 		state.flipY = flipY;
-		state.instancerotationX = _InstanceRotX;
-		state.instancerotationY = _InstanceRotY;
-		state.instancerotationZ = _InstanceRotZ;
 
 		state.instanceValue_curKeyframe = instanceValue_curKeyframe;
 		state.instanceValue_startFrame = instanceValue_startFrame;
@@ -2355,6 +2377,13 @@ void Player::setFrame(int frameNo, float dt)
 		state.effectValue_startTime = effectValue_startTime;
 		state.effectValue_speed = effectValue_speed;
 		state.effectValue_loopflag = effectValue_loopflag;
+
+		state.Calc_rotationX = state.rotationX;
+		state.Calc_rotationY = state.rotationY;
+		state.Calc_rotationZ = state.rotationZ;
+		state.Calc_scaleX = state.scaleX;
+		state.Calc_scaleY = state.scaleY;
+		state.Calc_opacity = state.opacity;
 
 		CustomSprite* sprite = static_cast<CustomSprite*>(_parts.at(partIndex));
 
@@ -2430,24 +2459,6 @@ void Player::setFrame(int frameNo, float dt)
 			quad.br.vertices.y = y1;
 #endif
 			//UVを設定する
-/*
-			int atlasWidth = state.texture.size_w;
-			int atlasHeight = state.texture.size_h;
-			float left, right, top, bottom;
-			left = cellRef->rect.origin.x / (float)atlasWidth;
-			right = (cellRef->rect.origin.x + cellRef->rect.size.width) / (float)atlasWidth;
-			top = cellRef->rect.origin.y / (float)atlasHeight;
-			bottom = (cellRef->rect.origin.y + cellRef->rect.size.height) / (float)atlasHeight;
-
-			quad.tl.texCoords.u = left;
-			quad.tl.texCoords.v = top;
-			quad.tr.texCoords.u = right;
-			quad.tr.texCoords.v = top;
-			quad.bl.texCoords.u = left;
-			quad.bl.texCoords.v = bottom;
-			quad.br.texCoords.u = right;
-			quad.br.texCoords.v = bottom;
-*/
 			quad.tl.texCoords.u = 0;
 			quad.tl.texCoords.v = 0;
 			quad.tr.texCoords.u = 0;
@@ -2528,7 +2539,6 @@ void Player::setFrame(int frameNo, float dt)
 				quad.br.vertices.y += reader.readS16();
 			}
 		}
-		
 		
 		//頂点情報の取得
 		unsigned char alpha = (unsigned char)opacity;
@@ -2793,8 +2803,6 @@ void Player::setFrame(int frameNo, float dt)
 			}
 
 			//インスタンスパラメータを設定
-			sprite->_ssplayer->set_InstanceAlpha(opacity);
-			sprite->_ssplayer->set_InstanceRotation(rotationX, rotationY, rotationZ);
 			sprite->_ssplayer->setColor(_col_r, _col_g, _col_b);
 
 			//インスタンス用SSPlayerに再生フレームを設定する
@@ -2831,102 +2839,109 @@ void Player::setFrame(int frameNo, float dt)
 
 		if (sprite->_isStateChanged)
 		{
-			if (partIndex > 0)
+			if (_dontUseMatrixForTransform == true)
 			{
-				//親のマトリクスを適用
-				CustomSprite* parent = static_cast<CustomSprite*>(_parts.at(partData->parentIndex));
-				memcpy(mat, parent->_mat, sizeof(float)* 16);
-			}
-			else
-			{
-				IdentityMatrix( mat );
-				//親がいない場合、プレイヤーの値とインスタンスパーツの値を初期値とする
-				TranslationMatrix(t, _state.x, _state.y, 0.0f);
-				MultiplyMatrix(t, mat, mat);
-
-				Matrix4RotationX(t, SSRadianToDegree(sprite->_state.instancerotationX ));
-				MultiplyMatrix(t, mat, mat);
-
-				Matrix4RotationY(t, SSRadianToDegree(sprite->_state.instancerotationY ));
-				MultiplyMatrix(t, mat, mat);
-
-				Matrix4RotationZ(t, SSRadianToDegree(sprite->_state.instancerotationZ ));
-				MultiplyMatrix(t, mat, mat);
-
-				//rootパーツはプレイヤーからステータスを引き継ぐ
-				sprite->_state.rotationX += _state.rotationX + sprite->_state.instancerotationX;
-				sprite->_state.rotationY += _state.rotationY + sprite->_state.instancerotationY;
-				sprite->_state.rotationZ += _state.rotationZ + sprite->_state.instancerotationZ;
-				sprite->_state.scaleX *= _state.scaleX;
-				sprite->_state.scaleY *= _state.scaleY;
-				if (_state.flipX == true)
+				//Ver.4互換
+				CustomSprite* parent = nullptr;
+				if (partIndex > 0)
 				{
-					//プレイヤーのXフリップ
-					sprite->_state.scaleX = -sprite->_state.scaleX;	//フラグ反転
+					parent = static_cast<CustomSprite*>(_parts.at(partData->parentIndex));
 				}
-				if (_state.flipY == true)
-				{
-					sprite->_state.scaleY = -sprite->_state.scaleY;	//フラグ反転
-				}
-			}
-			TranslationMatrix(t, sprite->_state.x, sprite->_state.y, 0.0f);
-			MultiplyMatrix(t, mat, mat);
-
-			Matrix4RotationX(t, SSRadianToDegree(sprite->_state.rotationX));
-			MultiplyMatrix(t, mat, mat);
-
-			Matrix4RotationY(t, SSRadianToDegree(sprite->_state.rotationY));
-			MultiplyMatrix(t, mat, mat);
-
-			Matrix4RotationZ(t, SSRadianToDegree(sprite->_state.rotationZ));
-			MultiplyMatrix(t, mat, mat);
-
-			ScaleMatrix(t, sprite->_state.scaleX, sprite->_state.scaleY, 1.0f);
-			MultiplyMatrix(t, mat, mat);
-
-			memcpy(sprite->_mat, mat, sizeof(float)* 16);
-			memcpy(sprite->_state.mat, mat, sizeof(float)* 16);
-
-			if (partIndex > 0)
-			{
-				CustomSprite* parent = static_cast<CustomSprite*>(_parts.at(partData->parentIndex));
-				//子供は親のステータスを引き継ぐ
-				//座標はマトリクスから取得する
-				if ((parent->_state.scaleX * parent->_state.scaleY) < 0)	//スケールのどちらかが-の場合は回転方向を逆にする
-				{
-					sprite->_state.rotationZ = -sprite->_state.rotationZ;
-				}
-				sprite->_state.rotationX += parent->_state.rotationX;
-				sprite->_state.rotationY += parent->_state.rotationY;
-				sprite->_state.rotationZ += parent->_state.rotationZ;
-
-				sprite->_state.scaleX *= parent->_state.scaleX;
-				sprite->_state.scaleY *= parent->_state.scaleY;
-
+				update_matrix_ss4(sprite, parent, partData);
 				//ルートパーツのアルファ値を反映させる
-				sprite->_state.opacity = (sprite->_state.opacity * _state.opacity * _InstanceAlpha) / 255 / 255;
+				sprite->_state.Calc_opacity = (sprite->_state.Calc_opacity * _state.opacity) / 255;
 				//インスタンスパーツの親を設定
 				if (sprite->_ssplayer)
 				{
 					sprite->_ssplayer->setPosition(sprite->_mat[12], sprite->_mat[13]);
-					sprite->_ssplayer->setScale(sprite->_state.scaleX, sprite->_state.scaleY);
-					sprite->_ssplayer->setRotation(sprite->_state.rotationX, sprite->_state.rotationY, sprite->_state.rotationZ);
+					sprite->_ssplayer->setScale(sprite->_state.Calc_scaleX, sprite->_state.Calc_scaleY);
+					sprite->_ssplayer->setRotation(sprite->_state.Calc_rotationX, sprite->_state.Calc_rotationY, sprite->_state.Calc_rotationZ);
+					sprite->_ssplayer->setAlpha(sprite->_state.Calc_opacity);
 				}
-
 			}
-			//原点計算を行う
-			float px = 0;
-			float py = 0;
-			float cx = ((sprite->_state.rect.size.width * sprite->_state.scaleX) * -(sprite->_state.pivotX - 0.5f));
-#ifdef UP_MINUS
-			float cy = ((sprite->_state.rect.size.height * sprite->_state.scaleY) * -(sprite->_state.pivotY - 0.5f));
-#else
-			float cy = ((sprite->_state.rect.size.height * sprite->_state.scaleY) * +(sprite->_state.pivotY - 0.5f));
-#endif
-			get_uv_rotation(&cx, &cy, 0, 0, sprite->_state.rotationZ);
+			else
+			{
+				if (partIndex > 0)
+				{
+					//親のマトリクスを適用
+					CustomSprite* parent = static_cast<CustomSprite*>(_parts.at(partData->parentIndex));
+					memcpy(mat, parent->_mat, sizeof(float) * 16);
+				}
+				else
+				{
+					IdentityMatrix(mat);
+					//rootパーツはプレイヤーからステータスを引き継ぐ
+					sprite->_state.x += _state.x;
+					sprite->_state.y += _state.y;
+					sprite->_state.rotationX += _state.rotationX;
+					sprite->_state.rotationY += _state.rotationY;
+					sprite->_state.rotationZ += _state.rotationZ;
+					sprite->_state.scaleX *= _state.scaleX;
+					sprite->_state.scaleY *= _state.scaleY;
+					//プレイヤーのフリップ
+					if (_state.flipX == true)
+					{
+						sprite->_state.scaleX = -sprite->_state.scaleX;	//フラグ反転
+					}
+					if (_state.flipY == true)
+					{
+						sprite->_state.scaleY = -sprite->_state.scaleY;	//フラグ反転
+					}
 
-			sprite->_state.mat[12] += cx;
-			sprite->_state.mat[13] += cy;
+					sprite->_state.Calc_rotationX = sprite->_state.rotationX;
+					sprite->_state.Calc_rotationY = sprite->_state.rotationY;
+					sprite->_state.Calc_rotationZ = sprite->_state.rotationZ;
+
+					sprite->_state.Calc_scaleX = sprite->_state.scaleX;
+					sprite->_state.Calc_scaleY = sprite->_state.scaleY;
+				}
+				TranslationMatrix(t, sprite->_state.x, sprite->_state.y, 0.0f);
+				MultiplyMatrix(t, mat, mat);
+
+				Matrix4RotationX(t, SSRadianToDegree(sprite->_state.rotationX));
+				MultiplyMatrix(t, mat, mat);
+
+				Matrix4RotationY(t, SSRadianToDegree(sprite->_state.rotationY));
+				MultiplyMatrix(t, mat, mat);
+
+				Matrix4RotationZ(t, SSRadianToDegree(sprite->_state.rotationZ));
+				MultiplyMatrix(t, mat, mat);
+
+				ScaleMatrix(t, sprite->_state.scaleX, sprite->_state.scaleY, 1.0f);
+				MultiplyMatrix(t, mat, mat);
+
+				memcpy(sprite->_mat, mat, sizeof(float) * 16);
+				memcpy(sprite->_state.mat, mat, sizeof(float) * 16);
+
+				if (partIndex > 0)
+				{
+					CustomSprite* parent = static_cast<CustomSprite*>(_parts.at(partData->parentIndex));
+					//子供は親のステータスを引き継ぐ
+					//座標はマトリクスから取得する
+					if ((parent->_state.Calc_scaleX * parent->_state.Calc_scaleY) < 0)	//スケールのどちらかが-の場合は回転方向を逆にする
+					{
+						sprite->_state.Calc_rotationZ = -sprite->_state.Calc_rotationZ;
+					}
+					sprite->_state.Calc_rotationX += parent->_state.Calc_rotationX;
+					sprite->_state.Calc_rotationY += parent->_state.Calc_rotationY;
+					sprite->_state.Calc_rotationZ += parent->_state.Calc_rotationZ;
+
+					sprite->_state.Calc_scaleX *= parent->_state.Calc_scaleX;
+					sprite->_state.Calc_scaleY *= parent->_state.Calc_scaleY;
+
+					//ルートパーツのアルファ値を反映させる
+					sprite->_state.Calc_opacity = (sprite->_state.Calc_opacity * _state.opacity) / 255;
+					//インスタンスパーツの親を設定
+					if (sprite->_ssplayer)
+					{
+						sprite->_ssplayer->setPosition(sprite->_mat[12], sprite->_mat[13]);
+						sprite->_ssplayer->setScale(sprite->_state.Calc_scaleX, sprite->_state.Calc_scaleY);
+						sprite->_ssplayer->setRotation(sprite->_state.Calc_rotationX, sprite->_state.Calc_rotationY, sprite->_state.Calc_rotationZ);
+						sprite->_ssplayer->setAlpha(sprite->_state.Calc_opacity);
+					}
+
+				}
+			}
 			sprite->_isStateChanged = false;
 		}
 	}
@@ -3145,22 +3160,6 @@ void Player::checkUserData(int frameNo)
 
 }
 
-
-//インスタンスパーツのアルファ値を設定
-void  Player::set_InstanceAlpha(int alpha)
-{
-	_InstanceAlpha = alpha;
-}
-
-//インスタンスパーツの回転値を設定
-void  Player::set_InstanceRotation(float rotX, float rotY, float rotZ)
-{
-	_InstanceRotX = rotX;
-	_InstanceRotY = rotY;
-	_InstanceRotZ = rotZ;
-}
-
-
 void  Player::setPosition(float x, float y)
 {
 	_state.x = x;
@@ -3238,6 +3237,93 @@ float Player::parcentValRot(float val1, float val2, float parcent)
 	return (newval);
 }
 
+void Player::update_matrix_ss4(CustomSprite *sprite, CustomSprite *parent, const PartData *partData)
+{
+
+
+	if (partData->index == 0)
+	{
+		//rootパーツ
+		//rootパーツはプレイヤーからステータスを引き継ぐ
+		sprite->_state.x += _state.x;
+		sprite->_state.y += _state.y;
+		sprite->_state.rotationX += _state.rotationX;
+		sprite->_state.rotationY += _state.rotationY;
+		sprite->_state.rotationZ += _state.rotationZ;
+		sprite->_state.scaleX *= _state.scaleX;
+		sprite->_state.scaleY *= _state.scaleY;
+		if (_state.flipX == true)
+		{
+			//プレイヤーのXフリップ
+			sprite->_state.scaleX = -sprite->_state.scaleX;	//フラグ反転
+		}
+		if (_state.flipY == true)
+		{
+			sprite->_state.scaleY = -sprite->_state.scaleY;	//フラグ反転
+		}
+
+		sprite->_temp_position = SsVector3(sprite->_state.x, sprite->_state.y, 0);
+		sprite->_temp_rotation = SsVector3(0, 0, sprite->_state.rotationZ);
+		sprite->_temp_scale = SsVector2(sprite->_state.scaleX, sprite->_state.scaleY);
+
+		return;
+	}
+
+	float x = sprite->_state.x;
+	float y = sprite->_state.y;
+	float z = sprite->_state.z;
+
+	//scaleを適用
+	x *= parent->_temp_scale.x;
+	y *= parent->_temp_scale.y;
+
+	float temp = 1.0f;
+
+	//回転
+	float angle = parent->_temp_rotation.z;
+	double aa = DegreeToRadian(angle) * temp;
+	double  asin = std::sin(aa);
+	double  acos = std::cos(aa);
+
+	float rx = (float)(x * acos - y * asin);
+	float ry = (float)(x * asin + y * acos);
+
+	x = rx;
+	y = ry;
+
+	//平行移動
+	sprite->_temp_position.x = parent->_temp_position.x + x;
+	sprite->_temp_position.y = parent->_temp_position.y + y;
+
+	//ローカル回転
+	sprite->_temp_rotation.z = sprite->_state.rotationZ + parent->_temp_rotation.z;
+
+	//拡大率
+	sprite->_temp_scale.x = sprite->_state.scaleX * parent->_temp_scale.x;
+	sprite->_temp_scale.y = sprite->_state.scaleY * parent->_temp_scale.y;
+
+	//SS4の状態で上書きする
+//	sprite->_temp_position.x;
+//	sprite->_temp_position.y;
+//	sprite->_temp_rotation.z;
+//	sprite->_temp_scale.x;
+//	sprite->_temp_scale.y;
+	
+	//単位行列にする
+	float mat[16];
+	IdentityMatrix(mat);
+	TranslationMatrixM(mat, sprite->_temp_position.x, sprite->_temp_position.y, sprite->_temp_position.z);//
+	RotationXYZMatrixM(mat, DegreeToRadian(0), DegreeToRadian(0), DegreeToRadian(sprite->_temp_rotation.z * temp));
+	ScaleMatrixM(mat, sprite->_temp_scale.x, sprite->_temp_scale.y, 1.0f);
+
+	memcpy(sprite->_mat, mat, sizeof(float) * 16);
+	memcpy(sprite->_state.mat, mat, sizeof(float) * 16);
+	sprite->_state.Calc_rotationX = 0;
+	sprite->_state.Calc_rotationY = 0;
+	sprite->_state.Calc_rotationZ = sprite->_temp_rotation.z * temp;
+	sprite->_state.Calc_scaleX = sprite->_temp_scale.x;
+	sprite->_state.Calc_scaleY = sprite->_temp_scale.y;
+}
 
 
 /**
@@ -3264,7 +3350,11 @@ CustomSprite::CustomSprite():
 	, _ssplayer(0)
 	,effectAttrInitialized(false)
 	,effectTimeTotal(0)
-{}
+{
+	_temp_position = SsVector3(0, 0, 0);
+	_temp_rotation = SsVector3(0, 0, 0);
+	_temp_scale = SsVector2(1.0f, 1.0f);
+}
 
 CustomSprite::~CustomSprite()
 {

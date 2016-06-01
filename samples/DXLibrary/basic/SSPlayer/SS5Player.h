@@ -152,12 +152,12 @@ struct State
 	float z;						/// SS5アトリビュート：Z座標
 	float pivotX;					/// 原点Xオフセット＋セルに設定された原点オフセットX
 	float pivotY;					/// 原点Yオフセット＋セルに設定された原点オフセットY
-	float rotationX;				/// X回転（親子関係計算済）
-	float rotationY;				/// Y回転（親子関係計算済）
-	float rotationZ;				/// Z回転（親子関係計算済）
-	float scaleX;					/// Xスケール（親子関係計算済）
-	float scaleY;					/// Yスケール（親子関係計算済）
-	int opacity;					/// 不透明度（0～255）（親子関係計算済）
+	float rotationX;				/// X回転
+	float rotationY;				/// Y回転
+	float rotationZ;				/// Z回転
+	float scaleX;					/// Xスケール
+	float scaleY;					/// Yスケール
+	int opacity;					/// 不透明度（0～255）
 	float size_X;					/// SS5アトリビュート：Xサイズ
 	float size_Y;					/// SS5アトリビュート：Xサイズ
 	float uv_move_X;				/// SS5アトリビュート：UV X移動
@@ -171,14 +171,18 @@ struct State
 	bool flipX;						/// 横反転（親子関係計算済）
 	bool flipY;						/// 縦反転（親子関係計算済）
 	bool isVisibled;				/// 非表示（親子関係計算済）
-	float instancerotationX;		/// インスタンスパーツに設定されたX回転
-	float instancerotationY;		/// インスタンスパーツに設定されたY回転
-	float instancerotationZ;		/// インスタンスパーツに設定されたZ回転
 	SSV3F_C4B_T2F_Quad quad;		/// 頂点データ、座標、カラー値、UVが含まれる（頂点変形、サイズXY、UV移動XY、UVスケール、UV回転、反転が反映済）
 	TextuerData texture;			/// セルに対応したテクスチャ番号（ゲーム側で管理している番号を設定する）
 	SSRect rect;					/// セルに対応したテクスチャ内の表示領域（開始座標、幅高さ）
 	int blendfunc;					/// パーツに設定されたブレンド方法
 	float mat[16];					/// パーツの位置を算出するためのマトリクス（親子関係計算済）
+	//再生用パラメータ
+	float Calc_rotationX;			/// X回転（親子関係計算済）
+	float Calc_rotationY;			/// Y回転（親子関係計算済）
+	float Calc_rotationZ;			/// Z回転（親子関係計算済）
+	float Calc_scaleX;				/// Xスケール（親子関係計算済）
+	float Calc_scaleY;				/// Yスケール（親子関係計算済）
+	int Calc_opacity;				/// 不透明度（0～255）（親子関係計算済）
 	//インスタンスアトリビュート
 	int			instanceValue_curKeyframe;
 	int			instanceValue_startFrame;
@@ -220,9 +224,6 @@ struct State
 		flipX = false;
 		flipY = false;
 		isVisibled = false;
-		instancerotationX = 0.0f;
-		instancerotationY = 0.0f;
-		instancerotationZ = 0.0f;
 		memset(&quad, 0, sizeof(quad));
 		texture.handle = 0;
 		texture.size_w = 0;
@@ -243,6 +244,14 @@ struct State
 		effectValue_startTime = 0;
 		effectValue_speed = 0;
 		effectValue_loopflag = 0;
+
+		Calc_rotationX = 0.0f;
+		Calc_rotationY = 0.0f;
+		Calc_rotationZ = 0.0f;
+		Calc_scaleX = 1.0f;
+		Calc_scaleY = 1.0f;
+		Calc_opacity = 255;
+
 	}
 
 	State() { init(); }
@@ -288,6 +297,11 @@ public:
 	//エフェクト制御用ワーク
 	bool effectAttrInitialized;
 	float effectTimeTotal;
+
+	//Ver4互換用ワーク
+	SsVector3		_temp_position;
+	SsVector3		_temp_rotation;
+	SsVector2		_temp_scale;
 
 public:
 	CustomSprite();
@@ -367,9 +381,6 @@ public:
 		setStateValue(_state.colorBlendFunc, state.colorBlendFunc);
 		setStateValue(_state.colorBlendType, state.colorBlendType);
 
-		setStateValue(_state.instancerotationX, state.instancerotationX);
-		setStateValue(_state.instancerotationY, state.instancerotationY);
-		setStateValue(_state.instancerotationZ, state.instancerotationZ);
 		setStateValue(_state.quad, state.quad);
 		_state.texture = state.texture;
 		_state.rect = state.rect;
@@ -385,6 +396,14 @@ public:
 		setStateValue(_state.effectValue_startTime, state.effectValue_startTime);
 		setStateValue(_state.effectValue_speed, state.effectValue_speed);
 		setStateValue(_state.effectValue_loopflag, state.effectValue_loopflag);
+
+		_state.Calc_rotationX = state.Calc_rotationX;
+		_state.Calc_rotationY = state.Calc_rotationY;
+		_state.Calc_rotationZ = state.Calc_rotationZ;
+		_state.Calc_scaleX = state.Calc_scaleX;
+		_state.Calc_scaleY = state.Calc_scaleY;
+		_state.Calc_opacity = state.Calc_opacity;
+
 	}
 
 
@@ -612,6 +631,12 @@ struct ResluteState
 	int	part_labelcolor;			/// ラベルカラー
 };
 
+//プロジェクトフラグ
+enum {
+	HEAD_FLAG_rootPartFunctionAsVer4 = 1 << 0,		//不透明度・反転・非表示アトリビュートの継承方法をVer.4と同様にする
+	HEAD_FLAG_dontUseMatrixForTransform = 1 << 1,	//親子の座標変換にマトリックスを使用しない（Ver4互換）
+};
+
 /**
 * 再生するフレームに含まれるパーツデータのフラグ
 */
@@ -785,6 +810,20 @@ enum
 //画面サイズから引いた座標を設定して運用するといいと思います。
 //#define UP_MINUS
 
+//描画に頂点データを使用する場合有効
+//無効にした場合はアフィン変換を使用してスプライトの表示を行います。
+//親パーツにマイナススケールを使用した場合に再現できない場合があります。
+#define USE_VERTEX
+
+//互換性設定の親子の座標変換にマトリクス使用しない（Ver4互換）を設定した場合に動作を再現します。
+//互換性設定はssbp内に出力されており、設定によって処理が分岐します。
+//設定がされていないデータはSS5の挙動を再現します。
+#define USE_VER4TRANSFORM
+
+//Ver1.2系と同等の挙動にする場合は
+//#define USE_VERTEX
+//#define USE_VER4TRANSFORM
+//をコメントアウトしてください。
 
 //------------------------------------------------------------------------------
 
@@ -1172,10 +1211,9 @@ protected:
 	void updateFrame(float dt);
 	void setFrame(int frameNo, float dt = 0.0f);
 	void checkUserData(int frameNo);
-	void set_InstanceAlpha(int alpha);
-	void set_InstanceRotation(float rotX, float rotY, float rotZ);
 	float parcentVal(float val1, float val2, float parcent);
 	float parcentValRot(float val1, float val2, float parcent);
+	void update_matrix_ss4(CustomSprite *sprite, CustomSprite *parent, const PartData *partData);
 
 protected:
 	ResourceManager*	_resman;
@@ -1201,19 +1239,17 @@ protected:
 	bool				_partVisible[PART_VISIBLE_MAX];
 	int					_cellChange[PART_VISIBLE_MAX];
 	int					_partIndex[PART_VISIBLE_MAX];
-	int					_InstanceAlpha;
-	float				_InstanceRotX;
-	float				_InstanceRotY;
-	float				_InstanceRotZ;
 	int					_animefps;
 	int					_col_r;
 	int					_col_g;
 	int					_col_b;
-	bool				_instanceOverWrite;		//インスタンス情報を上書きするか？
-	Instance			_instanseParam;			//インスタンスパラメータ
-	int					_startFrameOverWrite;	//開始フレームの上書き設定
-	int					_endFrameOverWrite;		//終了フレームの上書き設定
-	int					_seedOffset;			//エフェクトシードオフセット
+	bool				_instanceOverWrite;				//インスタンス情報を上書きするか？
+	Instance			_instanseParam;					//インスタンスパラメータ
+	int					_startFrameOverWrite;			//開始フレームの上書き設定
+	int					_endFrameOverWrite;				//終了フレームの上書き設定
+	int					_seedOffset;					//エフェクトシードオフセット
+	bool				_rootPartFunctionAsVer4;		//不透明度・反転・非表示アトリビュートの継承方法をVer.4と同様にする
+	bool				_dontUseMatrixForTransform;		//親子の座標変換にマトリックスを使用しない（Ver4互換）
 
 	UserData			_userData;
 

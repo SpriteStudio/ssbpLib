@@ -129,13 +129,7 @@ namespace ss
 		draw_count++;
 		//未対応機能
 		//ステータスから情報を取得し、各プラットフォームに合わせて機能を実装してください。
-		//X回転、Y回転、上下反転、カラーブレンド（一部のみ）
-		//頂点変形、Xサイズ、Yサイズ
-		float x = state.mat[12];	/// 表示座標はマトリクスから取得します。
-		float y = state.mat[13];	/// 表示座標はマトリクスから取得します。
-		float rotationZ = state.rotationZ;		/// 回転値
-		float scaleX = state.scaleX;							/// 拡大率
-		float scaleY = state.scaleY;							/// 拡大率
+		//X回転、Y回転、カラーブレンド（一部のみ）
 
 		//描画ファンクション
 		//
@@ -219,6 +213,63 @@ namespace ss
 		//描画用頂点情報を作成
 		SSV3F_C4B_T2F_Quad quad;
 		quad = state.quad;
+
+#ifdef USE_VERTEX
+		//原点補正
+		float cx = ((state.rect.size.width) * -(state.pivotX - 0.5f));
+#ifdef UP_MINUS
+		float cy = ((state.rect.size.height) * -(state.pivotY - 0.5f));
+#else
+		float cy = ((state.rect.size.height) * +(state.pivotY - 0.5f));
+#endif
+
+		quad.tl.vertices.x += cx;
+		quad.tl.vertices.y += cy;
+		quad.tr.vertices.x += cx;
+		quad.tr.vertices.y += cy;
+		quad.bl.vertices.x += cx;
+		quad.bl.vertices.y += cy;
+		quad.br.vertices.x += cx;
+		quad.br.vertices.y += cy;
+
+		float t[16];
+		TranslationMatrix(t, quad.tl.vertices.x, quad.tl.vertices.y, 0.0f);
+
+		MultiplyMatrix(t, state.mat, t);
+		quad.tl.vertices.x = t[12];
+		quad.tl.vertices.y = t[13];
+		TranslationMatrix(t, quad.tr.vertices.x, quad.tr.vertices.y, 0.0f);
+		MultiplyMatrix(t, state.mat, t);
+		quad.tr.vertices.x = t[12];
+		quad.tr.vertices.y = t[13];
+		TranslationMatrix(t, quad.bl.vertices.x, quad.bl.vertices.y, 0.0f);
+		MultiplyMatrix(t, state.mat, t);
+		quad.bl.vertices.x = t[12];
+		quad.bl.vertices.y = t[13];
+		TranslationMatrix(t, quad.br.vertices.x, quad.br.vertices.y, 0.0f);
+		MultiplyMatrix(t, state.mat, t);
+		quad.br.vertices.x = t[12];
+		quad.br.vertices.y = t[13];
+#else
+		float x = state.mat[12];	/// 表示座標はマトリクスから取得します。
+		float y = state.mat[13];	/// 表示座標はマトリクスから取得します。
+		float rotationZ = state.Calc_rotationZ;		/// 回転値
+		float scaleX = state.Calc_scaleX;							/// 拡大率
+		float scaleY = state.Calc_scaleY;							/// 拡大率
+
+
+		//原点計算を行う
+		float cx = ((state.rect.size.width * scaleX) * -(state.pivotX - 0.5f));
+#ifdef UP_MINUS
+		float cy = ((state.rect.size.height * scaleY) * -(state.pivotY - 0.5f));
+#else
+		float cy = ((state.rect.size.height * scaleY) * +(state.pivotY - 0.5f));
+#endif
+		get_uv_rotation(&cx, &cy, 0, 0, rotationZ);
+
+		x += cx;
+		y += cy;
+
 		quad.tl.vertices.x *= scaleX;
 		quad.tl.vertices.y *= scaleY;
 		quad.tr.vertices.x *= scaleX;
@@ -242,12 +293,12 @@ namespace ss
 		quad.bl.vertices.y += y;
 		quad.br.vertices.x += x;
 		quad.br.vertices.y += y;
-
+#endif
 		//頂点カラーにアルファを設定
-		quad.tl.colors.a = quad.bl.colors.a * state.opacity / 255;
-		quad.tr.colors.a = quad.bl.colors.a * state.opacity / 255;
-		quad.bl.colors.a = quad.bl.colors.a * state.opacity / 255;
-		quad.br.colors.a = quad.bl.colors.a * state.opacity / 255;
+		quad.tl.colors.a = quad.bl.colors.a * state.Calc_opacity / 255;
+		quad.tr.colors.a = quad.bl.colors.a * state.Calc_opacity / 255;
+		quad.bl.colors.a = quad.bl.colors.a * state.Calc_opacity / 255;
+		quad.br.colors.a = quad.bl.colors.a * state.Calc_opacity / 255;
 
 		//DXライブラリ用の頂点バッファを作成する
 		VERTEX_3D vertex[4] = {

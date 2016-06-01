@@ -291,7 +291,7 @@ public:
 	SsEffectBehavior*           refData;	//データ更新用
 
 	size_t						globaltime;
-
+	size_t						seedTableLen;
 
 public:
 	SsEffectEmitter() :
