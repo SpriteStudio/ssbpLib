@@ -290,7 +290,7 @@ public:
 	virtual void	initalizeEffect(SsEffectElementBase* ele, SsEffectEmitter* e)
 	{
 		ParticleElementDelay* source = static_cast<ParticleElementDelay*>(ele);
-		e->particle.delay = source->DelayTime + 1;
+		e->particle.delay = source->DelayTime;
 
 	}
 };
