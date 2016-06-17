@@ -285,15 +285,21 @@ void	SsEffectEmitter::updateParticle(float time, particleDrawData* p, bool recal
   	//指定の点へよせる
 	if ( particle.usePGravity )
 	{
-
-		//float gx = OutQuart( _t , _life ,  particle.gravityPos.x , ox + position.x );
-		//float gy = OutQuart( _t , _life ,  particle.gravityPos.y , oy + position.y );
 		float gx = OutQuad(_t *0.8f, _life, particle.gravityPos.x, ox + position.x);
 		float gy = OutQuad(_t *0.8f, _life, particle.gravityPos.y, oy + position.y);
-		p->x = blendFloat( p->x , gx , particle.gravityPower );
-        p->y = blendFloat( p->y , gy , particle.gravityPower );
 
+		float gp = particle.gravityPower;
+		if (gp < 0)
+		{
+			p->x = blendFloat(p->x, -gx, -gp);
+			p->y = blendFloat(p->y, -gy, -gp);
 
+		}
+		else
+		{
+			p->x = blendFloat(p->x, gx, gp);
+			p->y = blendFloat(p->y, gy, gp);
+		}
 	}
 
     //前のフレームからの方向を取る
@@ -318,7 +324,11 @@ void	SsEffectEmitter::updateParticle(float time, particleDrawData* p, bool recal
 
 bool compare_life( emitPattern& left,  emitPattern& right)
 {
-  return left.life < right.life ;
+	if (left.life == right.life)
+	{
+		if (left.uid < right.uid) return true;
+	}
+	return left.life < right.life ;
 }
 
 void	SsEffectEmitter::precalculate2()
@@ -327,50 +337,50 @@ void	SsEffectEmitter::precalculate2()
 	rand.init_genrand( emitterSeed );
 
 	_emitpattern.clear();
+	//_lifeExtend.clear();
+	_offsetPattern.clear();
 
 	if ( particleExistList == 0 )
 	{
-		//_emitpattern = new emitPattern[emitter.emitmax];
 		particleExistList = new particleExistSt[emitter.emitmax]; //存在しているパーティクルが入る計算用バッファ
 	}
 
-	//memset( _emitpattern , 0 , sizeof(emitPattern) * emitter.emitmax );
 	memset( particleExistList , 0 , sizeof(particleExistSt) * emitter.emitmax );
-
 
 	if ( emitter.emitnum < 1 ) emitter.emitnum = 1;
 
 	int cycle =  (int)(( (float)(emitter.emitmax *emitter.interval)  / (float)emitter.emitnum ) + 0.5f) ;
     int group =  emitter.emitmax / emitter.emitnum;
 
+	int extendsize = emitter.emitmax*LIFE_EXTEND_SCALE;
+	if (extendsize < LIFE_EXTEND_MIN) extendsize = LIFE_EXTEND_MIN;
 
 	int shot = 0;
 	int offset = particle.delay;
-	for ( int i = 0 ; i < emitter.emitmax ; i++ )
+	for (int i = 0; i < emitter.emitmax; i++)
 	{
-		emitPattern e;
-
-		e.life = emitter.particleLife + emitter.particleLife2 * rand.genrand_float32();
-		e.cycle = cycle;
-
-		if ( shot >= emitter.emitnum )
+		if (shot >= emitter.emitnum)
 		{
 			shot = 0;
-			offset+= emitter.interval;
+			offset += emitter.interval;
 		}
+		_offsetPattern.push_back(offset);
+		shot++;
+	}
 
-		e.offsetTime = offset;
-		if ( e.life > cycle )
+	for (int i = 0; i < extendsize; i++)
+	{
+		emitPattern e;
+		e.uid = i;
+		e.life = emitter.particleLife + emitter.particleLife2 * rand.genrand_float32();
+		e.cycle = cycle;
+		if (e.life > cycle)
 		{
 			e.cycle = e.life;
 		}
-		_emitpattern.push_back( e );
-		shot++;
 
+		_emitpattern.push_back(e);
 	}
-
-	//ライフでソートする
-    std::sort( _emitpattern.begin() , _emitpattern.end() , compare_life );
 
 	if (seedList != NULL)
 	{
@@ -400,63 +410,72 @@ void	SsEffectEmitter::precalculate2()
 
 
 
-void SsEffectEmitter::updateEmitter( double _time )
+void SsEffectEmitter::updateEmitter(double _time, int slide)
 {
+	int onum = _offsetPattern.size();
 	int pnum = _emitpattern.size();
+	slide = slide * SEED_MAGIC;
 
-	//int itime = _time;
 
-	for ( int i = 0 ; i < pnum ; i ++ )
+	for (int i = 0; i < onum; i++)
 	{
-		int t = (int)(_time - _emitpattern[i].offsetTime);
+		int slide_num = (i + slide) % pnum;
+
+		emitPattern* targetEP = &_emitpattern[slide_num];
+
+		int t = (int)(_time - _offsetPattern[i]);
+
 		particleExistList[i].exist = false;
 		particleExistList[i].born = false;
 
-
-		if ( _emitpattern[i].cycle != 0 )
+		if (targetEP->cycle != 0)
 		{
-			int loopnum = t / _emitpattern[i].cycle;
-			int cycle_top = loopnum * _emitpattern[i].cycle;
+			int loopnum = t / targetEP->cycle;
+			int cycle_top = loopnum * targetEP->cycle;
 
-            particleExistList[i].cycle = loopnum;
+			particleExistList[i].cycle = loopnum;
 
-			particleExistList[i].stime = cycle_top + _emitpattern[i].offsetTime;//
-			particleExistList[i].endtime = particleExistList[i].stime + _emitpattern[i].life;
+			particleExistList[i].stime = cycle_top + _offsetPattern[i];
+			particleExistList[i].endtime = particleExistList[i].stime + targetEP->life;// + _lifeExtend[slide_num];
 
-			if ( (double)particleExistList[i].stime <= _time &&  (double)particleExistList[i].endtime > _time )
+			if ((double)particleExistList[i].stime <= _time && (double)particleExistList[i].endtime > _time)
 			{
 				particleExistList[i].exist = true;
 				particleExistList[i].born = true;
 			}
 
-			if ( !this->emitter.Infinite )
+			if (!this->emitter.Infinite)
 			{
-				if ( particleExistList[i].stime >= this->emitter.life ) //エミッターが終了している
+				if (particleExistList[i].stime >= this->emitter.life) //エミッターが終了している
 				{
 					particleExistList[i].exist = false;    //作られてない
 
-					//最終的な値に計算し直し <-事前計算しておくといいかも・
-					int t = this->emitter.life - _emitpattern[i].offsetTime;
-					int loopnum = t / _emitpattern[i].cycle;
+														   //最終的な値に計算し直し <-事前計算しておくといいかも・
+					int t = this->emitter.life - _offsetPattern[i];
+					int loopnum = t / targetEP->cycle;
 
-					int cycle_top = loopnum * _emitpattern[i].cycle;
+					int cycle_top = loopnum * targetEP->cycle;
 
-					particleExistList[i].stime = cycle_top + _emitpattern[i].offsetTime;    //ディレイは別なところにもっていくかも
-					particleExistList[i].endtime = particleExistList[i].stime + _emitpattern[i].life;
+					particleExistList[i].stime = cycle_top + _offsetPattern[i];
+
+					particleExistList[i].endtime = particleExistList[i].stime + targetEP->life;// + _lifeExtend[slide_num];
 					particleExistList[i].born = false;
-				}else{
+				}
+				else 
+				{
 					particleExistList[i].born = true;
 				}
 			}
 
-			if ( t < 0 ){
-				 particleExistList[i].exist = false;
-				 particleExistList[i].born = false;
+			if (t < 0) {
+				particleExistList[i].exist = false;
+				particleExistList[i].born = false;
 			}
 		}
 	}
 
 }
+
 
 
 const particleExistSt*	SsEffectEmitter::getParticleDataFromID(int id)
@@ -620,7 +639,8 @@ void SsEffectRenderV2::particleDraw(SsEffectEmitter* e , double time , SsEffectE
 
 	int pnum = e->getParticleIDMax();
 
-	e->updateEmitter(time);         // <-メインのアップデートと一緒にやると良さげ？
+	int slide = (parent == 0) ? 0 : plp->id;
+	e->updateEmitter(time, slide);
 
 	for (auto id = 0; id < pnum; id++)
 	{
@@ -794,7 +814,7 @@ void	SsEffectRenderV2::draw()
 		if ( e->_parent )
 		{
 			//グローバルの時間で現在親がどれだけ生成されているのかをチェックする
-			e->_parent->updateEmitter(targetFrame);
+			e->_parent->updateEmitter(targetFrame, 0);
 
 			int loopnum =  e->_parent->getParticleIDMax();
 			for ( int n = 0 ; n < loopnum ; n ++ )
@@ -835,100 +855,118 @@ void    SsEffectRenderV2::reload()
 {
 	nowFrame = 0;
 
-    //updateが必要か
+	//updateが必要か
 	stop();
 	clearEmitterList();
 
 	SsEffectNode* root = this->effectData->GetRoot();
 
-    //this->effectData->updateNodeList();//ツールじゃないので要らない
-    const std::vector<SsEffectNode*>& list = this->effectData->getNodeList();
+	//this->effectData->updateNodeList();//ツールじゃないので要らない
+	const std::vector<SsEffectNode*>& list = this->effectData->getNodeList();
 
 	layoutScale.x = (float)(this->effectData->layoutScaleX) / 100.0f;
 	layoutScale.y = (float)(this->effectData->layoutScaleY) / 100.0f;
 
+	int* cnum = new int[list.size()];
+	memset(cnum, 0, sizeof(int) * list.size());
+
 	bool _Infinite = false;
 	//パラメータを取得
 	//以前のデータ形式から変換
-	for ( size_t i = 0 ; i < list.size() ; i ++ )
+	for (size_t i = 0; i < list.size(); i++)
 	{
-		SsEffectNode *node =  list[i];
+		SsEffectNode *node = list[i];
 
-
-		if ( node->GetType() == SsEffectNodeType::emmiter )
+		if (node->GetType() == SsEffectNodeType::emmiter)
 		{
-			//int pi = list[i]->parentIndex;
-
 			SsEffectEmitter* e = new SsEffectEmitter();
 			//パラメータをコピー
 
 			e->_parentIndex = node->parentIndex;
-			//繋ぎ先は恐らくパーティクルなので
-			if ( e->_parentIndex != 0 )
+			//繋ぎ先は恐らくパーティクルなのでエミッタに変換
+			if (e->_parentIndex != 0)
 			{
 				e->_parentIndex = list[e->_parentIndex]->parentIndex;
+
 			}
 
-			initEmitter( e , node );
+			cnum[e->_parentIndex]++;
+			if (cnum[e->_parentIndex] > 10)
+			{
+				_isWarningData = true;
+				continue; //子１０ノード表示制限
+			}
 
+			//孫抑制対策
+			if (e->_parentIndex != 0)
+			{
+				int a = list[e->_parentIndex]->parentIndex;
+				if (a != 0)
+				{
+					if (list[a]->parentIndex > 0) {
+						_isWarningData = true;
+						continue;
+					}
+				}
+			}
+
+			initEmitter(e, node);
 			this->emmiterList.push_back(e);
-
-			if ( e->emitter.Infinite ) _Infinite = true;
-
-		}else
+			if (e->emitter.Infinite) _Infinite = true;
+		}
+		else
 		{
-            //エミッター同士を繋ぎたいので
+			//エミッター同士を繋ぎたいので
 			this->emmiterList.push_back(0);
-
 		}
 	}
 
-
+	delete[] cnum;
 	Infinite = _Infinite;
 
 
-    //親子関係整理
+	//親子関係整理
 
 
 	effectTimeLength = 0;
 	//事前計算計算  updateListにルートの子を配置し親子関係を結ぶ
-	for ( size_t i = 0 ; i < this->emmiterList.size(); i++)
+	for (size_t i = 0; i < this->emmiterList.size(); i++)
 	{
 
-		if (emmiterList[i] != 0 )
+		if (emmiterList[i] != 0)
 		{
 			//emmiterList[i]->precalculate();
 			emmiterList[i]->precalculate2(); //ループ対応形式
 
 
-			int  pi =  emmiterList[i]->_parentIndex;
+			int  pi = emmiterList[i]->_parentIndex;
 
-			if ( emmiterList[i]->_parentIndex == 0 )
+			if (emmiterList[i]->_parentIndex == 0)  //ルート直下
 			{
 				emmiterList[i]->_parent = 0;
 				emmiterList[i]->globaltime = emmiterList[i]->getTimeLength();
 				updateList.push_back(emmiterList[i]);
-			}else{
+			}
+			else
+			{
 
 				void* t = this->emmiterList[pi];
-				//this->emmiterList[pi]->_child = emmiterList[i];
-                emmiterList[i]->_parent = emmiterList[pi];
+
+				emmiterList[i]->_parent = emmiterList[pi];
 
 				emmiterList[i]->globaltime = emmiterList[i]->getTimeLength() + this->emmiterList[pi]->getTimeLength();
 
 				updateList.push_back(emmiterList[i]);
 			}
 
-			if ( emmiterList[i]->globaltime > effectTimeLength )
+			if (emmiterList[i]->globaltime > effectTimeLength)
 			{
 				effectTimeLength = emmiterList[i]->globaltime;
 			}
 		}
 	}
-
-
 	//プライオリティソート
-	std::sort( updateList.begin() , updateList.end() , compare_priority );
+	std::sort(updateList.begin(), updateList.end(), compare_priority);
 
 
 }

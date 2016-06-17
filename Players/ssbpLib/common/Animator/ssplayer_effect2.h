@@ -26,8 +26,10 @@ class SsCell;
 class CustomSprite;
 
 
-
 #define SEED_MAGIC (7573)
+#define LIFE_EXTEND_SCALE (8)
+#define LIFE_EXTEND_MIN	  (64)
+
 #define LOOP_TYPE1 (0)
 #define LOOP_TYPE2 (0)
 #define LOOP_TYPE3 (1)
@@ -55,7 +57,7 @@ struct particleExistSt
 //v3.1
 struct emitPattern
 {
-	int   offsetTime;//0フレームからの開始オフセット
+	int	  uid;
 	int   life;
     int   cycle;
 };
@@ -269,6 +271,7 @@ public:
 
 	//生成用のリングバッファ
 	std::vector<emitPattern>    	_emitpattern;
+	std::vector<int>				_offsetPattern;
 
     particleExistSt*     particleExistList;
 
@@ -319,9 +322,9 @@ public:
 
 #if  LOOP_TYPE3
 
-	int	getParticleIDMax() { return _emitpattern.size(); }
+	int	getParticleIDMax() { return _offsetPattern.size(); }
 	const 	particleExistSt*	getParticleDataFromID(int id);
-	void	updateEmitter( double time );
+	void	updateEmitter(double time, int slide);
 
 #else
 
@@ -380,6 +383,7 @@ public:
 
 	int				seedOffset;
 	//	SsCellMapList*	curCellMapManager;/// セルマップのリスト（アニメデコーダーからもらう
+	bool		_isWarningData;
 
 	//親になるスプライト
 	bool _isContentScaleFactorAuto;
@@ -398,7 +402,10 @@ protected:
 
 public:
 	SsEffectRenderV2() : effectTimeLength(0), isIntFrame(true), seedOffset(0), mySeed(0), _parentSprite(0), _isContentScaleFactorAuto(false){}
-	virtual ~SsEffectRenderV2() {}
+	virtual ~SsEffectRenderV2() 
+	{
+		clearEmitterList();
+	}
 
 	virtual void    play(){ m_isPause = false;m_isPlay=true; }
 	virtual void	stop(){ m_isPlay = false;}
@@ -458,10 +465,13 @@ public:
 		{
 			seedOffset = 0;
 		}
-		else {
+		else
+		{
 			seedOffset = offset;
 		}
 	}
+	virtual bool	isInfinity() { return Infinite; }
+	virtual bool	isWarning() { return _isWarningData; }
 
 	//親になるスプライトを設定する
 	void setContentScaleEneble(bool eneble) { _isContentScaleFactorAuto = eneble; }
