@@ -29,31 +29,11 @@ static float blendFloat( float a,float b , float rate )
 	return   ( a + ( b - a ) * rate );
 }
 
-double InQuart(double t,double totaltime,double max ,double min )
-{
-	max -= min;
-	t /= totaltime;
-	return max * t*t*t*t + min;
-}
-
-double InOutQuart(double t,double totaltime,double max ,double min )
-{
-	max -= min;
-	t /= totaltime;
-	if( t/2 < 1 )
-		return max/2 * t*t*t*t +min;
-	t -= 2;
-	return -max/2 * (t*t*t*t-2) + min;
-}
-double OutQuart(double t,double totaltime,double max ,double min )
-{
-	max -= min;
-	t = t/totaltime-1;
-	return -max*( t*t*t*t-1) +min;
-}
-
 double OutQuad(double t, double totaltime, double max, double min)
 {
+	if (totaltime == 0.0) return 0.0;
+
+	if (t > totaltime) t = totaltime;
 	max -= min;
 	t /= totaltime;
 	return -max*t*(t - 2) + min;
@@ -285,6 +265,48 @@ void	SsEffectEmitter::updateParticle(float time, particleDrawData* p, bool recal
   	//指定の点へよせる
 	if ( particle.usePGravity )
 	{
+
+		//生成地点からの距離
+		SsVector2 v = SsVector2(  particle.gravityPos.x - (ox + position.x) ,
+                         particle.gravityPos.y - (oy + position.y) );
+
+
+		SsVector2 nv;
+		SsVector2::normalize( v , &nv );
+
+		float gp = particle.gravityPower;
+		if (gp > 0) {
+			SsVector2 v2 = SsVector2(p->x, p->y);
+			float len = v.length(); // 生成位置からの距離
+			float et = (len / gp)*0.90f;;
+
+			float _gt = _t;
+			if ( _gt >= (int)et )
+			{
+				_gt = et*0.90f;// + (_t / _life *0.1f);
+			}
+
+			nv = nv * gp * _gt;
+			p->x += nv.x;
+			p->y += nv.y;
+
+
+			float blend = OutQuad(_gt, et, 0.9f, 0.0f);
+			blend = blend; // *gp;
+			blend += (_t / _life *0.1f);
+
+			p->x = blendFloat(p->x, particle.gravityPos.x, blend);
+			p->y = blendFloat(p->y, particle.gravityPos.y, blend);
+
+		}
+		else {
+			nv = nv * gp * _t;
+			// パワーマイナスの場合は単純に反発させる
+			// 距離による減衰はない
+			p->x += nv.x;
+			p->y += nv.y;
+		}
+#if 0
 		float gx = OutQuad(_t *0.8f, _life, particle.gravityPos.x, ox + position.x);
 		float gy = OutQuad(_t *0.8f, _life, particle.gravityPos.y, oy + position.y);
 
@@ -300,6 +322,7 @@ void	SsEffectEmitter::updateParticle(float time, particleDrawData* p, bool recal
 			p->x = blendFloat(p->x, gx, gp);
 			p->y = blendFloat(p->y, gy, gp);
 		}
+#endif
 	}
 
     //前のフレームからの方向を取る
@@ -534,6 +557,7 @@ void	SsEffectRenderV2::drawSprite(
 	{
 		state.mat[i] = matrix[i];				//マトリクスのコピー
 	}
+	state.cellIndex = dispCell->refCell.cellIndex;
 	state.texture = dispCell->refCell.texture;	//テクスチャID	
 	state.rect = dispCell->refCell.rect;		//セルの矩形をコピー	
 	float width_h = state.rect.size.width / 2;
