@@ -2750,8 +2750,9 @@ void Player::setFrame(int frameNo, float dt)
 			int	selfTopKeyframe = refKeyframe;
 
 
-			int	reftime = (int)((float)time * refSpeed) - selfTopKeyframe; //開始から現在の経過時間
+			int	reftime = (int)((float)(time - selfTopKeyframe) * refSpeed); //開始から現在の経過時間
 			if (reftime < 0) continue;							//そもそも生存時間に存在していない
+			if (selfTopKeyframe > time) continue;
 
 			int inst_scale = (refEndframe - refStartframe) + 1; //インスタンスの尺
 
