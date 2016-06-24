@@ -826,8 +826,7 @@ void	SsEffectRenderV2::update()
 
 void	SsEffectRenderV2::draw()
 {
-
-
+	if (nowFrame < 0) return;
 
 	for ( size_t i = 0 ; i < updateList.size() ; i++ )
 	{
