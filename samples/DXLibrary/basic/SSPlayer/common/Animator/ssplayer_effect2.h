@@ -296,6 +296,8 @@ public:
 	size_t						globaltime;
 	size_t						seedTableLen;
 
+	int							uid; 
+
 public:
 	SsEffectEmitter() :
 //			particleList(0),
@@ -304,7 +306,8 @@ public:
 			particleListBufferSize(180*100),  //生成出来るパーティクルの最大値
 			_emitpattern(0),
 			particleExistList(0),
-			globaltime(0)
+			globaltime(0),
+			seedOffset(0)
 	{
 		emitterSeed = SEED_MAGIC;
 	}
