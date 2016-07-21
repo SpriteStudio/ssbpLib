@@ -411,7 +411,7 @@ public:
 protected:
 	void init(const ProjectData* data, const std::string& imageBaseDir, CellCache* cellCache)
 	{
-		SS_ASSERT(data != NULL, "Invalid data");
+		SS_ASSERT2(data != NULL, "Invalid data");
 
 		ToPointer ptr(data);
 
@@ -1207,7 +1207,7 @@ int ResourceManager::getMaxFrame(std::string ssbpName, std::string animeName)
 	if (animeRef == NULL)
 	{
 		std::string msg = Format("Not found animation > anime=%s", animeName.c_str());
-		SS_ASSERT(animeRef != NULL, msg.c_str());
+		SS_ASSERT2(animeRef != NULL, msg.c_str());
 	}
 	rc = animeRef->animationData->numFrames;
 
@@ -1777,6 +1777,14 @@ void Player::setPartsParentage()
 			}
 		}
 	}
+}
+
+//再生しているアニメーションに含まれるパーツ数を取得
+int Player::getPartsCount(void)
+{
+	ToPointer ptr(_currentRs->data);
+	const AnimePackData* packData = _currentAnimeRef->animePackData;
+	return packData->numParts;
 }
 
 //indexからパーツ名を取得
@@ -3231,7 +3239,7 @@ float Player::parcentValRot(float val1, float val2, float parcent)
 	}
 
 
-	float newval = inewval / 10;
+	float newval = (float)inewval / 10.0f;
 	return (newval);
 }
 
