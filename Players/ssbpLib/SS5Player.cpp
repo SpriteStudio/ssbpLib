@@ -2145,85 +2145,15 @@ void Player::setFrame(int frameNo, float dt)
 
 		SSCellPartState state;
 		state.readData(reader, init);
-	#if 0
-		// optional parameters
-		int flags      = reader.readU32();
-		int cellIndex  = flags & PART_FLAG_CELL_INDEX ? reader.readS16() : init->cellIndex;
-		float x        = flags & PART_FLAG_POSITION_X ? reader.readFloat() : init->positionX;
-#ifdef UP_MINUS
-		float y        = flags & PART_FLAG_POSITION_Y ? -reader.readFloat() : -init->positionY;		//上がマイナスなので反転させる
-#else
-		float y        = flags & PART_FLAG_POSITION_Y ? reader.readFloat() : init->positionY;
-#endif
-		float z        = flags & PART_FLAG_POSITION_Z ? reader.readFloat() : init->positionZ;
-		float pivotX   = flags & PART_FLAG_PIVOT_X ? reader.readFloat() : init->pivotX;
-#ifdef UP_MINUS
-		float pivotY = flags & PART_FLAG_PIVOT_Y ? -reader.readFloat() : -init->pivotY;
-#else
-		float pivotY = flags & PART_FLAG_PIVOT_Y ? reader.readFloat() : init->pivotY;
-#endif
-#ifdef UP_MINUS
-		float rotationX = flags & PART_FLAG_ROTATIONX ? -reader.readFloat() : -init->rotationX;
-		float rotationY = flags & PART_FLAG_ROTATIONY ? -reader.readFloat() : -init->rotationY;
-		float rotationZ = flags & PART_FLAG_ROTATIONZ ? -reader.readFloat() : -init->rotationZ;
-#else
-		float rotationX = flags & PART_FLAG_ROTATIONX ? reader.readFloat() : init->rotationX;
-		float rotationY = flags & PART_FLAG_ROTATIONY ? reader.readFloat() : init->rotationY;
-		float rotationZ = flags & PART_FLAG_ROTATIONZ ? reader.readFloat() : init->rotationZ;
-#endif
-		float scaleX = flags & PART_FLAG_SCALE_X ? reader.readFloat() : init->scaleX;
-		float scaleY   = flags & PART_FLAG_SCALE_Y ? reader.readFloat() : init->scaleY;
-		int opacity    = flags & PART_FLAG_OPACITY ? reader.readU16() : init->opacity;
-		float size_X   = flags & PART_FLAG_SIZE_X ? reader.readFloat() : init->size_X;
-		float size_Y   = flags & PART_FLAG_SIZE_Y ? reader.readFloat() : init->size_Y;
-		float uv_move_X   = flags & PART_FLAG_U_MOVE ? reader.readFloat() : init->uv_move_X;
-		float uv_move_Y   = flags & PART_FLAG_V_MOVE ? reader.readFloat() : init->uv_move_Y;
-		float uv_rotation = flags & PART_FLAG_UV_ROTATION ? reader.readFloat() : init->uv_rotation;
-		float uv_scale_X  = flags & PART_FLAG_U_SCALE ? reader.readFloat() : init->uv_scale_X;
-		float uv_scale_Y  = flags & PART_FLAG_V_SCALE ? reader.readFloat() : init->uv_scale_Y;
-		float boundingRadius = flags & PART_FLAG_BOUNDINGRADIUS ? reader.readFloat() : init->boundingRadius;
-
-		//インスタンスアトリビュート
-		int		instanceValue_curKeyframe	= flags & PART_FLAG_INSTANCE_KEYFRAME ? reader.readS32() : init->instanceValue_curKeyframe;
-		int		instanceValue_startFrame	= flags & PART_FLAG_INSTANCE_KEYFRAME ? reader.readS32() : init->instanceValue_startFrame;
-		int		instanceValue_endFrame		= flags & PART_FLAG_INSTANCE_KEYFRAME ? reader.readS32() : init->instanceValue_endFrame;
-		int		instanceValue_loopNum		= flags & PART_FLAG_INSTANCE_KEYFRAME ? reader.readS32() : init->instanceValue_loopNum;
-		float	instanceValue_speed			= flags & PART_FLAG_INSTANCE_KEYFRAME ? reader.readFloat() : init->instanceValue_speed;
-		int		instanceValue_loopflag		= flags & PART_FLAG_INSTANCE_KEYFRAME ? reader.readS32() : init->instanceValue_loopflag;
-		//エフェクトアトリビュート
-		int		effectValue_curKeyframe		= flags & PART_FLAG_EFFECT_KEYFRAME ? reader.readS32() : init->effectValue_curKeyframe;
-		int		effectValue_startTime		= flags & PART_FLAG_EFFECT_KEYFRAME ? reader.readS32() : init->effectValue_startTime;
-		float	effectValue_speed			= flags & PART_FLAG_EFFECT_KEYFRAME ? reader.readFloat() : init->effectValue_speed;
-		int		effectValue_loopflag		= flags & PART_FLAG_EFFECT_KEYFRAME ? reader.readS32() : init->effectValue_loopflag;
-
-
-		bool flipX = (bool)(flags & PART_FLAG_FLIP_H);
-		bool flipY = (bool)(flags & PART_FLAG_FLIP_V);
-
-		bool isVisibled = !(flags & PART_FLAG_INVISIBLE);
-	#endif
 
 		// optional parameters
 		int flags = state.flags;
-		bool isVisibled = state.isVisibled;
 		int cellIndex = state.cellIndex;
-		bool flipX = state.flipX;
-		bool flipY = state.flipY;
-		float pivotX = state.pivotX;
-		float pivotY = state.pivotY;
-		float x = state.x;
-		float y = state.y;
-		float scaleX = state.scaleX;
-		float scaleY = state.scaleY;
-		float rotationX = state.rotationX;
-		float rotationY = state.rotationY;
-		float rotationZ = state.rotationZ;
-
 
 		if (_partVisible[index] == false)
 		{
 			//ユーザーが任意に非表示としたパーツは非表示に設定
-			isVisibled = false;
+			state.isVisibled = false;
 		}
 		if (_cellChange[index] != -1)
 		{
@@ -2236,12 +2166,12 @@ void Player::setFrame(int frameNo, float dt)
 		if ( _state.flipX == true )
 		{
 			//プレイヤーのXフリップ
-			flipX = !flipX;	//フラグ反転
+			state.flipX = !state.flipX;	//フラグ反転
 		}
 		if (_state.flipY == true)
 		{
 			//プレイヤーのYフリップ
-			flipY = !flipY;	//フラグ反転
+			state.flipY = !state.flipY;	//フラグ反転
 		}
 
 		//セルの原点設定を反映させる
@@ -2252,16 +2182,16 @@ void Player::setFrame(int frameNo, float dt)
 			float cpy = 0;
 
 			cpx = cellRef->cell->pivot_X;
-			if (flipX) cpx = -cpx;	// 水平フリップによって原点を入れ替える
+			if (state.flipX) cpx = -cpx;	// 水平フリップによって原点を入れ替える
 			cpy = cellRef->cell->pivot_Y;
-			if (flipY) cpy = -cpy;	// 垂直フリップによって原点を入れ替える
+			if (state.flipY) cpy = -cpy;	// 垂直フリップによって原点を入れ替える
 
-			pivotX += cpx;
-			pivotY += cpy;
+			state.pivotX += cpx;
+			state.pivotY += cpy;
 
 		}
-		pivotX += 0.5f;
-		pivotY += 0.5f;
+		state.pivotX += 0.5f;
+		state.pivotY += 0.5f;
 
 		//モーションブレンド
 		if (_motionBlendPlayer)
@@ -2270,32 +2200,19 @@ void Player::setFrame(int frameNo, float dt)
 			if (blendSprite)
 			{ 
 				float percent = _blendTime / _blendTimeMax;
-				x = parcentVal(x, blendSprite->_orgState.x, percent);
-				y = parcentVal(y, blendSprite->_orgState.y, percent);
-				scaleX = parcentVal(scaleX, blendSprite->_orgState.scaleX, percent);
-				scaleY = parcentVal(scaleY, blendSprite->_orgState.scaleY, percent);
-				rotationX = parcentValRot(rotationX, blendSprite->_orgState.rotationX, percent);
-				rotationY = parcentValRot(rotationY, blendSprite->_orgState.rotationY, percent);
-				rotationZ = parcentValRot(rotationZ, blendSprite->_orgState.rotationZ, percent);
+				state.x = parcentVal(state.x, blendSprite->_orgState.x, percent);
+				state.y = parcentVal(state.y, blendSprite->_orgState.y, percent);
+				state.scaleX = parcentVal(state.scaleX, blendSprite->_orgState.scaleX, percent);
+				state.scaleY = parcentVal(state.scaleY, blendSprite->_orgState.scaleY, percent);
+				state.rotationX = parcentValRot(state.rotationX, blendSprite->_orgState.rotationX, percent);
+				state.rotationY = parcentValRot(state.rotationY, blendSprite->_orgState.rotationY, percent);
+				state.rotationZ = parcentValRot(state.rotationZ, blendSprite->_orgState.rotationZ, percent);
 			}
 
 		}
 
 		//ステータス保存
 		state.cellIndex = cellIndex;
-		state.x = x;
-		state.y = y;
-		state.pivotX = pivotX;
-		state.pivotY = pivotY;
-		state.rotationX = rotationX;
-		state.rotationY = rotationY;
-		state.rotationZ = rotationZ;
-		state.scaleX = scaleX;
-		state.scaleY = scaleY;
-		state.isVisibled = isVisibled;
-		state.flipX = flipX;
-		state.flipY = flipY;
-
 		state.Calc_rotationX = state.rotationX;
 		state.Calc_rotationY = state.rotationY;
 		state.Calc_rotationZ = state.rotationZ;
@@ -2307,8 +2224,8 @@ void Player::setFrame(int frameNo, float dt)
 
 		//反転
 		//反転はUVにも反映させておくので使いやすい方で反転してください。
-		sprite->setFlippedX(flipX);
-		sprite->setFlippedY(flipY);
+		sprite->setFlippedX(state.flipX);
+		sprite->setFlippedY(state.flipY);
 
 		bool setBlendEnabled = true;
 
