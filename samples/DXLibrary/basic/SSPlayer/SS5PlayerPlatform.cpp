@@ -9,7 +9,6 @@
 */
 #include "DxLib.h"
 
-extern int draw_count;
 
 namespace ss
 {
@@ -126,7 +125,6 @@ namespace ss
 	*/
 	void SSDrawSprite(State state)
 	{
-		draw_count++;
 		//未対応機能
 		//ステータスから情報を取得し、各プラットフォームに合わせて機能を実装してください。
 		//X回転、Y回転、カラーブレンド（一部のみ）

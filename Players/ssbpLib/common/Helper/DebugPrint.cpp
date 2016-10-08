@@ -19,7 +19,7 @@ void DEBUG_PRINTF( const char* strFormat, ...   )
 	va_list arglist;
 	va_start( arglist, strFormat);
 #if _WIN32
-	_vsnprintf(strBuffer, 1024, strFormat, arglist);
+	_vsnprintf_s(strBuffer, sizeof(strBuffer), _TRUNCATE, strFormat, arglist);
 	va_end(arglist);
 	OutputDebugStringA(strBuffer);
 #else
@@ -35,7 +35,11 @@ void DEBUG_PRINTF( const char* strFormat, ...   )
 void	THROW_ERROR_MESSAGE_MAIN( std::string str , char* fname , size_t line )
 {
 	char	___str__buffer[1024];
-	sprintf( ___str__buffer , "%s(%d) : %s \n" , fname , line , str.c_str() );
+#if _WIN32
+	_snprintf_s( ___str__buffer , sizeof(___str__buffer), _TRUNCATE, "%s(%d) : %s \n" , fname , line , str.c_str() );
+#else
+	sprintf(___str__buffer, "%s(%d) : %s \n", fname, line, str.c_str());
+#endif
 	std::string ___err_message = ___str__buffer;
 
 	DEBUG_PRINTF( ___str__buffer );
