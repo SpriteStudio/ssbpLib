@@ -6,6 +6,7 @@
 #include "SS5PlayerTypes.h"
 #include "common/Animator/ssplayer_matrix.h"
 #include "common/Animator/ssplayer_macro.h"
+#include "common/ToPointer.h"
 
 
 namespace ss
@@ -98,26 +99,6 @@ unsigned int getRandomSeed()
 
 	return(rc);
 }
-
-
-
-/**
- * ToPointer
- */
-class ToPointer
-{
-public:
-	explicit ToPointer(const void* base)
-		: _base(static_cast<const char*>(base)) {}
-	
-	const void* operator()(ss_offset offset) const
-	{
-		return (_base + offset);
-	}
-
-private:
-	const char*	_base;
-};
 
 
 /**
