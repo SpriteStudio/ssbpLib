@@ -1,5 +1,5 @@
 ﻿#include "DxLib.h"
-#include "SSPlayer/SS5Player.h"
+#include "../../../Players/ssbpLib/SS5Player.h"
 
 static int previousTime;
 static int waitTime;
