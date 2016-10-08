@@ -538,26 +538,23 @@ void	SsEffectRenderParticle::draw(SsEffectRenderer* render)
 	if ( refBehavior == NULL ) return;
 	if (dispCell->refCell.cellIndex == -1) return;
 
-	float		matrix[4 * 4];	///< 行列
-	IdentityMatrix( matrix );
+	SSMatrix matrix, tmp;	///< 行列
+	matrix *= tmp.setupScale(_size.x, _size.y, 1.0f);
+	matrix *= tmp.setupRotationZ(DegreeToRadian(_rotation) + direction);
+	matrix *= tmp.setupRotationY(0);
+	matrix *= tmp.setupRotationX(0);
+#ifdef UP_MINUS
+	matrix *= tmp.setupTranslation(_position.x, -_position.y, 0.0f);	//上がマイナスなので反転する
+#else
+	matrix *= tmp.setupTranslation(_position.x, _position.y, 0.0f);
+#endif
 
-
-	if (render->parentState)
-	{
-		memcpy( matrix , render->parentState->matrix , sizeof( float ) * 16 );
+	if(render->parentState){
+		matrix *= render->parentState->matrix;
 		this->alpha = render->render_root->alpha;
 	}
 
-#ifdef UP_MINUS
-	TranslationMatrixM(matrix, _position.x, -_position.y, 0.0f);	//上がマイナスなので反転する
-#else
-	TranslationMatrixM(matrix, _position.x, _position.y, 0.0f);
-#endif
-
-	RotationXYZMatrixM( matrix , 0 , 0 , DegreeToRadian(_rotation)+direction);
-
-    ScaleMatrixM(  matrix , _size.x, _size.y, 1.0f );
-
+	
 	SsFColor fcolor;
 	fcolor.fromARGB( _color.toARGB() );
 	fcolor.a = fcolor.a * this->alpha;
@@ -567,10 +564,8 @@ void	SsEffectRenderParticle::draw(SsEffectRenderer* render)
 	}
 	State state;
 	state = render->_parentSprite->_state;		//親パーツの情報をコピー
-	for (int i = 0; i < 16; i++)
-	{
-		state.mat[i] = matrix[i];				//マトリクスのコピー
-	}
+	state.mat = matrix;							//マトリクスのコピー
+	
 	state.texture = dispCell->refCell.texture;	//テクスチャID	
 	state.rect = dispCell->refCell.rect;		//セルの矩形をコピー	
 	float width_h = state.rect.size.width / 2;
@@ -660,8 +655,7 @@ void	SsEffectRenderParticle::draw(SsEffectRenderer* render)
 #endif
 	get_uv_rotation(&cx, &cy, 0, 0, state.rotationZ);
 
-	state.mat[12] += cx;
-	state.mat[13] += cy;
+	state.mat.addTranslation(cx, cy, 0);
 
 	SSDrawSprite(state);	//描画
 }
@@ -690,9 +684,9 @@ void	SsEffectRenderer::update(float delta)
 	if ( parentState )
 	{
 		
-		SsVector3 pos = SsVector3( parentState->matrix[3*4] ,
-								   parentState->matrix[3*4+1] ,
-								   parentState->matrix[3*4+2] );
+		float x, y, z;
+		parentState->matrix.getTranslation(&x, &y, &z);
+		SsVector3 pos = SsVector3( x, y, z );
 
 		layoutPosition = pos;
 

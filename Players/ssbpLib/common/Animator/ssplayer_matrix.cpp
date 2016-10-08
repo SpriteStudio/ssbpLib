@@ -103,7 +103,7 @@ void SSMatrix::getScale(float *x, float *y, float *z) const
 }
 
 /* 回転 ----------------------------------------------------------*/
-void SSMatrix::getRotation(float *x, float *y, float *z) const
+void SSMatrix::getRotationZYX(float *x, float *y, float *z) const
 {
 	static const float THRESHOLD = 0.001;
 	//ZYXの順の回転行列のをオイラー角に戻す
@@ -190,7 +190,7 @@ SSMatrix& SSMatrix::operator*=(const SSMatrix &o){
 }
 
 
-
+#if 0
 void	IdentityMatrix( float* matrix )
 {
 
@@ -334,6 +334,6 @@ void    Matrix4RotationZ( float* _matrix ,const float radians )
 	_matrix[15] = 1.0f;
 
 }
-
+#endif
 
 };

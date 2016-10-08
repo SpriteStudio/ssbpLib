@@ -114,9 +114,6 @@ extern void get_uv_rotation(float *u, float *v, float cu, float cv, float deg);
 
 #define __SSPI__	(3.14159265358979323846f)
 #define __SS2PI__	(__SSPI__ * 2)
-#define SSRadianToDegree(Radian) ((float)( Radian * __SS2PI__ )/ 360.0f )
-#define SSDegreeToRadian(Degree) ((float)( Degree * 360.0f) / __SS2PI__)
-
 
 #define SS_SAFE_DELETE(p)            do { if(p) { delete (p); (p) = 0; } } while(0)
 #define SS_SAFE_DELETE_ARRAY(p)     do { if(p) { delete[] (p); (p) = 0; } } while(0)
@@ -175,7 +172,7 @@ struct State
 	TextuerData texture;			/// セルに対応したテクスチャ番号（ゲーム側で管理している番号を設定する）
 	SSRect rect;					/// セルに対応したテクスチャ内の表示領域（開始座標、幅高さ）
 	int blendfunc;					/// パーツに設定されたブレンド方法
-	float mat[16];					/// パーツの位置を算出するためのマトリクス（親子関係計算済）
+	SSMatrix mat;					/// パーツの位置を算出するためのマトリクス（親子関係計算済）
 	//再生用パラメータ
 	float Calc_rotationX;			/// X回転（親子関係計算済）
 	float Calc_rotationY;			/// Y回転（親子関係計算済）
@@ -233,7 +230,7 @@ struct State
 		rect.origin.x = 0;
 		rect.origin.y = 0;
 		blendfunc = 0;
-		memset(&mat, 0, sizeof(mat));
+		mat.setupIdentity();
 		instanceValue_curKeyframe = 0;
 		instanceValue_startFrame = 0;
 		instanceValue_endFrame = 0;
@@ -279,7 +276,7 @@ private:
 	bool				_flipY;
 
 public:
-	float				_mat[16];
+	SSMatrix				_mat;
 	State				_state;
 	bool				_isStateChanged;
 	CustomSprite*		_parent;
@@ -384,7 +381,7 @@ public:
 		setStateValue(_state.quad, state.quad);
 		_state.texture = state.texture;
 		_state.rect = state.rect;
-		memcpy(&_state.mat, &state.mat, sizeof(_state.mat));
+		_state.mat = state.mat;
 
 		setStateValue(_state.instanceValue_curKeyframe, state.instanceValue_curKeyframe);
 		setStateValue(_state.instanceValue_startFrame, state.instanceValue_startFrame);

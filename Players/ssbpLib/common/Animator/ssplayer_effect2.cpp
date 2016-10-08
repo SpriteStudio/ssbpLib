@@ -521,27 +521,23 @@ void	SsEffectRenderV2::drawSprite(
 
 	if (dispCell->refCell.cellIndex == -1) return;
 
-	float		matrix[4 * 4];	///< 行列
-	IdentityMatrix( matrix );
+	SSMatrix matrix, tmp;	///< 行列
+	matrix *= tmp.setupScale(_size.x, _size.y, 1.0f);
+	matrix *= tmp.setupRotationZ(DegreeToRadian(_rotation) + direction);
+	matrix *= tmp.setupRotationY(0);
+	matrix *= tmp.setupRotationX(0);
+#ifdef UP_MINUS
+	matrix *= tmp.setupTranslation(_position.x * layoutScale.x, -_position.y * layoutScale.y, 0.0f);	//上がマイナスなので反転する
+#else
+	matrix *= tmp.setupTranslation(_position.x * layoutScale.x, _position.y * layoutScale.y, 0.0f);	//レイアウトスケールの反映
+#endif
 
 	float parentAlpha = 1.0f;
 
-	if (_parentSprite)
-	{
-		memcpy( matrix , _parentSprite->_state.mat , sizeof( float ) * 16 );
-    	parentAlpha = _parentSprite->_state.opacity / 255.0f;
+	if(_parentSprite){
+		matrix *= _parentSprite->_state.mat;
+		parentAlpha = _parentSprite->_state.opacity / 255.0f;
 	}
-
-
-#ifdef UP_MINUS
-	TranslationMatrixM(matrix, _position.x * layoutScale.x, -_position.y * layoutScale.y, 0.0f);	//上がマイナスなので反転する
-#else
-	TranslationMatrixM(matrix, _position.x * layoutScale.x, _position.y * layoutScale.y, 0.0f);	//レイアウトスケールの反映
-#endif
-
-	RotationXYZMatrixM( matrix , 0 , 0 , DegreeToRadian(_rotation)+direction );
-
-    ScaleMatrixM(  matrix , _size.x, _size.y, 1.0f );
 
 	SsFColor fcolor;
 	fcolor.fromARGB( _color.toARGB() );
@@ -553,10 +549,8 @@ void	SsEffectRenderV2::drawSprite(
 
 	State state;
 	state = _parentSprite->_state;		//親パーツの情報をコピー
-	for (int i = 0; i < 16; i++)
-	{
-		state.mat[i] = matrix[i];				//マトリクスのコピー
-	}
+	state.mat = matrix;					//マトリクスのコピー
+	
 	state.cellIndex = dispCell->refCell.cellIndex;
 	state.texture = dispCell->refCell.texture;	//テクスチャID	
 	state.rect = dispCell->refCell.rect;		//セルの矩形をコピー	
@@ -647,8 +641,7 @@ void	SsEffectRenderV2::drawSprite(
 #endif
 	get_uv_rotation(&cx, &cy, 0, 0, state.rotationZ);
 
-	state.mat[12] += cx;
-	state.mat[13] += cy;
+	state.mat.addTranslation(cx, cy, 0);
 
 	SSDrawSprite(state);	//描画
 

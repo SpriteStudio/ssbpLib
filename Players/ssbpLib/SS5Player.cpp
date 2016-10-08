@@ -5,6 +5,7 @@
 #include "SS5PlayerData.h"
 #include "SS5PlayerTypes.h"
 #include "common/Animator/ssplayer_matrix.h"
+#include "common/Animator/ssplayer_macro.h"
 
 
 namespace ss
@@ -77,8 +78,8 @@ void get_uv_rotation(float *u, float *v, float cu, float cv, float deg)
 	float dx = *u - cu; // 中心からの距離(X)
 	float dy = *v - cv; // 中心からの距離(Y)
 
-	float tmpX = (dx * cosf(SSRadianToDegree(deg))) - (dy * sinf(SSRadianToDegree(deg))); // 回転
-	float tmpY = (dx * sinf(SSRadianToDegree(deg))) + (dy * cosf(SSRadianToDegree(deg)));
+	float tmpX = (dx * cosf(DegreeToRadian(deg))) - (dy * sinf(DegreeToRadian(deg))); // 回転
+	float tmpY = (dx * sinf(DegreeToRadian(deg))) + (dy * cosf(DegreeToRadian(deg)));
 
 	*u = (cu + tmpX); // 元の座標にオフセットする
 	*v = (cv + tmpY);
@@ -1851,15 +1852,13 @@ bool Player::getPartState(ResluteState& result, const char* name, int frameNo)
 					//当たり判定などのパーツに付属するフラグを取得する場合は　partData　のメンバを参照してください。
 					//親から継承したスケールを反映させる場合はxスケールは_mat.m[0]、yスケールは_mat.m[5]をかけて使用してください。
 					CustomSprite* sprite = static_cast<CustomSprite*>(_parts.at(partIndex));
-					result.x = sprite->_state.mat[12];
-					result.y = sprite->_state.mat[13];
+					sprite->_state.mat.getTranslation(&result.x, &result.y);
 
 					//パーツアトリビュート
 //					sprite->_state;												//SpriteStudio上のアトリビュートの値は_stateから取得してください
 					result.flags = sprite->_state.flags;						// このフレームで更新が行われるステータスのフラグ
 					result.cellIndex = sprite->_state.cellIndex;				// パーツに割り当てられたセルの番号
-					result.x = sprite->_state.mat[12];
-					result.y = sprite->_state.mat[13];
+					sprite->_state.mat.getTranslation(&result.x, &result.y);
 					result.z = sprite->_state.z;
 					result.pivotX = sprite->_state.pivotX;						// 原点Xオフセット＋セルに設定された原点オフセットX
 					result.pivotY = sprite->_state.pivotY;						// 原点Yオフセット＋セルに設定された原点オフセットY
@@ -2828,12 +2827,11 @@ void Player::setFrame(int frameNo, float dt)
 	}
 
 	// 行列の更新
-	float mat[16];
-	float t[16];
 	for (int partIndex = 0; partIndex < packData->numParts; partIndex++)
 	{
 		const PartData* partData = &parts[partIndex];
 		CustomSprite* sprite = static_cast<CustomSprite*>(_parts.at(partIndex));
+		SSMatrix parentMatrix;
 
 		if (sprite->_isStateChanged)
 		{
@@ -2851,7 +2849,9 @@ void Player::setFrame(int frameNo, float dt)
 				//インスタンスパーツの親を設定
 				if (sprite->_ssplayer)
 				{
-					sprite->_ssplayer->setPosition(sprite->_mat[12], sprite->_mat[13]);
+					float x, y;
+					sprite->_mat.getTranslation(&x, &y);
+					sprite->_ssplayer->setPosition(x, y);
 					sprite->_ssplayer->setScale(sprite->_state.Calc_scaleX, sprite->_state.Calc_scaleY);
 					sprite->_ssplayer->setRotation(sprite->_state.Calc_rotationX, sprite->_state.Calc_rotationY, sprite->_state.Calc_rotationZ);
 					sprite->_ssplayer->setAlpha(sprite->_state.Calc_opacity);
@@ -2863,11 +2863,11 @@ void Player::setFrame(int frameNo, float dt)
 				{
 					//親のマトリクスを適用
 					CustomSprite* parent = static_cast<CustomSprite*>(_parts.at(partData->parentIndex));
-					memcpy(mat, parent->_mat, sizeof(float) * 16);
+					parentMatrix = parent->_mat;
 				}
 				else
 				{
-					IdentityMatrix(mat);
+					parentMatrix.setupIdentity();
 					//rootパーツはプレイヤーからステータスを引き継ぐ
 					sprite->_state.x += _state.x;
 					sprite->_state.y += _state.y;
@@ -2893,23 +2893,17 @@ void Player::setFrame(int frameNo, float dt)
 					sprite->_state.Calc_scaleX = sprite->_state.scaleX;
 					sprite->_state.Calc_scaleY = sprite->_state.scaleY;
 				}
-				TranslationMatrix(t, sprite->_state.x, sprite->_state.y, 0.0f);
-				MultiplyMatrix(t, mat, mat);
 
-				Matrix4RotationX(t, SSRadianToDegree(sprite->_state.rotationX));
-				MultiplyMatrix(t, mat, mat);
+				SSMatrix tmp, mat;
+				mat *= tmp.setupScale(sprite->_state.scaleX, sprite->_state.scaleY);
+				mat *= tmp.setupRotationZ(DegreeToRadian(sprite->_state.rotationZ));
+				mat *= tmp.setupRotationY(DegreeToRadian(sprite->_state.rotationY));
+				mat *= tmp.setupRotationX(DegreeToRadian(sprite->_state.rotationX));
+				mat *= tmp.setupTranslation(sprite->_state.x, sprite->_state.y);
+				mat *= parentMatrix;
 
-				Matrix4RotationY(t, SSRadianToDegree(sprite->_state.rotationY));
-				MultiplyMatrix(t, mat, mat);
-
-				Matrix4RotationZ(t, SSRadianToDegree(sprite->_state.rotationZ));
-				MultiplyMatrix(t, mat, mat);
-
-				ScaleMatrix(t, sprite->_state.scaleX, sprite->_state.scaleY, 1.0f);
-				MultiplyMatrix(t, mat, mat);
-
-				memcpy(sprite->_mat, mat, sizeof(float) * 16);
-				memcpy(sprite->_state.mat, mat, sizeof(float) * 16);
+				sprite->_mat = mat;
+				sprite->_state.mat = mat;
 
 				if (partIndex > 0)
 				{
@@ -2932,7 +2926,9 @@ void Player::setFrame(int frameNo, float dt)
 					//インスタンスパーツの親を設定
 					if (sprite->_ssplayer)
 					{
-						sprite->_ssplayer->setPosition(sprite->_mat[12], sprite->_mat[13]);
+						float x, y;
+						sprite->_mat.getTranslation(&x, &y);
+						sprite->_ssplayer->setPosition(x, y);
 						sprite->_ssplayer->setScale(sprite->_state.Calc_scaleX, sprite->_state.Calc_scaleY);
 						sprite->_ssplayer->setRotation(sprite->_state.Calc_rotationX, sprite->_state.Calc_rotationY, sprite->_state.Calc_rotationZ);
 						sprite->_ssplayer->setAlpha(sprite->_state.Calc_opacity);
@@ -3308,14 +3304,15 @@ void Player::update_matrix_ss4(CustomSprite *sprite, CustomSprite *parent, const
 //	sprite->_temp_scale.y;
 	
 	//単位行列にする
-	float mat[16];
-	IdentityMatrix(mat);
-	TranslationMatrixM(mat, sprite->_temp_position.x, sprite->_temp_position.y, sprite->_temp_position.z);//
-	RotationXYZMatrixM(mat, DegreeToRadian(0), DegreeToRadian(0), DegreeToRadian(sprite->_temp_rotation.z * temp));
-	ScaleMatrixM(mat, sprite->_temp_scale.x, sprite->_temp_scale.y, 1.0f);
+	SSMatrix mat, t;
+	mat *= t.setupScale(sprite->_temp_scale.x, sprite->_temp_scale.y, 1.0f);
+	mat *= t.setupRotationZ(DegreeToRadian(sprite->_temp_rotation.z * temp));
+	mat *= t.setupRotationY(DegreeToRadian(0));
+	mat *= t.setupRotationX(DegreeToRadian(0));
+	mat *= t.setupTranslation(sprite->_temp_position.x, sprite->_temp_position.y, sprite->_temp_position.z);
 
-	memcpy(sprite->_mat, mat, sizeof(float) * 16);
-	memcpy(sprite->_state.mat, mat, sizeof(float) * 16);
+	sprite->_mat = mat;
+	sprite->_state.mat = mat;
 	sprite->_state.Calc_rotationX = 0;
 	sprite->_state.Calc_rotationY = 0;
 	sprite->_state.Calc_rotationZ = sprite->_temp_rotation.z * temp;

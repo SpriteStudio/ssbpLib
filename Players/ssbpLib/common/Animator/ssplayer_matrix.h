@@ -38,7 +38,7 @@ public:
 	void getScale(float *x, float *y, float *z) const;
 
 	//回転の抽出
-	void getRotation(float *x, float *y, float *z) const; //ラジアンでかえります
+	void getRotationZYX(float *x, float *y, float *z) const; //ラジアンでかえります
 	SSMatrix getRotationMatrix() const;		//回転成分だけ行列として取り出す
 
 	SSMatrix operator*(const SSMatrix &o) const;
@@ -50,7 +50,7 @@ public:
 
 
 
-
+#if 0
 void	IdentityMatrix( float* matrix );
 void    ScaleMatrix( float* _matrix , const float x , const float y , const float z);
 void    TranslationMatrix( float* _matrix , const float x , const float y , const float z );
@@ -116,7 +116,7 @@ inline	void	MatrixCopy(float* src, float* dst)
 		dst[i] = src[i];
 	}
 }
-
+#endif
 
 };
 
