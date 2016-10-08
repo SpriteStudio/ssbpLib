@@ -3307,8 +3307,8 @@ void Player::update_matrix_ss4(CustomSprite *sprite, CustomSprite *parent, const
 	SSMatrix mat, t;
 	mat *= t.setupScale(sprite->_temp_scale.x, sprite->_temp_scale.y, 1.0f);
 	mat *= t.setupRotationZ(DegreeToRadian(sprite->_temp_rotation.z * temp));
-	mat *= t.setupRotationY(DegreeToRadian(0));
-	mat *= t.setupRotationX(DegreeToRadian(0));
+//	mat *= t.setupRotationY(DegreeToRadian(0));
+//	mat *= t.setupRotationX(DegreeToRadian(0));
 	mat *= t.setupTranslation(sprite->_temp_position.x, sprite->_temp_position.y, sprite->_temp_position.z);
 
 	sprite->_mat = mat;

@@ -524,8 +524,8 @@ void	SsEffectRenderV2::drawSprite(
 	SSMatrix matrix, tmp;	///< 行列
 	matrix *= tmp.setupScale(_size.x, _size.y, 1.0f);
 	matrix *= tmp.setupRotationZ(DegreeToRadian(_rotation) + direction);
-	matrix *= tmp.setupRotationY(0);
-	matrix *= tmp.setupRotationX(0);
+//	matrix *= tmp.setupRotationY(0);
+//	matrix *= tmp.setupRotationX(0);
 #ifdef UP_MINUS
 	matrix *= tmp.setupTranslation(_position.x * layoutScale.x, -_position.y * layoutScale.y, 0.0f);	//上がマイナスなので反転する
 #else
