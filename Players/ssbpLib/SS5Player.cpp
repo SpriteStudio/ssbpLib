@@ -208,15 +208,15 @@ public:
 		bool rc = false;
 
 		ToPointer ptr(data);
-		const Cell* cells = static_cast<const Cell*>(ptr(data->cells));
+		const Cell* cells = ptr.toCell(data);
 
 		//名前からインデックスの取得
 		int cellindex = -1;
 		for (int i = 0; i < data->numCells; i++)
 		{
 			const Cell* cell = &cells[i];
-			const CellMap* cellMap = static_cast<const CellMap*>(ptr(cell->cellMap));
-			const char* name = static_cast<const char*>(ptr(cellMap->name));
+			const CellMap* cellMap = ptr.toCellMap(cell);
+			const char* name = ptr.toString(cellMap->name);
 			if (strcmp(cellName, name) == 0)
 			{
 				CellRef* ref = getReference(i);
@@ -233,20 +233,14 @@ public:
 	{
 		bool rc = false;
 
-		ToPointer ptr(data);
-		const Cell* cells = static_cast<const Cell*>(ptr(data->cells));
 		for (int i = 0; i < data->numCells; i++)
-		{
-			const Cell* cell = &cells[i];
-			const CellMap* cellMap = static_cast<const CellMap*>(ptr(cell->cellMap));
+		{			
+			CellRef* ref = _refs.at(i);
+			if (ref->texture.handle != -1 )
 			{
-				CellRef* ref = _refs.at(i);
-				if (ref->texture.handle != -1 )
-				{
-					SSTextureRelese(ref->texture.handle);
-					ref->texture.handle = -1;
-					rc = true;
-				}
+				SSTextureRelese(ref->texture.handle);
+				ref->texture.handle = -1;
+				rc = true;
 			}
 		}
 		return(rc);
@@ -263,16 +257,16 @@ protected:
 		_texname.clear();
 
 		ToPointer ptr(data);
-		const Cell* cells = static_cast<const Cell*>(ptr(data->cells));
+		const Cell* cells = ptr.toCell(data);
 
 		for (int i = 0; i < data->numCells; i++)
 		{
 			const Cell* cell = &cells[i];
-			const CellMap* cellMap = static_cast<const CellMap*>(ptr(cell->cellMap));
+			const CellMap* cellMap = ptr.toCellMap(cell);
 			
 			if (cellMap->index >= (int)_textures.size())
 			{
-				const char* imagePath = static_cast<const char*>(ptr(cellMap->imagePath));
+				const char* imagePath = ptr.toString(cellMap->imagePath);
 				addTexture(imagePath, imageBaseDir, (SsTexWrapMode::_enum)cellMap->wrapmode, (SsTexFilterMode::_enum)cellMap->filtermode);
 			}
 
@@ -893,18 +887,18 @@ protected:
 		SS_ASSERT2(data != NULL, "Invalid data");
 		
 		ToPointer ptr(data);
-		const AnimePackData* animePacks = static_cast<const AnimePackData*>(ptr(data->animePacks));
+		const AnimePackData* animePacks = ptr.toAnimePackData(data);
 
 		for (int packIndex = 0; packIndex < data->numAnimePacks; packIndex++)
 		{
 			const AnimePackData* pack = &animePacks[packIndex];
-			const AnimationData* animations = static_cast<const AnimationData*>(ptr(pack->animations));
-			const char* packName = static_cast<const char*>(ptr(pack->name));
+			const AnimationData* animations = ptr.toAnimationData(pack);
+			const char* packName = ptr.toString(pack->name);
 			
 			for (int animeIndex = 0; animeIndex < pack->numAnimations; animeIndex++)
 			{
 				const AnimationData* anime = &animations[animeIndex];
-				const char* animeName = static_cast<const char*>(ptr(anime->name));
+				const char* animeName = ptr.toString(anime->name);
 				
 				AnimeRef* ref = new AnimeRef();
 				ref->packName = packName;
@@ -1039,7 +1033,7 @@ std::string ResourceManager::addData(const std::string& dataKey, const ProjectDa
 	if (imageBaseDir == s_null && data->imageBaseDir)
 	{
 		ToPointer ptr(data);
-		const char* dir = static_cast<const char*>(ptr(data->imageBaseDir));
+		const char* dir = ptr.toString(data->imageBaseDir);
 		baseDir = dir;
 	}
 
@@ -1086,7 +1080,7 @@ std::string ResourceManager::addDataWithKey(const std::string& dataKey, const st
 		{
 			// コンバート時に指定されたパスを使用する
 			ToPointer ptr(data);
-			const char* dir = static_cast<const char*>(ptr(data->imageBaseDir));
+			const char* dir = ptr.toString(data->imageBaseDir);
 			baseDir = dir;
 		}
 		else
@@ -1680,7 +1674,7 @@ void Player::releaseParts()
 
 			ToPointer ptr(_currentRs->data);
 			const AnimePackData* packData = _currentAnimeRef->animePackData;
-			const PartData* parts = static_cast<const PartData*>(ptr(packData->parts));
+			const PartData* parts = ptr.toPartData(packData);
 			if (_parts.size() > 0)
 			{
 				for (int partIndex = 0; partIndex < packData->numParts; partIndex++)
@@ -1701,7 +1695,7 @@ void Player::setPartsParentage()
 
 	ToPointer ptr(_currentRs->data);
 	const AnimePackData* packData = _currentAnimeRef->animePackData;
-	const PartData* parts = static_cast<const PartData*>(ptr(packData->parts));
+	const PartData* parts = ptr.toPartData(packData);
 
 	//親子関係を設定
 	for (int partIndex = 0; partIndex < packData->numParts; partIndex++)
@@ -1720,7 +1714,7 @@ void Player::setPartsParentage()
 		}
 
 		//インスタンスパーツの生成
-		std::string refanimeName = static_cast<const char*>(ptr(partData->refname));
+		std::string refanimeName = ptr.toString(partData->refname);
 
 		SS_SAFE_DELETE(sprite->_ssplayer);
 		if (refanimeName != "")
@@ -1739,7 +1733,7 @@ void Player::setPartsParentage()
 			sprite->refEffect = 0;
 		}
 
-		std::string refeffectName = static_cast<const char*>(ptr(partData->effectfilename));
+		std::string refeffectName = ptr.toString(partData->effectfilename);
 		if (refeffectName != "")
 		{
 			SsEffectModel* effectmodel = _currentRs->effectCache->getReference(refeffectName);
@@ -1769,8 +1763,8 @@ const char* Player::getPartName(int partId) const
 	const AnimePackData* packData = _currentAnimeRef->animePackData;
 	SS_ASSERT2(partId >= 0 && partId < packData->numParts, "partId is out of range.");
 
-	const PartData* partData = static_cast<const PartData*>(ptr(packData->parts));
-	const char* name = static_cast<const char*>(ptr(partData[partId].name));
+	const PartData* partData = ptr.toPartData(packData);
+	const char* name = ptr.toString(partData[partId].name);
 	return name;
 }
 
@@ -1819,14 +1813,14 @@ bool Player::getPartState(ResluteState& result, const char* name, int frameNo)
 			ToPointer ptr(_currentRs->data);
 
 			const AnimePackData* packData = _currentAnimeRef->animePackData;
-			const PartData* parts = static_cast<const PartData*>(ptr(packData->parts));
+			const PartData* parts = ptr.toPartData(packData);
 
 			for (int index = 0; index < packData->numParts; index++)
 			{
 				int partIndex = _partIndex[index];
 
 				const PartData* partData = &parts[partIndex];
-				const char* partName = static_cast<const char*>(ptr(partData->name));
+				const char* partName = ptr.toString(partData->name);
 				if (strcmp(partName, name) == 0)
 				{
 					//必要に応じて取得するパラメータを追加してください。
@@ -1868,7 +1862,7 @@ bool Player::getPartState(ResluteState& result, const char* name, int frameNo)
 					result.part_boundsType = partData->boundsType;				//当たり判定種類
 					result.part_alphaBlendType = partData->alphaBlendType;		// BlendType
 					//ラベルカラー
-					std::string colorName = static_cast<const char*>(ptr(partData->colorLabel));
+					std::string colorName = ptr.toString(partData->colorLabel);
 					if (colorName == COLORLABELSTR_NONE)
 					{
 						result.part_labelcolor = COLORLABEL_NONE;
@@ -1956,7 +1950,7 @@ int Player::getLabelToFrame(char* findLabelName)
 
 		LabelData ldata;
 		ss_offset offset = reader.readOffset();
-		const char* str = static_cast<const char*>(ptr(offset));
+		const char* str = ptr.toString(offset);
 		int labelFrame = reader.readU16();
 		ldata.str = str;
 		ldata.frameNo = labelFrame;
@@ -1982,14 +1976,14 @@ void Player::setPartVisible(std::string partsname, bool flg)
 		ToPointer ptr(_currentRs->data);
 
 		const AnimePackData* packData = _currentAnimeRef->animePackData;
-		const PartData* parts = static_cast<const PartData*>(ptr(packData->parts));
+		const PartData* parts = ptr.toPartData(packData);
 
 		for (int index = 0; index < packData->numParts; index++)
 		{
 			int partIndex = _partIndex[index];
 
 			const PartData* partData = &parts[partIndex];
-			const char* partName = static_cast<const char*>(ptr(partData->name));
+			const char* partName = ptr.toString(partData->name);
 			if (strcmp(partName, partsname.c_str()) == 0)
 			{
 				_partVisible[index] = flg;
@@ -2011,16 +2005,16 @@ void Player::setPartCell(std::string partsname, std::string sscename, std::strin
 		if ((sscename != "") && (cellname != ""))
 		{
 			//セルマップIDを取得する
-			const Cell* cells = static_cast<const Cell*>(ptr(_currentRs->data->cells));
+			const Cell* cells = ptr.toCell(_currentRs->data);
 
 			//名前からインデックスの取得
 			int cellindex = -1;
 			for (int i = 0; i < _currentRs->data->numCells; i++)
 			{
 				const Cell* cell = &cells[i];
-				const char* name1 = static_cast<const char*>(ptr(cell->name));
-				const CellMap* cellMap = static_cast<const CellMap*>(ptr(cell->cellMap));
-				const char* name2 = static_cast<const char*>(ptr(cellMap->name));
+				const char* name1 = ptr.toString(cell->name);
+				const CellMap* cellMap = ptr.toCellMap(cell);
+				const char* name2 = ptr.toString(cellMap->name);
 				if (strcmp(cellname.c_str(), name1) == 0)
 				{
 					if (strcmp(sscename.c_str(), name2) == 0)
@@ -2033,14 +2027,14 @@ void Player::setPartCell(std::string partsname, std::string sscename, std::strin
 		}
 
 		const AnimePackData* packData = _currentAnimeRef->animePackData;
-		const PartData* parts = static_cast<const PartData*>(ptr(packData->parts));
+		const PartData* parts = ptr.toPartData(packData);
 
 		for (int index = 0; index < packData->numParts; index++)
 		{
 			int partIndex = _partIndex[index];
 
 			const PartData* partData = &parts[partIndex];
-			const char* partName = static_cast<const char*>(ptr(partData->name));
+			const char* partName = ptr.toString(partData->name);
 			if (strcmp(partName, partsname.c_str()) == 0)
 			{
 				//セル番号を設定
@@ -2061,14 +2055,14 @@ bool Player::changeInstanceAnime(std::string partsname, std::string animename, b
 		ToPointer ptr(_currentRs->data);
 
 		const AnimePackData* packData = _currentAnimeRef->animePackData;
-		const PartData* parts = static_cast<const PartData*>(ptr(packData->parts));
+		const PartData* parts = ptr.toPartData(packData);
 
 		for (int index = 0; index < packData->numParts; index++)
 		{
 			int partIndex = _partIndex[index];
 
 			const PartData* partData = &parts[partIndex];
-			const char* partName = static_cast<const char*>(ptr(partData->name));
+			const char* partName = ptr.toString(partData->name);
 			if (strcmp(partName, partsname.c_str()) == 0)
 			{
 				CustomSprite* sprite = static_cast<CustomSprite*>(_parts.at(partIndex));
@@ -2182,7 +2176,7 @@ void Player::setFrame(int frameNo, float dt)
 	ToPointer ptr(_currentRs->data);
 
 	const AnimePackData* packData = _currentAnimeRef->animePackData;
-	const PartData* parts = static_cast<const PartData*>(ptr(packData->parts));
+	const PartData* parts = ptr.toPartData(packData);
 
 	const AnimationData* animeData = _currentAnimeRef->animationData;
 	const ss_offset* frameDataIndex = static_cast<const ss_offset*>(ptr(animeData->frameData));
@@ -2190,7 +2184,7 @@ void Player::setFrame(int frameNo, float dt)
 	const ss_u16* frameDataArray = static_cast<const ss_u16*>(ptr(frameDataIndex[frameNo]));
 	DataArrayReader reader(frameDataArray);
 	
-	const AnimationInitialData* initialDataList = static_cast<const AnimationInitialData*>(ptr(animeData->defaultData));
+	const AnimationInitialData* initialDataList = ptr.toAnimationInitialData(animeData);
 
 
 	State state;
@@ -3056,7 +3050,7 @@ void Player::checkUserData(int frameNo)
 
 	const AnimePackData* packData = _currentAnimeRef->animePackData;
 	const AnimationData* animeData = _currentAnimeRef->animationData;
-	const PartData* parts = static_cast<const PartData*>(ptr(packData->parts));
+	const PartData* parts = ptr.toPartData(packData);
 
 	if (!animeData->userData) return;
 	const ss_offset* userDataIndex = static_cast<const ss_offset*>(ptr(animeData->userData));
@@ -3117,7 +3111,7 @@ void Player::checkUserData(int frameNo)
 			_userData.flags |= UserData::FLAG_STRING;
 			int size = reader.readU16();
 			ss_offset offset = reader.readOffset();
-			const char* str = static_cast<const char*>(ptr(offset));
+			const char* str = ptr.toString(offset);
 			_userData.str = str;
 			_userData.strSize = size;
 		}
@@ -3127,7 +3121,7 @@ void Player::checkUserData(int frameNo)
 			_userData.strSize = 0;
 		}
 		
-		_userData.partName = static_cast<const char*>(ptr(parts[partIndex].name));
+		_userData.partName = ptr.toString(parts[partIndex].name);
 		_userData.frameNo = frameNo;
 		
 		SSonUserData(this, &_userData);
