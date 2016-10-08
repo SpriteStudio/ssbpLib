@@ -2135,7 +2135,7 @@ void Player::setFrame(int frameNo, float dt)
 	const AnimationInitialData* initialDataList = ptr.toAnimationInitialData(animeData);
 
 
-	State state;
+	SSCellPartState state;
 
 	for (int index = 0; index < packData->numParts; index++)
 	{

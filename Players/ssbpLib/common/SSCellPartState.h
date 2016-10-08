@@ -7,10 +7,10 @@
 namespace ss{
 
 /**
- * State
- * パーツの情報を格納します。Stateの内容をもとに描画処理を作成してください。
+ * SSCellPartState
+ * パーツの情報を格納します。SSCellPartStateの内容をもとに描画処理を作成してください。
  */
-struct State
+struct SSCellPartState
 {
 	int flags;						/// このフレームで更新が行われるステータスのフラグ
 	int cellIndex;					/// パーツに割り当てられたセルの番号
@@ -121,7 +121,7 @@ struct State
 
 	}
 
-	State() { init(); }
+	SSCellPartState() { init(); }
 };
 
 

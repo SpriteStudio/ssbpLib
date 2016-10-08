@@ -562,7 +562,7 @@ void	SsEffectRenderParticle::draw(SsEffectRenderer* render)
 	{
 		return;
 	}
-	State state;
+	SSCellPartState state;
 	state = render->_parentSprite->_state;		//親パーツの情報をコピー
 	state.mat = matrix;							//マトリクスのコピー
 	

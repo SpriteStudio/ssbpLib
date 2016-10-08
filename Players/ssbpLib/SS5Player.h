@@ -75,7 +75,7 @@ https://github.com/SpriteStudio/SpriteStudio5-SDK/wiki/%E3%82%B3%E3%83%B3%E3%83%
 #include "SS5PlayerData.h"
 #include "SS5PlayerTypes.h"
 #include "SS5PlayerPlatform.h"
-#include "common/SSPartState.h"
+#include "common/SSCellPartState.h"
 #include <map>
 #include <vector>
 #include <string>
@@ -159,8 +159,8 @@ private:
 	bool				_flipY;
 
 public:
-	SSMatrix				_mat;
-	State				_state;
+	SSMatrix			_mat;
+	SSCellPartState		_state;
 	bool				_isStateChanged;
 	CustomSprite*		_parent;
 	Player*				_ssplayer;
@@ -172,7 +172,7 @@ public:
 	SsPartState			partState;
 
 	//モーションブレンド用ステータス
-	State				_orgState;
+	SSCellPartState		_orgState;
 
 	//エフェクト制御用ワーク
 	bool effectAttrInitialized;
@@ -231,7 +231,7 @@ public:
 		}
 	}
 
-	void setState(const State& state)
+	void setState(const SSCellPartState& state)
 	{
 		setStateValue(_state.flags, state.flags);
 		setStateValue(_state.cellIndex, state.cellIndex);
@@ -1133,7 +1133,7 @@ protected:
 
 	UserData			_userData;
 
-	State				_state;
+	SSCellPartState		_state;
 };
 
 

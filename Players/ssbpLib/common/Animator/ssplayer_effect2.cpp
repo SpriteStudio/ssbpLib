@@ -547,7 +547,7 @@ void	SsEffectRenderV2::drawSprite(
 		return;
 	}
 
-	State state;
+	SSCellPartState state;
 	state = _parentSprite->_state;		//親パーツの情報をコピー
 	state.mat = matrix;					//マトリクスのコピー
 	

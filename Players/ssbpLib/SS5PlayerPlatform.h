@@ -11,7 +11,7 @@
 
 namespace ss
 {
-	struct State;
+	struct SSCellPartState;
 	struct UserData;
 	class Player;
 
@@ -19,7 +19,7 @@ namespace ss
 	extern long SSTextureLoad(const char* pszFileName, SsTexWrapMode::_enum  wrapmode, SsTexFilterMode::_enum filtermode);
 	extern bool SSTextureRelese(long handle);
 	extern bool isAbsolutePath(const std::string& strPath);
-	extern void SSDrawSprite(State state);
+	extern void SSDrawSprite(SSCellPartState state);
 	extern bool SSGetTextureSize(long handle, int &w, int &h);
 	extern void SSonUserData(Player *player, UserData *userData);
 	extern void SSPlayEnd(Player *player);
