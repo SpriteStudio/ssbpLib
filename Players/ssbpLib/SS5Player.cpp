@@ -2135,7 +2135,7 @@ void Player::setFrame(int frameNo, float dt)
 	const AnimationInitialData* initialDataList = ptr.toAnimationInitialData(animeData);
 
 
-	SSCellPartState state;
+
 
 	for (int index = 0; index < packData->numParts; index++)
 	{
@@ -2143,6 +2143,9 @@ void Player::setFrame(int frameNo, float dt)
 		const PartData* partData = &parts[partIndex];
 		const AnimationInitialData* init = &initialDataList[partIndex];
 
+		SSCellPartState state;
+		state.readData(reader, init);
+	#if 0
 		// optional parameters
 		int flags      = reader.readU32();
 		int cellIndex  = flags & PART_FLAG_CELL_INDEX ? reader.readS16() : init->cellIndex;
@@ -2198,6 +2201,24 @@ void Player::setFrame(int frameNo, float dt)
 		bool flipY = (bool)(flags & PART_FLAG_FLIP_V);
 
 		bool isVisibled = !(flags & PART_FLAG_INVISIBLE);
+	#endif
+
+		// optional parameters
+		int flags = state.flags;
+		bool isVisibled = state.isVisibled;
+		int cellIndex = state.cellIndex;
+		bool flipX = state.flipX;
+		bool flipY = state.flipY;
+		float pivotX = state.pivotX;
+		float pivotY = state.pivotY;
+		float x = state.x;
+		float y = state.y;
+		float scaleX = state.scaleX;
+		float scaleY = state.scaleY;
+		float rotationX = state.rotationX;
+		float rotationY = state.rotationY;
+		float rotationZ = state.rotationZ;
+
 
 		if (_partVisible[index] == false)
 		{
@@ -2261,11 +2282,9 @@ void Player::setFrame(int frameNo, float dt)
 		}
 
 		//ステータス保存
-		state.flags = flags;
 		state.cellIndex = cellIndex;
 		state.x = x;
 		state.y = y;
-		state.z = z;
 		state.pivotX = pivotX;
 		state.pivotY = pivotY;
 		state.rotationX = rotationX;
@@ -2273,29 +2292,9 @@ void Player::setFrame(int frameNo, float dt)
 		state.rotationZ = rotationZ;
 		state.scaleX = scaleX;
 		state.scaleY = scaleY;
-		state.opacity = opacity;
-		state.size_X = size_X;
-		state.size_Y = size_Y;
-		state.uv_move_X = uv_move_X;
-		state.uv_move_Y = uv_move_Y;
-		state.uv_rotation = uv_rotation;
-		state.uv_scale_X = uv_scale_X;
-		state.uv_scale_Y = uv_scale_Y;
-		state.boundingRadius = boundingRadius;
 		state.isVisibled = isVisibled;
 		state.flipX = flipX;
 		state.flipY = flipY;
-
-		state.instanceValue_curKeyframe = instanceValue_curKeyframe;
-		state.instanceValue_startFrame = instanceValue_startFrame;
-		state.instanceValue_endFrame = instanceValue_endFrame;
-		state.instanceValue_loopNum = instanceValue_loopNum;
-		state.instanceValue_speed = instanceValue_speed;
-		state.instanceValue_loopflag = instanceValue_loopflag;
-		state.effectValue_curKeyframe = effectValue_curKeyframe;
-		state.effectValue_startTime = effectValue_startTime;
-		state.effectValue_speed = effectValue_speed;
-		state.effectValue_loopflag = effectValue_loopflag;
 
 		state.Calc_rotationX = state.rotationX;
 		state.Calc_rotationY = state.rotationY;
@@ -2342,7 +2341,7 @@ void Player::setFrame(int frameNo, float dt)
 				state.isVisibled = false;
 			}
 		}
-		sprite->setOpacity(opacity);
+		sprite->setOpacity(state.opacity);
 
 		//頂点データの設定
 		//quadにはプリミティブの座標（頂点変形を含む）、UV、カラー値が設定されます。
@@ -2409,7 +2408,7 @@ void Player::setFrame(int frameNo, float dt)
 			if (w!= 0.0f)
 			{
 				center = quad.tl.vertices.x + w;
-				float scale = (size_X / 2.0f) / w;
+				float scale = (state.size_X / 2.0f) / w;
 
 				quad.bl.vertices.x = center - (w * scale);
 				quad.br.vertices.x = center + (w * scale);
@@ -2425,7 +2424,7 @@ void Player::setFrame(int frameNo, float dt)
 			if (h != 0.0f)
 			{
 				center = quad.tl.vertices.y + h;
-				float scale = (size_Y / 2.0f) / h;
+				float scale = (state.size_Y / 2.0f) / h;
 
 				quad.bl.vertices.y = center - (h * scale);
 				quad.br.vertices.y = center - (h * scale);
@@ -2460,7 +2459,7 @@ void Player::setFrame(int frameNo, float dt)
 		}
 		
 		//頂点情報の取得
-		unsigned char alpha = (unsigned char)opacity;
+		unsigned char alpha = (unsigned char)state.opacity;
 		SSColor4B color4 = { 0xff, 0xff, 0xff, 0xff };
 
 		color4.r = color4.r * _col_r / 255;
@@ -2535,17 +2534,17 @@ void Player::setFrame(int frameNo, float dt)
 		//uvスクロール
 		if (flags & PART_FLAG_U_MOVE)
 		{
-			quad.tl.texCoords.u += uv_move_X;
-			quad.tr.texCoords.u += uv_move_X;
-			quad.bl.texCoords.u += uv_move_X;
-			quad.br.texCoords.u += uv_move_X;
+			quad.tl.texCoords.u += state.uv_move_X;
+			quad.tr.texCoords.u += state.uv_move_X;
+			quad.bl.texCoords.u += state.uv_move_X;
+			quad.br.texCoords.u += state.uv_move_X;
 		}
 		if (flags & PART_FLAG_V_MOVE)
 		{
-			quad.tl.texCoords.v += uv_move_Y;
-			quad.tr.texCoords.v += uv_move_Y;
-			quad.bl.texCoords.v += uv_move_Y;
-			quad.br.texCoords.v += uv_move_Y;
+			quad.tl.texCoords.v += state.uv_move_Y;
+			quad.tr.texCoords.v += state.uv_move_Y;
+			quad.bl.texCoords.v += state.uv_move_Y;
+			quad.br.texCoords.v += state.uv_move_Y;
 		}
 
 
@@ -2575,26 +2574,26 @@ void Player::setFrame(int frameNo, float dt)
 		if (flags & PART_FLAG_UV_ROTATION)
 		{
 			//頂点位置を回転させる
-			get_uv_rotation(&quad.tl.texCoords.u, &quad.tl.texCoords.v, u_center, v_center, uv_rotation);
-			get_uv_rotation(&quad.tr.texCoords.u, &quad.tr.texCoords.v, u_center, v_center, uv_rotation);
-			get_uv_rotation(&quad.bl.texCoords.u, &quad.bl.texCoords.v, u_center, v_center, uv_rotation);
-			get_uv_rotation(&quad.br.texCoords.u, &quad.br.texCoords.v, u_center, v_center, uv_rotation);
+			get_uv_rotation(&quad.tl.texCoords.u, &quad.tl.texCoords.v, u_center, v_center, state.uv_rotation);
+			get_uv_rotation(&quad.tr.texCoords.u, &quad.tr.texCoords.v, u_center, v_center, state.uv_rotation);
+			get_uv_rotation(&quad.bl.texCoords.u, &quad.bl.texCoords.v, u_center, v_center, state.uv_rotation);
+			get_uv_rotation(&quad.br.texCoords.u, &quad.br.texCoords.v, u_center, v_center, state.uv_rotation);
 		}
 
 		//UVスケール || 反転
 		if ((flags & PART_FLAG_U_SCALE) || (flags & PART_FLAG_FLIP_H))
 		{
-			quad.tl.texCoords.u = u_center - (u_wide * uv_scale_X * u_code);
-			quad.tr.texCoords.u = u_center + (u_wide * uv_scale_X * u_code);
-			quad.bl.texCoords.u = u_center - (u_wide * uv_scale_X * u_code);
-			quad.br.texCoords.u = u_center + (u_wide * uv_scale_X * u_code);
+			quad.tl.texCoords.u = u_center - (u_wide * state.uv_scale_X * u_code);
+			quad.tr.texCoords.u = u_center + (u_wide * state.uv_scale_X * u_code);
+			quad.bl.texCoords.u = u_center - (u_wide * state.uv_scale_X * u_code);
+			quad.br.texCoords.u = u_center + (u_wide * state.uv_scale_X * u_code);
 		}
 		if ((flags & PART_FLAG_V_SCALE) || (flags & PART_FLAG_FLIP_V))
 		{
-			quad.tl.texCoords.v = v_center - (v_height * uv_scale_Y * v_code);
-			quad.tr.texCoords.v = v_center - (v_height * uv_scale_Y * v_code);
-			quad.bl.texCoords.v = v_center + (v_height * uv_scale_Y * v_code);
-			quad.br.texCoords.v = v_center + (v_height * uv_scale_Y * v_code);
+			quad.tl.texCoords.v = v_center - (v_height * state.uv_scale_Y * v_code);
+			quad.tr.texCoords.v = v_center - (v_height * state.uv_scale_Y * v_code);
+			quad.bl.texCoords.v = v_center + (v_height * state.uv_scale_Y * v_code);
+			quad.br.texCoords.v = v_center + (v_height * state.uv_scale_Y * v_code);
 		}
 		state.quad = quad;
 
@@ -2608,17 +2607,17 @@ void Player::setFrame(int frameNo, float dt)
 			Instance keyParam;
 			sprite->_ssplayer->getInstanceParam(&overWrite, &keyParam);
 			//描画
-			int refKeyframe = instanceValue_curKeyframe;
-			int refStartframe = instanceValue_startFrame;
-			int refEndframe = instanceValue_endFrame;
-			float refSpeed = instanceValue_speed;
-			int refloopNum = instanceValue_loopNum;
+			int refKeyframe = state.instanceValue_curKeyframe;
+			int refStartframe = state.instanceValue_startFrame;
+			int refEndframe = state.instanceValue_endFrame;
+			float refSpeed = state.instanceValue_speed;
+			int refloopNum = state.instanceValue_loopNum;
 			bool infinity = false;
 			bool reverse = false;
 			bool pingpong = false;
 			bool independent = false;
 
-			int lflags = instanceValue_loopflag;
+			int lflags = state.instanceValue_loopflag;
 			if (lflags & INSTANCE_LOOP_FLAG_INFINITY )
 			{
 				//無限ループ
