@@ -2258,36 +2258,16 @@ void Player::setFrame(int frameNo, float dt)
 			float y2 = height_h;
 
 #ifdef UP_MINUS
-			quad.tl.vertices.x = x1;
-			quad.tl.vertices.y = y1;
-			quad.tr.vertices.x = x2;
-			quad.tr.vertices.y = y1;
-			quad.bl.vertices.x = x1;
-			quad.bl.vertices.y = y2;
-			quad.br.vertices.x = x2;
-			quad.br.vertices.y = y2;
+			quad.tl.vertices = SSVertex3F(x1, y1, 0);
+			quad.tr.vertices = SSVertex3F(x2, y1, 0);
+			quad.bl.vertices = SSVertex3F(x1, y2, 0);
+			quad.br.vertices = SSVertex3F(x2, y2, 0);
 #else
-			quad.tl.vertices.x = x1;
-			quad.tl.vertices.y = y2;
-			quad.tr.vertices.x = x2;
-			quad.tr.vertices.y = y2;
-			quad.bl.vertices.x = x1;
-			quad.bl.vertices.y = y1;
-			quad.br.vertices.x = x2;
-			quad.br.vertices.y = y1;
+			quad.tl.vertices = SSVertex3F(x1, y2, 0);
+			quad.tr.vertices = SSVertex3F(x2, y2, 0);
+			quad.bl.vertices = SSVertex3F(x1, y1, 0);
+			quad.br.vertices = SSVertex3F(x2, y1, 0);
 #endif
-			//UVを設定する
-			if (cellRef)
-			{
-				quad.tl.texCoords.u = cellRef->cell->u1;
-				quad.tl.texCoords.v = cellRef->cell->v1;
-				quad.tr.texCoords.u = cellRef->cell->u2;
-				quad.tr.texCoords.v = cellRef->cell->v1;
-				quad.bl.texCoords.u = cellRef->cell->u1;
-				quad.bl.texCoords.v = cellRef->cell->v2;
-				quad.br.texCoords.u = cellRef->cell->u2;
-				quad.br.texCoords.v = cellRef->cell->v2;
-			}
 		}
 
 		//サイズ設定
@@ -2421,6 +2401,20 @@ void Player::setFrame(int frameNo, float dt)
 					quad.br.colors = color4;
 				}
 			}
+		}
+
+
+		//UVを設定する
+		if(cellRef)
+		{
+			quad.tl.texCoords.u = cellRef->cell->u1;
+			quad.tl.texCoords.v = cellRef->cell->v1;
+			quad.tr.texCoords.u = cellRef->cell->u2;
+			quad.tr.texCoords.v = cellRef->cell->v1;
+			quad.bl.texCoords.u = cellRef->cell->u1;
+			quad.bl.texCoords.v = cellRef->cell->v2;
+			quad.br.texCoords.u = cellRef->cell->u2;
+			quad.br.texCoords.v = cellRef->cell->v2;
 		}
 		//uvスクロール
 		if (flags & PART_FLAG_U_MOVE)
