@@ -14,17 +14,7 @@ class SsEffectRenderV2;
  */
 class CustomSprite{
 private:
-	static unsigned int ssSelectorLocation;
-	static unsigned int	ssAlphaLocation;
-	static unsigned int	sshasPremultipliedAlpha;
-
-	//	static CCGLProgram* getCustomShaderProgram();
-
-private:
-	//	CCGLProgram*	_defaultShaderProgram;
-	bool				_useCustomShaderProgram;
 	float				_opacity;
-	int					_hasPremultipliedAlpha;
 	int					_colorBlendFuncNo;
 	bool				_flipX;
 	bool				_flipY;
@@ -36,7 +26,6 @@ public:
 	CustomSprite*		_parent;
 	Player*				_ssplayer;
 	float				_liveFrame;
-	SSV3F_C4B_T2F_Quad	_sQuad;
 
 	//エフェクト用パラメータ
 	SsEffectRenderV2*	refEffect;
@@ -85,22 +74,16 @@ public:
 
 
 	// override
-	virtual void draw(void);
 	virtual void setOpacity(unsigned char opacity);
 
 	// original functions
 	void changeShaderProgram(bool useCustomShaderProgram);
-	bool isCustomShaderProgramEnabled() const;
 	void setColorBlendFunc(int colorBlendFuncNo);
-	SSV3F_C4B_T2F_Quad& getAttributeRef();
 
 	void setFlippedX(bool flip);
 	void setFlippedY(bool flip);
 	bool isFlippedX();
 	bool isFlippedY();
-	void sethasPremultipliedAlpha(int PremultipliedAlpha);
-
-public:
 };
 
 
