@@ -1775,35 +1775,35 @@ bool Player::getPartState(ResluteState& result, const char* name, int frameNo)
 					//当たり判定などのパーツに付属するフラグを取得する場合は　partData　のメンバを参照してください。
 					//親から継承したスケールを反映させる場合はxスケールは_mat.m[0]、yスケールは_mat.m[5]をかけて使用してください。
 					CustomSprite* sprite = static_cast<CustomSprite*>(_parts.at(partIndex));
-					sprite->_state.mat.getTranslation(&result.x, &result.y);
+					sprite->_state.m_mat.getTranslation(&result.x, &result.y);
 
 					//パーツアトリビュート
 //					sprite->_state;												//SpriteStudio上のアトリビュートの値は_stateから取得してください
-					result.flags = sprite->_state.flags;						// このフレームで更新が行われるステータスのフラグ
-					result.cellIndex = sprite->_state.cellIndex;				// パーツに割り当てられたセルの番号
-					sprite->_state.mat.getTranslation(&result.x, &result.y);
-					result.z = sprite->_state.z;
-					result.pivotX = sprite->_state.pivotX;						// 原点Xオフセット＋セルに設定された原点オフセットX
-					result.pivotY = sprite->_state.pivotY;						// 原点Yオフセット＋セルに設定された原点オフセットY
-					result.rotationX = sprite->_state.rotationX;				// X回転（親子関係計算済）
-					result.rotationY = sprite->_state.rotationY;				// Y回転（親子関係計算済）
-					result.rotationZ = sprite->_state.rotationZ;				// Z回転（親子関係計算済）
-					result.scaleX = sprite->_state.scaleX;						// Xスケール（親子関係計算済）
-					result.scaleY = sprite->_state.scaleY;						// Yスケール（親子関係計算済）
-					result.opacity = sprite->_state.opacity;					// 不透明度（0～255）（親子関係計算済）
-					result.size_X = sprite->_state.size_X;						// SS5アトリビュート：Xサイズ
-					result.size_Y = sprite->_state.size_Y;						// SS5アトリビュート：Xサイズ
-					result.uv_move_X = sprite->_state.uv_move_X;				// SS5アトリビュート：UV X移動
-					result.uv_move_Y = sprite->_state.uv_move_Y;				// SS5アトリビュート：UV Y移動
-					result.uv_rotation = sprite->_state.uv_rotation;			// SS5アトリビュート：UV 回転
-					result.uv_scale_X = sprite->_state.uv_scale_X;				// SS5アトリビュート：UV Xスケール
-					result.uv_scale_Y = sprite->_state.uv_scale_Y;				// SS5アトリビュート：UV Yスケール
-					result.boundingRadius = sprite->_state.boundingRadius;		// SS5アトリビュート：当たり半径
-					result.colorBlendFunc = sprite->_state.colorBlendFunc;		// SS5アトリビュート：カラーブレンドのブレンド方法
-					result.colorBlendType = sprite->_state.colorBlendType;		// SS5アトリビュート：カラーブレンドの単色か頂点カラーか。
-					result.flipX = sprite->_state.flipX;						// 横反転（親子関係計算済）
-					result.flipY = sprite->_state.flipY;						// 縦反転（親子関係計算済）
-					result.isVisibled = sprite->_state.isVisibled;				// 非表示（親子関係計算済）
+					result.flags = sprite->_state.m_flags;						// このフレームで更新が行われるステータスのフラグ
+					result.cellIndex = sprite->_state.m_cellIndex;				// パーツに割り当てられたセルの番号
+					sprite->_state.m_mat.getTranslation(&result.x, &result.y);
+					result.z = sprite->_state.m_z;
+					result.pivotX = sprite->_state.m_pivotX;						// 原点Xオフセット＋セルに設定された原点オフセットX
+					result.pivotY = sprite->_state.m_pivotY;						// 原点Yオフセット＋セルに設定された原点オフセットY
+					result.rotationX = sprite->_state.m_rotationX;				// X回転（親子関係計算済）
+					result.rotationY = sprite->_state.m_rotationY;				// Y回転（親子関係計算済）
+					result.rotationZ = sprite->_state.m_rotationZ;				// Z回転（親子関係計算済）
+					result.scaleX = sprite->_state.m_scaleX;						// Xスケール（親子関係計算済）
+					result.scaleY = sprite->_state.m_scaleY;						// Yスケール（親子関係計算済）
+					result.opacity = sprite->_state.m_opacity;					// 不透明度（0～255）（親子関係計算済）
+					result.size_X = sprite->_state.m_size_X;						// SS5アトリビュート：Xサイズ
+					result.size_Y = sprite->_state.m_size_Y;						// SS5アトリビュート：Xサイズ
+					result.uv_move_X = sprite->_state.m_uv_move_X;				// SS5アトリビュート：UV X移動
+					result.uv_move_Y = sprite->_state.m_uv_move_Y;				// SS5アトリビュート：UV Y移動
+					result.uv_rotation = sprite->_state.m_uv_rotation;			// SS5アトリビュート：UV 回転
+					result.uv_scale_X = sprite->_state.m_uv_scale_X;				// SS5アトリビュート：UV Xスケール
+					result.uv_scale_Y = sprite->_state.m_uv_scale_Y;				// SS5アトリビュート：UV Yスケール
+					result.boundingRadius = sprite->_state.m_boundingRadius;		// SS5アトリビュート：当たり半径
+					result.colorBlendFunc = sprite->_state.m_colorBlendFunc;		// SS5アトリビュート：カラーブレンドのブレンド方法
+					result.colorBlendType = sprite->_state.m_colorBlendType;		// SS5アトリビュート：カラーブレンドの単色か頂点カラーか。
+					result.flipX = sprite->_state.m_flipX;						// 横反転（親子関係計算済）
+					result.flipY = sprite->_state.m_flipY;						// 縦反転（親子関係計算済）
+					result.isVisibled = sprite->_state.m_isVisibled;				// 非表示（親子関係計算済）
 
 					//パーツ設定
 					result.part_type = partData->type;							//パーツ種別
@@ -1849,12 +1849,12 @@ bool Player::getPartState(ResluteState& result, const char* name, int frameNo)
 						//SS4はマトリクスを使用していないので独自の計算結果を反映させる
 						result.x = sprite->_temp_position.x;							//画面上のX座標を取得
 						result.y = sprite->_temp_position.y;							//画面上のY座標を取得
-						result.z = sprite->_state.z;									// Z座標アトリビュートを取得
+						result.z = sprite->_state.m_z;									// Z座標アトリビュートを取得
 						result.rotationZ = sprite->_temp_rotation.z;					// Z回転（親子関係計算済）
 						result.scaleX = sprite->_temp_scale.x;							// Xスケール（親子関係計算済）
 						result.scaleY = sprite->_temp_scale.y;							// Yスケール（親子関係計算済）
-						result.size_X = sprite->_state.size_X * sprite->_temp_scale.x;	// SS5アトリビュート：Xサイズ
-						result.size_Y = sprite->_state.size_Y * sprite->_temp_scale.y;	// SS5アトリビュート：Yサイズ
+						result.size_X = sprite->_state.m_size_X * sprite->_temp_scale.x;	// SS5アトリビュート：Xサイズ
+						result.size_Y = sprite->_state.m_size_Y * sprite->_temp_scale.y;	// SS5アトリビュート：Yサイズ
 					}
 
 					rc = true;
@@ -2112,8 +2112,8 @@ void Player::setFrame(int frameNo, float dt)
 		CustomSprite* root = static_cast<CustomSprite*>(_parts.at(0));
 		float scaleX = root->isFlippedX() ? -1.0f : 1.0f;
 		float scaleY = root->isFlippedY() ? -1.0f : 1.0f;
-		root->setStateValue(root->_state.x, scaleX);
-		root->setStateValue(root->_state.y, scaleY);
+		root->setStateValue(root->_state.m_x, scaleX);
+		root->setStateValue(root->_state.m_y, scaleY);
 		forceUpdate = root->_isStateChanged;
 	}
 	
@@ -2147,13 +2147,13 @@ void Player::setFrame(int frameNo, float dt)
 		state.readData(reader, init);
 
 		// optional parameters
-		int flags = state.flags;
-		int cellIndex = state.cellIndex;
+		int flags = state.m_flags;
+		int cellIndex = state.m_cellIndex;
 
 		if (_partVisible[index] == false)
 		{
 			//ユーザーが任意に非表示としたパーツは非表示に設定
-			state.isVisibled = false;
+			state.m_isVisibled = false;
 		}
 		if (_cellChange[index] != -1)
 		{
@@ -2163,15 +2163,15 @@ void Player::setFrame(int frameNo, float dt)
 
 		_partIndex[index] = partIndex;
 
-		if ( _state.flipX == true )
+		if ( _state.m_flipX == true )
 		{
 			//プレイヤーのXフリップ
-			state.flipX = !state.flipX;	//フラグ反転
+			state.m_flipX = !state.m_flipX;	//フラグ反転
 		}
-		if (_state.flipY == true)
+		if (_state.m_flipY == true)
 		{
 			//プレイヤーのYフリップ
-			state.flipY = !state.flipY;	//フラグ反転
+			state.m_flipY = !state.m_flipY;	//フラグ反転
 		}
 
 		//セルの原点設定を反映させる
@@ -2182,16 +2182,16 @@ void Player::setFrame(int frameNo, float dt)
 			float cpy = 0;
 
 			cpx = cellRef->cell->pivot_X;
-			if (state.flipX) cpx = -cpx;	// 水平フリップによって原点を入れ替える
+			if (state.m_flipX) cpx = -cpx;	// 水平フリップによって原点を入れ替える
 			cpy = cellRef->cell->pivot_Y;
-			if (state.flipY) cpy = -cpy;	// 垂直フリップによって原点を入れ替える
+			if (state.m_flipY) cpy = -cpy;	// 垂直フリップによって原点を入れ替える
 
-			state.pivotX += cpx;
-			state.pivotY += cpy;
+			state.m_pivotX += cpx;
+			state.m_pivotY += cpy;
 
 		}
-		state.pivotX += 0.5f;
-		state.pivotY += 0.5f;
+		state.m_pivotX += 0.5f;
+		state.m_pivotY += 0.5f;
 
 		//モーションブレンド
 		if (_motionBlendPlayer)
@@ -2200,41 +2200,41 @@ void Player::setFrame(int frameNo, float dt)
 			if (blendSprite)
 			{ 
 				float percent = _blendTime / _blendTimeMax;
-				state.x = parcentVal(state.x, blendSprite->_orgState.x, percent);
-				state.y = parcentVal(state.y, blendSprite->_orgState.y, percent);
-				state.scaleX = parcentVal(state.scaleX, blendSprite->_orgState.scaleX, percent);
-				state.scaleY = parcentVal(state.scaleY, blendSprite->_orgState.scaleY, percent);
-				state.rotationX = parcentValRot(state.rotationX, blendSprite->_orgState.rotationX, percent);
-				state.rotationY = parcentValRot(state.rotationY, blendSprite->_orgState.rotationY, percent);
-				state.rotationZ = parcentValRot(state.rotationZ, blendSprite->_orgState.rotationZ, percent);
+				state.m_x = parcentVal(state.m_x, blendSprite->_orgState.m_x, percent);
+				state.m_y = parcentVal(state.m_y, blendSprite->_orgState.m_y, percent);
+				state.m_scaleX = parcentVal(state.m_scaleX, blendSprite->_orgState.m_scaleX, percent);
+				state.m_scaleY = parcentVal(state.m_scaleY, blendSprite->_orgState.m_scaleY, percent);
+				state.m_rotationX = parcentValRot(state.m_rotationX, blendSprite->_orgState.m_rotationX, percent);
+				state.m_rotationY = parcentValRot(state.m_rotationY, blendSprite->_orgState.m_rotationY, percent);
+				state.m_rotationZ = parcentValRot(state.m_rotationZ, blendSprite->_orgState.m_rotationZ, percent);
 			}
 
 		}
 
 		//ステータス保存
-		state.cellIndex = cellIndex;
-		state.Calc_rotationX = state.rotationX;
-		state.Calc_rotationY = state.rotationY;
-		state.Calc_rotationZ = state.rotationZ;
-		state.Calc_scaleX = state.scaleX;
-		state.Calc_scaleY = state.scaleY;
-		state.Calc_opacity = state.opacity;
+		state.m_cellIndex = cellIndex;
+		state.m_Calc_rotationX = state.m_rotationX;
+		state.m_Calc_rotationY = state.m_rotationY;
+		state.m_Calc_rotationZ = state.m_rotationZ;
+		state.m_Calc_scaleX = state.m_scaleX;
+		state.m_Calc_scaleY = state.m_scaleY;
+		state.m_Calc_opacity = state.m_opacity;
 
 		CustomSprite* sprite = static_cast<CustomSprite*>(_parts.at(partIndex));
 
 		//反転
 		//反転はUVにも反映させておくので使いやすい方で反転してください。
-		sprite->setFlippedX(state.flipX);
-		sprite->setFlippedY(state.flipY);
+		sprite->setFlippedX(state.m_flipX);
+		sprite->setFlippedY(state.m_flipY);
 
 		bool setBlendEnabled = true;
 
 		if (cellRef)
 		{
 			//各パーツのテクスチャ情報を設定
-			state.texture = cellRef->texture;
-			state.rect = cellRef->rect;
-			state.blendfunc = partData->alphaBlendType;
+			state.m_texture = cellRef->texture;
+			state.m_rect = cellRef->rect;
+			state.m_blendfunc = partData->alphaBlendType;
 
 			if (setBlendEnabled)
 			{
@@ -2251,14 +2251,14 @@ void Player::setFrame(int frameNo, float dt)
 		}
 		else
 		{
-			state.texture.handle = -1;
+			state.m_texture.handle = -1;
 			//セルが無く通常パーツ、ヌルパーツの時は非表示にする
 			if ((partData->type == PARTTYPE_NORMAL) || (partData->type == PARTTYPE_NULL))
 			{
-				state.isVisibled = false;
+				state.m_isVisibled = false;
 			}
 		}
-		sprite->setOpacity(state.opacity);
+		sprite->setOpacity(state.m_opacity);
 
 		//頂点データの設定
 		//quadにはプリミティブの座標（頂点変形を含む）、UV、カラー値が設定されます。
@@ -2325,7 +2325,7 @@ void Player::setFrame(int frameNo, float dt)
 			if (w!= 0.0f)
 			{
 				center = quad.tl.vertices.x + w;
-				float scale = (state.size_X / 2.0f) / w;
+				float scale = (state.m_size_X / 2.0f) / w;
 
 				quad.bl.vertices.x = center - (w * scale);
 				quad.br.vertices.x = center + (w * scale);
@@ -2341,7 +2341,7 @@ void Player::setFrame(int frameNo, float dt)
 			if (h != 0.0f)
 			{
 				center = quad.tl.vertices.y + h;
-				float scale = (state.size_Y / 2.0f) / h;
+				float scale = (state.m_size_Y / 2.0f) / h;
 
 				quad.bl.vertices.y = center - (h * scale);
 				quad.br.vertices.y = center - (h * scale);
@@ -2376,7 +2376,7 @@ void Player::setFrame(int frameNo, float dt)
 		}
 		
 		//頂点情報の取得
-		unsigned char alpha = (unsigned char)state.opacity;
+		unsigned char alpha = (unsigned char)state.m_opacity;
 		SSColor4B color4 = { 0xff, 0xff, 0xff, 0xff };
 
 		color4.r = color4.r * _col_r / 255;
@@ -2399,8 +2399,8 @@ void Player::setFrame(int frameNo, float dt)
 			float blend_rate = 1.0f;
 
 			sprite->setColorBlendFunc(funcNo);
-			sprite->_state.colorBlendFunc = funcNo;
-			sprite->_state.colorBlendType = cb_flags;
+			sprite->_state.m_colorBlendFunc = funcNo;
+			sprite->_state.m_colorBlendType = cb_flags;
 
 			//ssbpではカラーブレンドのレート（％）は使用できません。
 			//制限となります。
@@ -2451,17 +2451,17 @@ void Player::setFrame(int frameNo, float dt)
 		//uvスクロール
 		if (flags & PART_FLAG_U_MOVE)
 		{
-			quad.tl.texCoords.u += state.uv_move_X;
-			quad.tr.texCoords.u += state.uv_move_X;
-			quad.bl.texCoords.u += state.uv_move_X;
-			quad.br.texCoords.u += state.uv_move_X;
+			quad.tl.texCoords.u += state.m_uv_move_X;
+			quad.tr.texCoords.u += state.m_uv_move_X;
+			quad.bl.texCoords.u += state.m_uv_move_X;
+			quad.br.texCoords.u += state.m_uv_move_X;
 		}
 		if (flags & PART_FLAG_V_MOVE)
 		{
-			quad.tl.texCoords.v += state.uv_move_Y;
-			quad.tr.texCoords.v += state.uv_move_Y;
-			quad.bl.texCoords.v += state.uv_move_Y;
-			quad.br.texCoords.v += state.uv_move_Y;
+			quad.tl.texCoords.v += state.m_uv_move_Y;
+			quad.tr.texCoords.v += state.m_uv_move_Y;
+			quad.bl.texCoords.v += state.m_uv_move_Y;
+			quad.br.texCoords.v += state.m_uv_move_Y;
 		}
 
 
@@ -2491,28 +2491,28 @@ void Player::setFrame(int frameNo, float dt)
 		if (flags & PART_FLAG_UV_ROTATION)
 		{
 			//頂点位置を回転させる
-			get_uv_rotation(&quad.tl.texCoords.u, &quad.tl.texCoords.v, u_center, v_center, state.uv_rotation);
-			get_uv_rotation(&quad.tr.texCoords.u, &quad.tr.texCoords.v, u_center, v_center, state.uv_rotation);
-			get_uv_rotation(&quad.bl.texCoords.u, &quad.bl.texCoords.v, u_center, v_center, state.uv_rotation);
-			get_uv_rotation(&quad.br.texCoords.u, &quad.br.texCoords.v, u_center, v_center, state.uv_rotation);
+			get_uv_rotation(&quad.tl.texCoords.u, &quad.tl.texCoords.v, u_center, v_center, state.m_uv_rotation);
+			get_uv_rotation(&quad.tr.texCoords.u, &quad.tr.texCoords.v, u_center, v_center, state.m_uv_rotation);
+			get_uv_rotation(&quad.bl.texCoords.u, &quad.bl.texCoords.v, u_center, v_center, state.m_uv_rotation);
+			get_uv_rotation(&quad.br.texCoords.u, &quad.br.texCoords.v, u_center, v_center, state.m_uv_rotation);
 		}
 
 		//UVスケール || 反転
 		if ((flags & PART_FLAG_U_SCALE) || (flags & PART_FLAG_FLIP_H))
 		{
-			quad.tl.texCoords.u = u_center - (u_wide * state.uv_scale_X * u_code);
-			quad.tr.texCoords.u = u_center + (u_wide * state.uv_scale_X * u_code);
-			quad.bl.texCoords.u = u_center - (u_wide * state.uv_scale_X * u_code);
-			quad.br.texCoords.u = u_center + (u_wide * state.uv_scale_X * u_code);
+			quad.tl.texCoords.u = u_center - (u_wide * state.m_uv_scale_X * u_code);
+			quad.tr.texCoords.u = u_center + (u_wide * state.m_uv_scale_X * u_code);
+			quad.bl.texCoords.u = u_center - (u_wide * state.m_uv_scale_X * u_code);
+			quad.br.texCoords.u = u_center + (u_wide * state.m_uv_scale_X * u_code);
 		}
 		if ((flags & PART_FLAG_V_SCALE) || (flags & PART_FLAG_FLIP_V))
 		{
-			quad.tl.texCoords.v = v_center - (v_height * state.uv_scale_Y * v_code);
-			quad.tr.texCoords.v = v_center - (v_height * state.uv_scale_Y * v_code);
-			quad.bl.texCoords.v = v_center + (v_height * state.uv_scale_Y * v_code);
-			quad.br.texCoords.v = v_center + (v_height * state.uv_scale_Y * v_code);
+			quad.tl.texCoords.v = v_center - (v_height * state.m_uv_scale_Y * v_code);
+			quad.tr.texCoords.v = v_center - (v_height * state.m_uv_scale_Y * v_code);
+			quad.bl.texCoords.v = v_center + (v_height * state.m_uv_scale_Y * v_code);
+			quad.br.texCoords.v = v_center + (v_height * state.m_uv_scale_Y * v_code);
 		}
-		state.quad = quad;
+		state.m_quad = quad;
 
 
 
@@ -2524,17 +2524,17 @@ void Player::setFrame(int frameNo, float dt)
 			Instance keyParam;
 			sprite->_ssplayer->getInstanceParam(&overWrite, &keyParam);
 			//描画
-			int refKeyframe = state.instanceValue_curKeyframe;
-			int refStartframe = state.instanceValue_startFrame;
-			int refEndframe = state.instanceValue_endFrame;
-			float refSpeed = state.instanceValue_speed;
-			int refloopNum = state.instanceValue_loopNum;
+			int refKeyframe = state.m_instanceValue_curKeyframe;
+			int refStartframe = state.m_instanceValue_startFrame;
+			int refEndframe = state.m_instanceValue_endFrame;
+			float refSpeed = state.m_instanceValue_speed;
+			int refloopNum = state.m_instanceValue_loopNum;
 			bool infinity = false;
 			bool reverse = false;
 			bool pingpong = false;
 			bool independent = false;
 
-			int lflags = state.instanceValue_loopflag;
+			int lflags = state.m_instanceValue_loopflag;
 			if (lflags & INSTANCE_LOOP_FLAG_INFINITY )
 			{
 				//無限ループ
@@ -2684,16 +2684,16 @@ void Player::setFrame(int frameNo, float dt)
 				}
 				update_matrix_ss4(sprite, parent, partData);
 				//ルートパーツのアルファ値を反映させる
-				sprite->_state.Calc_opacity = (sprite->_state.Calc_opacity * _state.opacity) / 255;
+				sprite->_state.m_Calc_opacity = (sprite->_state.m_Calc_opacity * _state.m_opacity) / 255;
 				//インスタンスパーツの親を設定
 				if (sprite->_ssplayer)
 				{
 					float x, y;
 					sprite->_mat.getTranslation(&x, &y);
 					sprite->_ssplayer->setPosition(x, y);
-					sprite->_ssplayer->setScale(sprite->_state.Calc_scaleX, sprite->_state.Calc_scaleY);
-					sprite->_ssplayer->setRotation(sprite->_state.Calc_rotationX, sprite->_state.Calc_rotationY, sprite->_state.Calc_rotationZ);
-					sprite->_ssplayer->setAlpha(sprite->_state.Calc_opacity);
+					sprite->_ssplayer->setScale(sprite->_state.m_Calc_scaleX, sprite->_state.m_Calc_scaleY);
+					sprite->_ssplayer->setRotation(sprite->_state.m_Calc_rotationX, sprite->_state.m_Calc_rotationY, sprite->_state.m_Calc_rotationZ);
+					sprite->_ssplayer->setAlpha(sprite->_state.m_Calc_opacity);
 				}
 			}
 			else
@@ -2708,69 +2708,69 @@ void Player::setFrame(int frameNo, float dt)
 				{
 					parentMatrix.setupIdentity();
 					//rootパーツはプレイヤーからステータスを引き継ぐ
-					sprite->_state.x += _state.x;
-					sprite->_state.y += _state.y;
-					sprite->_state.rotationX += _state.rotationX;
-					sprite->_state.rotationY += _state.rotationY;
-					sprite->_state.rotationZ += _state.rotationZ;
-					sprite->_state.scaleX *= _state.scaleX;
-					sprite->_state.scaleY *= _state.scaleY;
+					sprite->_state.m_x += _state.m_x;
+					sprite->_state.m_y += _state.m_y;
+					sprite->_state.m_rotationX += _state.m_rotationX;
+					sprite->_state.m_rotationY += _state.m_rotationY;
+					sprite->_state.m_rotationZ += _state.m_rotationZ;
+					sprite->_state.m_scaleX *= _state.m_scaleX;
+					sprite->_state.m_scaleY *= _state.m_scaleY;
 					//プレイヤーのフリップ
-					if (_state.flipX == true)
+					if (_state.m_flipX == true)
 					{
-						sprite->_state.scaleX = -sprite->_state.scaleX;	//フラグ反転
+						sprite->_state.m_scaleX = -sprite->_state.m_scaleX;	//フラグ反転
 					}
-					if (_state.flipY == true)
+					if (_state.m_flipY == true)
 					{
-						sprite->_state.scaleY = -sprite->_state.scaleY;	//フラグ反転
+						sprite->_state.m_scaleY = -sprite->_state.m_scaleY;	//フラグ反転
 					}
 
-					sprite->_state.Calc_rotationX = sprite->_state.rotationX;
-					sprite->_state.Calc_rotationY = sprite->_state.rotationY;
-					sprite->_state.Calc_rotationZ = sprite->_state.rotationZ;
+					sprite->_state.m_Calc_rotationX = sprite->_state.m_rotationX;
+					sprite->_state.m_Calc_rotationY = sprite->_state.m_rotationY;
+					sprite->_state.m_Calc_rotationZ = sprite->_state.m_rotationZ;
 
-					sprite->_state.Calc_scaleX = sprite->_state.scaleX;
-					sprite->_state.Calc_scaleY = sprite->_state.scaleY;
+					sprite->_state.m_Calc_scaleX = sprite->_state.m_scaleX;
+					sprite->_state.m_Calc_scaleY = sprite->_state.m_scaleY;
 				}
 
 				SSMatrix tmp, mat;
-				mat *= tmp.setupScale(sprite->_state.scaleX, sprite->_state.scaleY);
-				mat *= tmp.setupRotationZ(DegreeToRadian(sprite->_state.rotationZ));
-				mat *= tmp.setupRotationY(DegreeToRadian(sprite->_state.rotationY));
-				mat *= tmp.setupRotationX(DegreeToRadian(sprite->_state.rotationX));
-				mat *= tmp.setupTranslation(sprite->_state.x, sprite->_state.y);
+				mat *= tmp.setupScale(sprite->_state.m_scaleX, sprite->_state.m_scaleY);
+				mat *= tmp.setupRotationZ(DegreeToRadian(sprite->_state.m_rotationZ));
+				mat *= tmp.setupRotationY(DegreeToRadian(sprite->_state.m_rotationY));
+				mat *= tmp.setupRotationX(DegreeToRadian(sprite->_state.m_rotationX));
+				mat *= tmp.setupTranslation(sprite->_state.m_x, sprite->_state.m_y);
 				mat *= parentMatrix;
 
 				sprite->_mat = mat;
-				sprite->_state.mat = mat;
+				sprite->_state.m_mat = mat;
 
 				if (partIndex > 0)
 				{
 					CustomSprite* parent = static_cast<CustomSprite*>(_parts.at(partData->parentIndex));
 					//子供は親のステータスを引き継ぐ
 					//座標はマトリクスから取得する
-					if ((parent->_state.Calc_scaleX * parent->_state.Calc_scaleY) < 0)	//スケールのどちらかが-の場合は回転方向を逆にする
+					if ((parent->_state.m_Calc_scaleX * parent->_state.m_Calc_scaleY) < 0)	//スケールのどちらかが-の場合は回転方向を逆にする
 					{
-						sprite->_state.Calc_rotationZ = -sprite->_state.Calc_rotationZ;
+						sprite->_state.m_Calc_rotationZ = -sprite->_state.m_Calc_rotationZ;
 					}
-					sprite->_state.Calc_rotationX += parent->_state.Calc_rotationX;
-					sprite->_state.Calc_rotationY += parent->_state.Calc_rotationY;
-					sprite->_state.Calc_rotationZ += parent->_state.Calc_rotationZ;
+					sprite->_state.m_Calc_rotationX += parent->_state.m_Calc_rotationX;
+					sprite->_state.m_Calc_rotationY += parent->_state.m_Calc_rotationY;
+					sprite->_state.m_Calc_rotationZ += parent->_state.m_Calc_rotationZ;
 
-					sprite->_state.Calc_scaleX *= parent->_state.Calc_scaleX;
-					sprite->_state.Calc_scaleY *= parent->_state.Calc_scaleY;
+					sprite->_state.m_Calc_scaleX *= parent->_state.m_Calc_scaleX;
+					sprite->_state.m_Calc_scaleY *= parent->_state.m_Calc_scaleY;
 
 					//ルートパーツのアルファ値を反映させる
-					sprite->_state.Calc_opacity = (sprite->_state.Calc_opacity * _state.opacity) / 255;
+					sprite->_state.m_Calc_opacity = (sprite->_state.m_Calc_opacity * _state.m_opacity) / 255;
 					//インスタンスパーツの親を設定
 					if (sprite->_ssplayer)
 					{
 						float x, y;
 						sprite->_mat.getTranslation(&x, &y);
 						sprite->_ssplayer->setPosition(x, y);
-						sprite->_ssplayer->setScale(sprite->_state.Calc_scaleX, sprite->_state.Calc_scaleY);
-						sprite->_ssplayer->setRotation(sprite->_state.Calc_rotationX, sprite->_state.Calc_rotationY, sprite->_state.Calc_rotationZ);
-						sprite->_ssplayer->setAlpha(sprite->_state.Calc_opacity);
+						sprite->_ssplayer->setScale(sprite->_state.m_Calc_scaleX, sprite->_state.m_Calc_scaleY);
+						sprite->_ssplayer->setRotation(sprite->_state.m_Calc_rotationX, sprite->_state.m_Calc_rotationY, sprite->_state.m_Calc_rotationZ);
+						sprite->_ssplayer->setAlpha(sprite->_state.m_Calc_opacity);
 					}
 
 				}
@@ -2796,12 +2796,12 @@ void Player::setFrame(int frameNo, float dt)
 			sprite->refEffect->setParentSprite(sprite);
 
 			//エフェクトアトリビュート
-			int curKeyframe = sprite->_state.effectValue_curKeyframe;
-			int refStartframe = sprite->_state.effectValue_startTime;
-			float refSpeed = sprite->_state.effectValue_speed;
+			int curKeyframe = sprite->_state.m_effectValue_curKeyframe;
+			int refStartframe = sprite->_state.m_effectValue_startTime;
+			float refSpeed = sprite->_state.m_effectValue_speed;
 			bool independent = false;
 
-			int lflags = sprite->_state.effectValue_loopflag;
+			int lflags = sprite->_state.m_effectValue_loopflag;
 			if (lflags & EFFECT_LOOP_FLAG_INDEPENDENT)
 			{
 				independent = true;
@@ -2814,7 +2814,7 @@ void Player::setFrame(int frameNo, float dt)
 			}
 
 			sprite->refEffect->setParentSprite(sprite);	//親スプライトの設定
-			if (sprite->_state.isVisibled == true)
+			if (sprite->_state.m_isVisibled == true)
 			{
 
 				if (independent)
@@ -2878,7 +2878,7 @@ void Player::draw()
 		CustomSprite* sprite = static_cast<CustomSprite*>(_parts.at(partIndex));
 		if (sprite->_ssplayer)
 		{
-			if ((sprite->_state.isVisibled == true) && (sprite->_state.opacity > 0))
+			if ((sprite->_state.m_isVisibled == true) && (sprite->_state.m_opacity > 0))
 			{
 				//インスタンスパーツの場合は子供のプレイヤーを再生
 				sprite->_ssplayer->draw();
@@ -2888,7 +2888,7 @@ void Player::draw()
 		{
 			if (sprite->refEffect)
 			{ 
-				if ((sprite->_state.isVisibled == true) && (sprite->_state.opacity > 0))
+				if ((sprite->_state.m_isVisibled == true) && (sprite->_state.m_opacity > 0))
 				{
 					//エフェクトパーツ
 					sprite->refEffect->draw();
@@ -2896,9 +2896,9 @@ void Player::draw()
 			}
 			else
 			{
-				if (sprite->_state.texture.handle != -1)
+				if (sprite->_state.m_texture.handle != -1)
 				{
-					if ((sprite->_state.isVisibled == true) && (sprite->_state.opacity > 0))
+					if ((sprite->_state.m_isVisibled == true) && (sprite->_state.m_opacity > 0))
 					{
 						SSDrawSprite(sprite->_state);
 					}
@@ -2995,31 +2995,31 @@ void Player::checkUserData(int frameNo)
 
 void  Player::setPosition(float x, float y)
 {
-	_state.x = x;
-	_state.y = y;
+	_state.m_x = x;
+	_state.m_y = y;
 }
 void  Player::setRotation(float x, float y, float z)
 {
-	_state.rotationX = x;
-	_state.rotationY = y;
-	_state.rotationZ = z;
+	_state.m_rotationX = x;
+	_state.m_rotationY = y;
+	_state.m_rotationZ = z;
 }
 
 void  Player::setScale(float x, float y)
 {
-	_state.scaleX = x;
-	_state.scaleY = y;
+	_state.m_scaleX = x;
+	_state.m_scaleY = y;
 }
 
 void  Player::setAlpha(int a)
 {
-	_state.opacity = a;
+	_state.m_opacity = a;
 }
 
 void  Player::setFlip(bool flipX, bool flipY)
 {
-	_state.flipX = flipX;
-	_state.flipY = flipY;
+	_state.m_flipX = flipX;
+	_state.m_flipY = flipY;
 }
 
 //割合に応じた中間値を取得します
@@ -3078,33 +3078,33 @@ void Player::update_matrix_ss4(CustomSprite *sprite, CustomSprite *parent, const
 	{
 		//rootパーツ
 		//rootパーツはプレイヤーからステータスを引き継ぐ
-		sprite->_state.x += _state.x;
-		sprite->_state.y += _state.y;
-		sprite->_state.rotationX += _state.rotationX;
-		sprite->_state.rotationY += _state.rotationY;
-		sprite->_state.rotationZ += _state.rotationZ;
-		sprite->_state.scaleX *= _state.scaleX;
-		sprite->_state.scaleY *= _state.scaleY;
-		if (_state.flipX == true)
+		sprite->_state.m_x += _state.m_x;
+		sprite->_state.m_y += _state.m_y;
+		sprite->_state.m_rotationX += _state.m_rotationX;
+		sprite->_state.m_rotationY += _state.m_rotationY;
+		sprite->_state.m_rotationZ += _state.m_rotationZ;
+		sprite->_state.m_scaleX *= _state.m_scaleX;
+		sprite->_state.m_scaleY *= _state.m_scaleY;
+		if (_state.m_flipX == true)
 		{
 			//プレイヤーのXフリップ
-			sprite->_state.scaleX = -sprite->_state.scaleX;	//フラグ反転
+			sprite->_state.m_scaleX = -sprite->_state.m_scaleX;	//フラグ反転
 		}
-		if (_state.flipY == true)
+		if (_state.m_flipY == true)
 		{
-			sprite->_state.scaleY = -sprite->_state.scaleY;	//フラグ反転
+			sprite->_state.m_scaleY = -sprite->_state.m_scaleY;	//フラグ反転
 		}
 
-		sprite->_temp_position = SsVector3(sprite->_state.x, sprite->_state.y, 0);
-		sprite->_temp_rotation = SsVector3(0, 0, sprite->_state.rotationZ);
-		sprite->_temp_scale = SsVector2(sprite->_state.scaleX, sprite->_state.scaleY);
+		sprite->_temp_position = SsVector3(sprite->_state.m_x, sprite->_state.m_y, 0);
+		sprite->_temp_rotation = SsVector3(0, 0, sprite->_state.m_rotationZ);
+		sprite->_temp_scale = SsVector2(sprite->_state.m_scaleX, sprite->_state.m_scaleY);
 
 		return;
 	}
 
-	float x = sprite->_state.x;
-	float y = sprite->_state.y;
-	float z = sprite->_state.z;
+	float x = sprite->_state.m_x;
+	float y = sprite->_state.m_y;
+	float z = sprite->_state.m_z;
 
 	//scaleを適用
 	x *= parent->_temp_scale.x;
@@ -3129,11 +3129,11 @@ void Player::update_matrix_ss4(CustomSprite *sprite, CustomSprite *parent, const
 	sprite->_temp_position.y = parent->_temp_position.y + y;
 
 	//ローカル回転
-	sprite->_temp_rotation.z = sprite->_state.rotationZ + parent->_temp_rotation.z;
+	sprite->_temp_rotation.z = sprite->_state.m_rotationZ + parent->_temp_rotation.z;
 
 	//拡大率
-	sprite->_temp_scale.x = sprite->_state.scaleX * parent->_temp_scale.x;
-	sprite->_temp_scale.y = sprite->_state.scaleY * parent->_temp_scale.y;
+	sprite->_temp_scale.x = sprite->_state.m_scaleX * parent->_temp_scale.x;
+	sprite->_temp_scale.y = sprite->_state.m_scaleY * parent->_temp_scale.y;
 
 	//SS4の状態で上書きする
 //	sprite->_temp_position.x;
@@ -3151,12 +3151,12 @@ void Player::update_matrix_ss4(CustomSprite *sprite, CustomSprite *parent, const
 	mat *= t.setupTranslation(sprite->_temp_position.x, sprite->_temp_position.y, sprite->_temp_position.z);
 
 	sprite->_mat = mat;
-	sprite->_state.mat = mat;
-	sprite->_state.Calc_rotationX = 0;
-	sprite->_state.Calc_rotationY = 0;
-	sprite->_state.Calc_rotationZ = sprite->_temp_rotation.z * temp;
-	sprite->_state.Calc_scaleX = sprite->_temp_scale.x;
-	sprite->_state.Calc_scaleY = sprite->_temp_scale.y;
+	sprite->_state.m_mat = mat;
+	sprite->_state.m_Calc_rotationX = 0;
+	sprite->_state.m_Calc_rotationY = 0;
+	sprite->_state.m_Calc_rotationZ = sprite->_temp_rotation.z * temp;
+	sprite->_state.m_Calc_scaleX = sprite->_temp_scale.x;
+	sprite->_state.m_Calc_scaleY = sprite->_temp_scale.y;
 }
 
 

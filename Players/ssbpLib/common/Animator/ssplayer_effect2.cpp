@@ -535,8 +535,8 @@ void	SsEffectRenderV2::drawSprite(
 	float parentAlpha = 1.0f;
 
 	if(_parentSprite){
-		matrix *= _parentSprite->_state.mat;
-		parentAlpha = _parentSprite->_state.opacity / 255.0f;
+		matrix *= _parentSprite->_state.m_mat;
+		parentAlpha = _parentSprite->_state.m_opacity / 255.0f;
 	}
 
 	SsFColor fcolor;
@@ -549,99 +549,99 @@ void	SsEffectRenderV2::drawSprite(
 
 	SSCellPartState state;
 	state = _parentSprite->_state;		//親パーツの情報をコピー
-	state.mat = matrix;					//マトリクスのコピー
+	state.m_mat = matrix;					//マトリクスのコピー
 	
-	state.cellIndex = dispCell->refCell.cellIndex;
-	state.texture = dispCell->refCell.texture;	//テクスチャID	
-	state.rect = dispCell->refCell.rect;		//セルの矩形をコピー	
-	float width_h = state.rect.size.width / 2;
-	float height_h = state.rect.size.height / 2;
+	state.m_cellIndex = dispCell->refCell.cellIndex;
+	state.m_texture = dispCell->refCell.texture;	//テクスチャID	
+	state.m_rect = dispCell->refCell.rect;		//セルの矩形をコピー	
+	float width_h = state.m_rect.size.width / 2;
+	float height_h = state.m_rect.size.height / 2;
 	float x1 = -width_h;
 	float y1 = -height_h;
 	float x2 = width_h;
 	float y2 = height_h;
 
 #ifdef UP_MINUS
-	state.quad.tl.vertices.x = x1;
-	state.quad.tl.vertices.y = y1;
-	state.quad.tr.vertices.x = x2;
-	state.quad.tr.vertices.y = y1;
-	state.quad.bl.vertices.x = x1;
-	state.quad.bl.vertices.y = y2;
-	state.quad.br.vertices.x = x2;
-	state.quad.br.vertices.y = y2;
+	state.m_quad.tl.vertices.x = x1;
+	state.m_quad.tl.vertices.y = y1;
+	state.m_quad.tr.vertices.x = x2;
+	state.m_quad.tr.vertices.y = y1;
+	state.m_quad.bl.vertices.x = x1;
+	state.m_quad.bl.vertices.y = y2;
+	state.m_quad.br.vertices.x = x2;
+	state.m_quad.br.vertices.y = y2;
 #else
-	state.quad.tl.vertices.x = x1;
-	state.quad.tl.vertices.y = y2;
-	state.quad.tr.vertices.x = x2;
-	state.quad.tr.vertices.y = y2;
-	state.quad.bl.vertices.x = x1;
-	state.quad.bl.vertices.y = y1;
-	state.quad.br.vertices.x = x2;
-	state.quad.br.vertices.y = y1;
+	state.m_quad.tl.vertices.x = x1;
+	state.m_quad.tl.vertices.y = y2;
+	state.m_quad.tr.vertices.x = x2;
+	state.m_quad.tr.vertices.y = y2;
+	state.m_quad.bl.vertices.x = x1;
+	state.m_quad.bl.vertices.y = y1;
+	state.m_quad.br.vertices.x = x2;
+	state.m_quad.br.vertices.y = y1;
 #endif
 
 	//UVを設定する
-	int atlasWidth = state.texture.size_w;
-	int atlasHeight = state.texture.size_h;
+	int atlasWidth = state.m_texture.size_w;
+	int atlasHeight = state.m_texture.size_h;
 	float left, right, top, bottom;
-	left = state.rect.origin.x / (float)atlasWidth;
-	right = (state.rect.origin.x + state.rect.size.width) / (float)atlasWidth;
-	top = state.rect.origin.y / (float)atlasHeight;
-	bottom = (state.rect.origin.y + state.rect.size.height) / (float)atlasHeight;
+	left = state.m_rect.origin.x / (float)atlasWidth;
+	right = (state.m_rect.origin.x + state.m_rect.size.width) / (float)atlasWidth;
+	top = state.m_rect.origin.y / (float)atlasHeight;
+	bottom = (state.m_rect.origin.y + state.m_rect.size.height) / (float)atlasHeight;
 
-	state.quad.tl.texCoords.u = left;
-	state.quad.tl.texCoords.v = top;
-	state.quad.tr.texCoords.u = right;
-	state.quad.tr.texCoords.v = top;
-	state.quad.bl.texCoords.u = left;
-	state.quad.bl.texCoords.v = bottom;
-	state.quad.br.texCoords.u = right;
-	state.quad.br.texCoords.v = bottom;
+	state.m_quad.tl.texCoords.u = left;
+	state.m_quad.tl.texCoords.v = top;
+	state.m_quad.tr.texCoords.u = right;
+	state.m_quad.tr.texCoords.v = top;
+	state.m_quad.bl.texCoords.u = left;
+	state.m_quad.bl.texCoords.v = bottom;
+	state.m_quad.br.texCoords.u = right;
+	state.m_quad.br.texCoords.v = bottom;
 
 	//ブレンドタイプを設定
 	if (dispCell->blendType == SsRenderBlendType::Mix)
 	{
-		state.blendfunc = BLEND_MIX;	//ブレンドタイプを設定
+		state.m_blendfunc = BLEND_MIX;	//ブレンドタイプを設定
 	}
 	else
 	{
-		state.blendfunc = BLEND_ADD;	//ブレンドタイプを設定
+		state.m_blendfunc = BLEND_ADD;	//ブレンドタイプを設定
 	}
-	//	state.flags = PART_FLAG_COLOR_BLEND;		//カラーブレンドフラグを設定
-	state.colorBlendFunc = BLEND_MUL;			//カラーブレンドフラグ乗算
+	//	state.m_flags = PART_FLAG_COLOR_BLEND;		//カラーブレンドフラグを設定
+	state.m_colorBlendFunc = BLEND_MUL;			//カラーブレンドフラグ乗算
 	int r = (int)(fcolor.r * 255.0f);			//カラー値を設定
 	int g = (int)(fcolor.g * 255.0f);
 	int b = (int)(fcolor.b * 255.0f);
 	int a = (int)(fcolor.a * 255.0f);
-	state.quad.tl.colors.r = r;
-	state.quad.tl.colors.g = g;
-	state.quad.tl.colors.b = b;
-	state.quad.tl.colors.a = a;
-	state.quad.tr.colors = state.quad.bl.colors = state.quad.br.colors = state.quad.tl.colors;
-	state.opacity = a;							//透明度を設定
+	state.m_quad.tl.colors.r = r;
+	state.m_quad.tl.colors.g = g;
+	state.m_quad.tl.colors.b = b;
+	state.m_quad.tl.colors.a = a;
+	state.m_quad.tr.colors = state.m_quad.bl.colors = state.m_quad.br.colors = state.m_quad.tl.colors;
+	state.m_opacity = a;							//透明度を設定
 
-	state.rotationZ += _rotation + RadianToDegree(direction);		//回転
-	state.scaleX *= _size.x;		//スケール
-	state.scaleY *= _size.y;		//スケール
+	state.m_rotationZ += _rotation + RadianToDegree(direction);		//回転
+	state.m_scaleX *= _size.x;		//スケール
+	state.m_scaleY *= _size.y;		//スケール
 
-	if ((state.scaleX * state.scaleY) < 0)	//スケールのどちらかが-の場合は回転方向を逆にする
+	if ((state.m_scaleX * state.m_scaleY) < 0)	//スケールのどちらかが-の場合は回転方向を逆にする
 	{
-		state.rotationZ = -state.rotationZ;
+		state.m_rotationZ = -state.m_rotationZ;
 	}
 
 	//原点計算を行う
 	float px = 0;
 	float py = 0;
-	float cx = ((state.rect.size.width * state.scaleX) * -(dispCell->refCell.pivot_X));
+	float cx = ((state.m_rect.size.width * state.m_scaleX) * -(dispCell->refCell.pivot_X));
 #ifdef UP_MINUS
-	float cy = ((state.rect.size.height * state.scaleY) * -(dispCell->refCell.pivot_Y));
+	float cy = ((state.m_rect.size.height * state.m_scaleY) * -(dispCell->refCell.pivot_Y));
 #else
-	float cy = ((state.rect.size.height * state.scaleY) * +(dispCell->refCell.pivot_Y));
+	float cy = ((state.m_rect.size.height * state.m_scaleY) * +(dispCell->refCell.pivot_Y));
 #endif
-	get_uv_rotation(&cx, &cy, 0, 0, state.rotationZ);
+	get_uv_rotation(&cx, &cy, 0, 0, state.m_rotationZ);
 
-	state.mat.addTranslation(cx, cy, 0);
+	state.m_mat.addTranslation(cx, cy, 0);
 
 	SSDrawSprite(state);	//描画
 

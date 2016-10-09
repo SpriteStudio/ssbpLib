@@ -9,59 +9,59 @@ namespace ss{
 
 void SSCellPartState::init()
 {
-	flags = 0;
-	cellIndex = 0;
-	x = 0.0f;
-	y = 0.0f;
-	z = 0.0f;
-	pivotX = 0.0f;
-	pivotY = 0.0f;
-	rotationX = 0.0f;
-	rotationY = 0.0f;
-	rotationZ = 0.0f;
-	scaleX = 1.0f;
-	scaleY = 1.0f;
-	opacity = 255;
-	size_X = 1.0f;
-	size_Y = 1.0f;
-	uv_move_X = 0.0f;
-	uv_move_Y = 0.0f;
-	uv_rotation = 0.0f;
-	uv_scale_X = 1.0f;
-	uv_scale_Y = 1.0f;
-	boundingRadius = 0.0f;
-	colorBlendFunc = 0;
-	colorBlendType = 0;
-	flipX = false;
-	flipY = false;
-	isVisibled = false;
-	memset(&quad, 0, sizeof(quad));
-	texture.handle = 0;
-	texture.size_w = 0;
-	texture.size_h = 0;
-	rect.size.height = 0;
-	rect.size.width = 0;
-	rect.origin.x = 0;
-	rect.origin.y = 0;
-	blendfunc = 0;
-	mat.setupIdentity();
-	instanceValue_curKeyframe = 0;
-	instanceValue_startFrame = 0;
-	instanceValue_endFrame = 0;
-	instanceValue_loopNum = 0;
-	instanceValue_speed = 0;
-	instanceValue_loopflag = 0;
-	effectValue_curKeyframe = 0;
-	effectValue_startTime = 0;
-	effectValue_speed = 0;
-	effectValue_loopflag = 0;
+	m_flags = 0;
+	m_cellIndex = 0;
+	m_x = 0.0f;
+	m_y = 0.0f;
+	m_z = 0.0f;
+	m_pivotX = 0.0f;
+	m_pivotY = 0.0f;
+	m_rotationX = 0.0f;
+	m_rotationY = 0.0f;
+	m_rotationZ = 0.0f;
+	m_scaleX = 1.0f;
+	m_scaleY = 1.0f;
+	m_opacity = 255;
+	m_size_X = 1.0f;
+	m_size_Y = 1.0f;
+	m_uv_move_X = 0.0f;
+	m_uv_move_Y = 0.0f;
+	m_uv_rotation = 0.0f;
+	m_uv_scale_X = 1.0f;
+	m_uv_scale_Y = 1.0f;
+	m_boundingRadius = 0.0f;
+	m_colorBlendFunc = 0;
+	m_colorBlendType = 0;
+	m_flipX = false;
+	m_flipY = false;
+	m_isVisibled = false;
+	memset(&m_quad, 0, sizeof(m_quad));
+	m_texture.handle = 0;
+	m_texture.size_w = 0;
+	m_texture.size_h = 0;
+	m_rect.size.height = 0;
+	m_rect.size.width = 0;
+	m_rect.origin.x = 0;
+	m_rect.origin.y = 0;
+	m_blendfunc = 0;
+	m_mat.setupIdentity();
+	m_instanceValue_curKeyframe = 0;
+	m_instanceValue_startFrame = 0;
+	m_instanceValue_endFrame = 0;
+	m_instanceValue_loopNum = 0;
+	m_instanceValue_speed = 0;
+	m_instanceValue_loopflag = 0;
+	m_effectValue_curKeyframe = 0;
+	m_effectValue_startTime = 0;
+	m_effectValue_speed = 0;
+	m_effectValue_loopflag = 0;
 
-	Calc_rotationX = 0.0f;
-	Calc_rotationY = 0.0f;
-	Calc_rotationZ = 0.0f;
-	Calc_scaleX = 1.0f;
-	Calc_scaleY = 1.0f;
-	Calc_opacity = 255;
+	m_Calc_rotationX = 0.0f;
+	m_Calc_rotationY = 0.0f;
+	m_Calc_rotationZ = 0.0f;
+	m_Calc_scaleX = 1.0f;
+	m_Calc_scaleY = 1.0f;
+	m_Calc_opacity = 255;
 }
 	
 
@@ -70,60 +70,62 @@ void SSCellPartState::init()
 void SSCellPartState::readData(DataArrayReader &reader, const AnimationInitialData *init)
 {
 	// optional parameters
-	flags = reader.readU32();
-	cellIndex = flags & PART_FLAG_CELL_INDEX ? reader.readS16() : init->cellIndex;
-	x = flags & PART_FLAG_POSITION_X ? reader.readFloat() : init->positionX;
+	int flags = reader.readU32();
+
+	m_flags = flags;
+	m_cellIndex = flags & PART_FLAG_CELL_INDEX ? reader.readS16() : init->cellIndex;
+	m_x         = flags & PART_FLAG_POSITION_X ? reader.readFloat() : init->positionX;
 #ifdef UP_MINUS
-	y = flags & PART_FLAG_POSITION_Y ? -reader.readFloat() : -init->positionY;		//上がマイナスなので反転させる
+	m_y         = flags & PART_FLAG_POSITION_Y ? -reader.readFloat() : -init->positionY;		//上がマイナスなので反転させる
 #else
-	y = flags & PART_FLAG_POSITION_Y ? reader.readFloat() : init->positionY;
+	m_y         = flags & PART_FLAG_POSITION_Y ? reader.readFloat() : init->positionY;
 #endif
-	z = flags & PART_FLAG_POSITION_Z ? reader.readFloat() : init->positionZ;
-	pivotX = flags & PART_FLAG_PIVOT_X ? reader.readFloat() : init->pivotX;
+	m_z         = flags & PART_FLAG_POSITION_Z ? reader.readFloat() : init->positionZ;
+	m_pivotX    = flags & PART_FLAG_PIVOT_X ? reader.readFloat() : init->pivotX;
 #ifdef UP_MINUS
-	pivotY = flags & PART_FLAG_PIVOT_Y ? -reader.readFloat() : -init->pivotY;
+	m_pivotY    = flags & PART_FLAG_PIVOT_Y ? -reader.readFloat() : -init->pivotY;
 #else
-	pivotY = flags & PART_FLAG_PIVOT_Y ? reader.readFloat() : init->pivotY;
+	m_pivotY    = flags & PART_FLAG_PIVOT_Y ? reader.readFloat() : init->pivotY;
 #endif
 #ifdef UP_MINUS
-	rotationX = flags & PART_FLAG_ROTATIONX ? -reader.readFloat() : -init->rotationX;
-	rotationY = flags & PART_FLAG_ROTATIONY ? -reader.readFloat() : -init->rotationY;
-	rotationZ = flags & PART_FLAG_ROTATIONZ ? -reader.readFloat() : -init->rotationZ;
+	m_rotationX = flags & PART_FLAG_ROTATIONX ? -reader.readFloat() : -init->rotationX;
+	m_rotationY = flags & PART_FLAG_ROTATIONY ? -reader.readFloat() : -init->rotationY;
+	m_rotationZ = flags & PART_FLAG_ROTATIONZ ? -reader.readFloat() : -init->rotationZ;
 #else
-	rotationX = flags & PART_FLAG_ROTATIONX ? reader.readFloat() : init->rotationX;
-	rotationY = flags & PART_FLAG_ROTATIONY ? reader.readFloat() : init->rotationY;
-	rotationZ = flags & PART_FLAG_ROTATIONZ ? reader.readFloat() : init->rotationZ;
+	m_rotationX = flags & PART_FLAG_ROTATIONX ? reader.readFloat() : init->rotationX;
+	m_rotationY = flags & PART_FLAG_ROTATIONY ? reader.readFloat() : init->rotationY;
+	m_rotationZ = flags & PART_FLAG_ROTATIONZ ? reader.readFloat() : init->rotationZ;
 #endif
-	scaleX = flags & PART_FLAG_SCALE_X ? reader.readFloat() : init->scaleX;
-	scaleY = flags & PART_FLAG_SCALE_Y ? reader.readFloat() : init->scaleY;
-	opacity = flags & PART_FLAG_OPACITY ? reader.readU16() : init->opacity;
-	size_X = flags & PART_FLAG_SIZE_X ? reader.readFloat() : init->size_X;
-	size_Y = flags & PART_FLAG_SIZE_Y ? reader.readFloat() : init->size_Y;
-	uv_move_X = flags & PART_FLAG_U_MOVE ? reader.readFloat() : init->uv_move_X;
-	uv_move_Y = flags & PART_FLAG_V_MOVE ? reader.readFloat() : init->uv_move_Y;
-	uv_rotation = flags & PART_FLAG_UV_ROTATION ? reader.readFloat() : init->uv_rotation;
-	uv_scale_X = flags & PART_FLAG_U_SCALE ? reader.readFloat() : init->uv_scale_X;
-	uv_scale_Y = flags & PART_FLAG_V_SCALE ? reader.readFloat() : init->uv_scale_Y;
-	boundingRadius = flags & PART_FLAG_BOUNDINGRADIUS ? reader.readFloat() : init->boundingRadius;
+	m_scaleX    = flags & PART_FLAG_SCALE_X ? reader.readFloat() : init->scaleX;
+	m_scaleY    = flags & PART_FLAG_SCALE_Y ? reader.readFloat() : init->scaleY;
+	m_opacity   = flags & PART_FLAG_OPACITY ? reader.readU16() : init->opacity;
+	m_size_X    = flags & PART_FLAG_SIZE_X ? reader.readFloat() : init->size_X;
+	m_size_Y    = flags & PART_FLAG_SIZE_Y ? reader.readFloat() : init->size_Y;
+	m_uv_move_X = flags & PART_FLAG_U_MOVE ? reader.readFloat() : init->uv_move_X;
+	m_uv_move_Y = flags & PART_FLAG_V_MOVE ? reader.readFloat() : init->uv_move_Y;
+	m_uv_rotation = flags & PART_FLAG_UV_ROTATION ? reader.readFloat() : init->uv_rotation;
+	m_uv_scale_X  = flags & PART_FLAG_U_SCALE ? reader.readFloat() : init->uv_scale_X;
+	m_uv_scale_Y  = flags & PART_FLAG_V_SCALE ? reader.readFloat() : init->uv_scale_Y;
+	m_boundingRadius = flags & PART_FLAG_BOUNDINGRADIUS ? reader.readFloat() : init->boundingRadius;
 
 	//インスタンスアトリビュート
-	instanceValue_curKeyframe = flags & PART_FLAG_INSTANCE_KEYFRAME ? reader.readS32() : init->instanceValue_curKeyframe;
-	instanceValue_startFrame = flags & PART_FLAG_INSTANCE_KEYFRAME ? reader.readS32() : init->instanceValue_startFrame;
-	instanceValue_endFrame = flags & PART_FLAG_INSTANCE_KEYFRAME ? reader.readS32() : init->instanceValue_endFrame;
-	instanceValue_loopNum = flags & PART_FLAG_INSTANCE_KEYFRAME ? reader.readS32() : init->instanceValue_loopNum;
-	instanceValue_speed = flags & PART_FLAG_INSTANCE_KEYFRAME ? reader.readFloat() : init->instanceValue_speed;
-	instanceValue_loopflag = flags & PART_FLAG_INSTANCE_KEYFRAME ? reader.readS32() : init->instanceValue_loopflag;
+	m_instanceValue_curKeyframe = flags & PART_FLAG_INSTANCE_KEYFRAME ? reader.readS32() : init->instanceValue_curKeyframe;
+	m_instanceValue_startFrame  = flags & PART_FLAG_INSTANCE_KEYFRAME ? reader.readS32() : init->instanceValue_startFrame;
+	m_instanceValue_endFrame    = flags & PART_FLAG_INSTANCE_KEYFRAME ? reader.readS32() : init->instanceValue_endFrame;
+	m_instanceValue_loopNum     = flags & PART_FLAG_INSTANCE_KEYFRAME ? reader.readS32() : init->instanceValue_loopNum;
+	m_instanceValue_speed       = flags & PART_FLAG_INSTANCE_KEYFRAME ? reader.readFloat() : init->instanceValue_speed;
+	m_instanceValue_loopflag    = flags & PART_FLAG_INSTANCE_KEYFRAME ? reader.readS32() : init->instanceValue_loopflag;
 	//エフェクトアトリビュート
-	effectValue_curKeyframe = flags & PART_FLAG_EFFECT_KEYFRAME ? reader.readS32() : init->effectValue_curKeyframe;
-	effectValue_startTime = flags & PART_FLAG_EFFECT_KEYFRAME ? reader.readS32() : init->effectValue_startTime;
-	effectValue_speed = flags & PART_FLAG_EFFECT_KEYFRAME ? reader.readFloat() : init->effectValue_speed;
-	effectValue_loopflag = flags & PART_FLAG_EFFECT_KEYFRAME ? reader.readS32() : init->effectValue_loopflag;
+	m_effectValue_curKeyframe = flags & PART_FLAG_EFFECT_KEYFRAME ? reader.readS32() : init->effectValue_curKeyframe;
+	m_effectValue_startTime   = flags & PART_FLAG_EFFECT_KEYFRAME ? reader.readS32() : init->effectValue_startTime;
+	m_effectValue_speed       = flags & PART_FLAG_EFFECT_KEYFRAME ? reader.readFloat() : init->effectValue_speed;
+	m_effectValue_loopflag    = flags & PART_FLAG_EFFECT_KEYFRAME ? reader.readS32() : init->effectValue_loopflag;
 
 
-	flipX = (bool)(flags & PART_FLAG_FLIP_H);
-	flipY = (bool)(flags & PART_FLAG_FLIP_V);
+	m_flipX = (bool)(flags & PART_FLAG_FLIP_H);
+	m_flipY = (bool)(flags & PART_FLAG_FLIP_V);
 	
-	isVisibled = !(flags & PART_FLAG_INVISIBLE);
+	m_isVisibled = !(flags & PART_FLAG_INVISIBLE);
 }
 
 

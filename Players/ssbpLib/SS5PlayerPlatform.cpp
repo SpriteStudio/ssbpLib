@@ -131,36 +131,36 @@ namespace ss
 
 		//描画ファンクション
 		//
-		switch (state.blendfunc)
+		switch (state.m_blendfunc)
 		{
 			case BLEND_MIX:		///< 0 ブレンド（ミックス）
-				if (state.opacity == 255)
+				if (state.m_opacity == 255)
 				{
-					SetDrawBlendMode(DX_BLENDMODE_NOBLEND, state.opacity);
+					SetDrawBlendMode(DX_BLENDMODE_NOBLEND, state.m_opacity);
 				}
 				else
 				{
-					SetDrawBlendMode(DX_BLENDMODE_ALPHA, state.opacity);
+					SetDrawBlendMode(DX_BLENDMODE_ALPHA, state.m_opacity);
 				}
 				break;
 			case BLEND_MUL:		///< 1 乗算
-				SetDrawBlendMode(DX_BLENDMODE_MULA, state.opacity);
+				SetDrawBlendMode(DX_BLENDMODE_MULA, state.m_opacity);
 				break;
 			case BLEND_ADD:		///< 2 加算
-				SetDrawBlendMode(DX_BLENDMODE_ADD, state.opacity);
+				SetDrawBlendMode(DX_BLENDMODE_ADD, state.m_opacity);
 				break;
 			case BLEND_SUB:		///< 3 減算
-				SetDrawBlendMode(DX_BLENDMODE_SUB, state.opacity);
+				SetDrawBlendMode(DX_BLENDMODE_SUB, state.m_opacity);
 				break;
 
 		}
 
-		if (state.flags & PART_FLAG_COLOR_BLEND)
+		if (state.m_flags & PART_FLAG_COLOR_BLEND)
 		{
 			//RGBのカラーブレンドを設定
 			//厳密に再現するには専用のシェーダーを使い、テクスチャにカラー値を合成する必要がある
 			//作成する場合はssShader_frag.h、CustomSpriteのコメントとなってるシェーダー処理を参考にしてください。
-			if (state.colorBlendType == VERTEX_FLAG_ONE)
+			if (state.m_colorBlendType == VERTEX_FLAG_ONE)
 			{
 				//単色カラーブレンド
 			}
@@ -169,14 +169,14 @@ namespace ss
 				//頂点カラーブレンド
 				//未対応
 			}
-			switch (state.colorBlendFunc)
+			switch (state.m_colorBlendFunc)
 			{
 			case BLEND_MIX:
 				break;
 			case BLEND_MUL:		///< 1 乗算
 				// ブレンド方法は乗算以外未対応
 				// とりあえず左上の色を反映させる
-				SetDrawBright(state.quad.tl.colors.r, state.quad.tl.colors.g, state.quad.tl.colors.b);
+				SetDrawBright(state.m_quad.tl.colors.r, state.m_quad.tl.colors.g, state.m_quad.tl.colors.b);
 				break;
 			case BLEND_ADD:		///< 2 加算
 				break;
@@ -194,12 +194,12 @@ namespace ss
 		* DrawRectRotaGraphはxとyが中心になるように、テクスチャの矩形を表示します。
 		* DXライブラリのスプライト表示機能は上方向がマイナスになります。
 		*/
-		SetDrawBright(state.quad.bl.colors.r, state.quad.bl.colors.g, state.quad.bl.colors.b);
+		SetDrawBright(state.m_quad.bl.colors.r, state.m_quad.bl.colors.g, state.m_quad.bl.colors.b);
 		DrawRectRotaGraph(
 			(int)x, (int)y,	//この座標が画像の中心になります。
-			(int)state.rect.origin.x, (int)state.rect.origin.y, (int)state.rect.size.width, (int)state.rect.size.height,
+			(int)state.m_rect.origin.x, (int)state.m_rect.origin.y, (int)state.m_rect.size.width, (int)state.m_rect.size.height,
 			scaleX, SSRadianToDegree(rotationZ),
-			state.texture.handle, TRUE, state.flipX
+			state.m_texture.handle, TRUE, state.m_flipX
 			);
 		SetDrawBright(255, 255, 255);
 #else
@@ -210,15 +210,15 @@ namespace ss
 		*/
 		//描画用頂点情報を作成
 		SSV3F_C4B_T2F_Quad quad;
-		quad = state.quad;
+		quad = state.m_quad;
 
 #ifdef USE_VERTEX
 		//原点補正
-		float cx = ((state.rect.size.width) * -(state.pivotX - 0.5f));
+		float cx = ((state.m_rect.size.width) * -(state.m_pivotX - 0.5f));
 #ifdef UP_MINUS
-		float cy = ((state.rect.size.height) * -(state.pivotY - 0.5f));
+		float cy = ((state.m_rect.size.height) * -(state.m_pivotY - 0.5f));
 #else
-		float cy = ((state.rect.size.height) * +(state.pivotY - 0.5f));
+		float cy = ((state.m_rect.size.height) * +(state.m_pivotY - 0.5f));
 #endif
 
 		quad.tl.vertices.x += cx;
@@ -233,41 +233,41 @@ namespace ss
 		float x, y;
 		SSMatrix t;
 		t.setupTranslation(quad.tl.vertices.x, quad.tl.vertices.y, 0.0f);
-		t *= state.mat;
+		t *= state.m_mat;
 		t.getTranslation(&x, &y);
 		quad.tl.vertices.x = x;
 		quad.tl.vertices.y = y;
 
 		t.setupTranslation(quad.tr.vertices.x, quad.tr.vertices.y, 0.0f);
-		t *= state.mat;
+		t *= state.m_mat;
 		t.getTranslation(&x, &y);
 		quad.tr.vertices.x = x;
 		quad.tr.vertices.y = y;
 
 		t.setupTranslation(quad.bl.vertices.x, quad.bl.vertices.y, 0.0f);
-		t *= state.mat;
+		t *= state.m_mat;
 		t.getTranslation(&x, &y);
 		quad.bl.vertices.x = x;
 		quad.bl.vertices.y = y;
 
 		t.setupTranslation(quad.br.vertices.x, quad.br.vertices.y, 0.0f);
-		t *= state.mat;
+		t *= state.m_mat;
 		t.getTranslation(&x, &y);
 		quad.br.vertices.x = x;
 		quad.br.vertices.y = y;
 #else
-		state.mat.getTranslation(&x, &y);	/// 表示座標はマトリクスから取得します。
-		float rotationZ = state.Calc_rotationZ;		/// 回転値
-		float scaleX = state.Calc_scaleX;							/// 拡大率
-		float scaleY = state.Calc_scaleY;							/// 拡大率
+		state.m_mat.getTranslation(&x, &y);	/// 表示座標はマトリクスから取得します。
+		float rotationZ = state.m_Calc_rotationZ;		/// 回転値
+		float scaleX = state.m_Calc_scaleX;							/// 拡大率
+		float scaleY = state.m_Calc_scaleY;							/// 拡大率
 
 
 		//原点計算を行う
-		float cx = ((state.rect.size.width * scaleX) * -(state.pivotX - 0.5f));
+		float cx = ((state.m_rect.size.width * scaleX) * -(state.m_pivotX - 0.5f));
 #ifdef UP_MINUS
-		float cy = ((state.rect.size.height * scaleY) * -(state.pivotY - 0.5f));
+		float cy = ((state.m_rect.size.height * scaleY) * -(state.m_pivotY - 0.5f));
 #else
-		float cy = ((state.rect.size.height * scaleY) * +(state.pivotY - 0.5f));
+		float cy = ((state.m_rect.size.height * scaleY) * +(state.m_pivotY - 0.5f));
 #endif
 		get_uv_rotation(&cx, &cy, 0, 0, rotationZ);
 
@@ -299,10 +299,10 @@ namespace ss
 		quad.br.vertices.y += y;
 #endif
 		//頂点カラーにアルファを設定
-		quad.tl.colors.a = quad.bl.colors.a * state.Calc_opacity / 255;
-		quad.tr.colors.a = quad.bl.colors.a * state.Calc_opacity / 255;
-		quad.bl.colors.a = quad.bl.colors.a * state.Calc_opacity / 255;
-		quad.br.colors.a = quad.bl.colors.a * state.Calc_opacity / 255;
+		quad.tl.colors.a = quad.bl.colors.a * state.m_Calc_opacity / 255;
+		quad.tr.colors.a = quad.bl.colors.a * state.m_Calc_opacity / 255;
+		quad.bl.colors.a = quad.bl.colors.a * state.m_Calc_opacity / 255;
+		quad.br.colors.a = quad.bl.colors.a * state.m_Calc_opacity / 255;
 
 		//DXライブラリ用の頂点バッファを作成する
 		VERTEX_3D vertex[4] = {
@@ -312,7 +312,7 @@ namespace ss
 			vertex3Dfrom(quad.br)
 		};
 		//3Dプリミティブの表示
-		DrawPolygon3DBase(vertex, 4, DX_PRIMTYPE_TRIANGLESTRIP, state.texture.handle, true);
+		DrawPolygon3DBase(vertex, 4, DX_PRIMTYPE_TRIANGLESTRIP, state.m_texture.handle, true);
 #endif
 
 		SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);	//ブレンドステートを通常へ戻す

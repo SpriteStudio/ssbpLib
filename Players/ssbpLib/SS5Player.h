@@ -75,7 +75,7 @@ https://github.com/SpriteStudio/SpriteStudio5-SDK/wiki/%E3%82%B3%E3%83%B3%E3%83%
 #include "SS5PlayerData.h"
 #include "SS5PlayerTypes.h"
 #include "SS5PlayerPlatform.h"
-#include "common/SSCellPartState.h"
+#include "common/SSCellPartstate.h"
 #include <map>
 #include <vector>
 #include <string>
@@ -89,7 +89,7 @@ https://github.com/SpriteStudio/SpriteStudio5-SDK/wiki/%E3%82%B3%E3%83%B3%E3%83%
 #include "common/Animator/ssplayer_matrix.h"
 #include "common/Animator/ssplayer_effectfunction.h"
 #include "common/Animator/ssplayer_cellmap.h"
-#include "common/Animator/ssplayer_PartState.h"
+#include "common/Animator/ssplayer_Partstate.h"
 //#include "./Common/Animator/MersenneTwister.h"
 
 #pragma warning(disable : 4996)
@@ -233,56 +233,56 @@ public:
 
 	void setState(const SSCellPartState& state)
 	{
-		setStateValue(_state.flags, state.flags);
-		setStateValue(_state.cellIndex, state.cellIndex);
-		setStateValue(_state.x, state.x);
-		setStateValue(_state.y, state.y);
-		setStateValue(_state.z, state.z);
-		setStateValue(_state.pivotX, state.pivotX);
-		setStateValue(_state.pivotY, state.pivotY);
-		setStateValue(_state.rotationX, state.rotationX);
-		setStateValue(_state.rotationY, state.rotationY);
-		setStateValue(_state.rotationZ, state.rotationZ);
-		setStateValue(_state.scaleX, state.scaleX);
-		setStateValue(_state.scaleY, state.scaleY);
-		setStateValue(_state.opacity, state.opacity);
-		setStateValue(_state.size_X, state.size_X);
-		setStateValue(_state.size_Y, state.size_Y);
-		setStateValue(_state.uv_move_X, state.uv_move_X);
-		setStateValue(_state.uv_move_Y, state.uv_move_Y);
-		setStateValue(_state.uv_rotation, state.uv_rotation);
-		setStateValue(_state.uv_scale_X, state.uv_scale_X);
-		setStateValue(_state.uv_scale_Y, state.uv_scale_Y);
-		setStateValue(_state.boundingRadius, state.boundingRadius);
-		setStateValue(_state.isVisibled, state.isVisibled);
-		setStateValue(_state.flipX, state.flipX);
-		setStateValue(_state.flipY, state.flipY);
-		setStateValue(_state.blendfunc, state.blendfunc);
-		setStateValue(_state.colorBlendFunc, state.colorBlendFunc);
-		setStateValue(_state.colorBlendType, state.colorBlendType);
+		setStateValue(_state.m_flags, state.m_flags);
+		setStateValue(_state.m_cellIndex, state.m_cellIndex);
+		setStateValue(_state.m_x, state.m_x);
+		setStateValue(_state.m_y, state.m_y);
+		setStateValue(_state.m_z, state.m_z);
+		setStateValue(_state.m_pivotX, state.m_pivotX);
+		setStateValue(_state.m_pivotY, state.m_pivotY);
+		setStateValue(_state.m_rotationX, state.m_rotationX);
+		setStateValue(_state.m_rotationY, state.m_rotationY);
+		setStateValue(_state.m_rotationZ, state.m_rotationZ);
+		setStateValue(_state.m_scaleX, state.m_scaleX);
+		setStateValue(_state.m_scaleY, state.m_scaleY);
+		setStateValue(_state.m_opacity, state.m_opacity);
+		setStateValue(_state.m_size_X, state.m_size_X);
+		setStateValue(_state.m_size_Y, state.m_size_Y);
+		setStateValue(_state.m_uv_move_X, state.m_uv_move_X);
+		setStateValue(_state.m_uv_move_Y, state.m_uv_move_Y);
+		setStateValue(_state.m_uv_rotation, state.m_uv_rotation);
+		setStateValue(_state.m_uv_scale_X, state.m_uv_scale_X);
+		setStateValue(_state.m_uv_scale_Y, state.m_uv_scale_Y);
+		setStateValue(_state.m_boundingRadius, state.m_boundingRadius);
+		setStateValue(_state.m_isVisibled, state.m_isVisibled);
+		setStateValue(_state.m_flipX, state.m_flipX);
+		setStateValue(_state.m_flipY, state.m_flipY);
+		setStateValue(_state.m_blendfunc, state.m_blendfunc);
+		setStateValue(_state.m_colorBlendFunc, state.m_colorBlendFunc);
+		setStateValue(_state.m_colorBlendType, state.m_colorBlendType);
 
-		setStateValue(_state.quad, state.quad);
-		_state.texture = state.texture;
-		_state.rect = state.rect;
-		_state.mat = state.mat;
+		setStateValue(_state.m_quad, state.m_quad);
+		_state.m_texture = state.m_texture;
+		_state.m_rect = state.m_rect;
+		_state.m_mat = state.m_mat;
 
-		setStateValue(_state.instanceValue_curKeyframe, state.instanceValue_curKeyframe);
-		setStateValue(_state.instanceValue_startFrame, state.instanceValue_startFrame);
-		setStateValue(_state.instanceValue_endFrame, state.instanceValue_endFrame);
-		setStateValue(_state.instanceValue_loopNum, state.instanceValue_loopNum);
-		setStateValue(_state.instanceValue_speed, state.instanceValue_speed);
-		setStateValue(_state.instanceValue_loopflag, state.instanceValue_loopflag);
-		setStateValue(_state.effectValue_curKeyframe, state.effectValue_curKeyframe);
-		setStateValue(_state.effectValue_startTime, state.effectValue_startTime);
-		setStateValue(_state.effectValue_speed, state.effectValue_speed);
-		setStateValue(_state.effectValue_loopflag, state.effectValue_loopflag);
+		setStateValue(_state.m_instanceValue_curKeyframe, state.m_instanceValue_curKeyframe);
+		setStateValue(_state.m_instanceValue_startFrame, state.m_instanceValue_startFrame);
+		setStateValue(_state.m_instanceValue_endFrame, state.m_instanceValue_endFrame);
+		setStateValue(_state.m_instanceValue_loopNum, state.m_instanceValue_loopNum);
+		setStateValue(_state.m_instanceValue_speed, state.m_instanceValue_speed);
+		setStateValue(_state.m_instanceValue_loopflag, state.m_instanceValue_loopflag);
+		setStateValue(_state.m_effectValue_curKeyframe, state.m_effectValue_curKeyframe);
+		setStateValue(_state.m_effectValue_startTime, state.m_effectValue_startTime);
+		setStateValue(_state.m_effectValue_speed, state.m_effectValue_speed);
+		setStateValue(_state.m_effectValue_loopflag, state.m_effectValue_loopflag);
 
-		_state.Calc_rotationX = state.Calc_rotationX;
-		_state.Calc_rotationY = state.Calc_rotationY;
-		_state.Calc_rotationZ = state.Calc_rotationZ;
-		_state.Calc_scaleX = state.Calc_scaleX;
-		_state.Calc_scaleY = state.Calc_scaleY;
-		_state.Calc_opacity = state.Calc_opacity;
+		_state.m_Calc_rotationX = state.m_Calc_rotationX;
+		_state.m_Calc_rotationY = state.m_Calc_rotationY;
+		_state.m_Calc_rotationZ = state.m_Calc_rotationZ;
+		_state.m_Calc_scaleX = state.m_Calc_scaleX;
+		_state.m_Calc_scaleY = state.m_Calc_scaleY;
+		_state.m_Calc_opacity = state.m_Calc_opacity;
 
 	}
 
