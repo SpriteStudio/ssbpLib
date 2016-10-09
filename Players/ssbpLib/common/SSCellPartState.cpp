@@ -35,7 +35,7 @@ void SSCellPartState::init()
 	m_flipX = false;
 	m_flipY = false;
 	m_isVisibled = false;
-	memset(&m_quad, 0, sizeof(m_quad));
+	m_quad = SSV3F_C4B_T2F_Quad();
 	m_texture.handle = 0;
 	m_texture.size_w = 0;
 	m_texture.size_h = 0;

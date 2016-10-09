@@ -2247,7 +2247,6 @@ void Player::setFrame(int frameNo, float dt)
 		//頂点データの設定
 		//quadにはプリミティブの座標（頂点変形を含む）、UV、カラー値が設定されます。
 		SSV3F_C4B_T2F_Quad quad;
-		memset(&quad, 0, sizeof(quad));
 		if (cellRef)
 		{
 			//頂点を設定する
@@ -2278,14 +2277,6 @@ void Player::setFrame(int frameNo, float dt)
 			quad.br.vertices.y = y1;
 #endif
 			//UVを設定する
-			quad.tl.texCoords.u = 0;
-			quad.tl.texCoords.v = 0;
-			quad.tr.texCoords.u = 0;
-			quad.tr.texCoords.v = 0;
-			quad.bl.texCoords.u = 0;
-			quad.bl.texCoords.v = 0;
-			quad.br.texCoords.u = 0;
-			quad.br.texCoords.v = 0;
 			if (cellRef)
 			{
 				quad.tl.texCoords.u = cellRef->cell->u1;
