@@ -10,6 +10,7 @@
 #include "ssplayer_effectfunction.h"
 
 #include "../../SS5PlayerPlatform.h"
+#include "common/CustomSprite.h"
 
 
 #define DEBUG_DISP (0)

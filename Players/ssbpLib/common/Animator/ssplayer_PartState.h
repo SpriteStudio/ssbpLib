@@ -4,6 +4,7 @@
 //#include "../loader/ssloader.h"
 //#include "../Helper/ssHelper.h"
 #include "ssplayer_matrix.h"
+#include "common/Loader/sstypes.h"
 namespace ss
 {
 
