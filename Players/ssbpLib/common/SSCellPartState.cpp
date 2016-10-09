@@ -129,4 +129,49 @@ void SSCellPartState::readData(DataArrayReader &reader, const AnimationInitialDa
 }
 
 
+bool SSCellPartState::isStateChanged(const SSCellPartState& s) const
+{
+	return !(
+		m_flags == s.m_flags
+		&& m_cellIndex == s.m_cellIndex
+		&& m_x == s.m_x
+		&& m_y == s.m_y
+		&& m_z == s.m_z
+		&& m_pivotX == s.m_pivotX
+		&& m_pivotY == s.m_pivotY
+		&& m_rotationX == s.m_rotationX
+		&& m_rotationY == s.m_rotationY
+		&& m_rotationZ == s.m_rotationZ
+		&& m_scaleX == s.m_scaleX
+		&& m_scaleY == s.m_scaleY
+		&& m_opacity == s.m_opacity
+		&& m_size_X == s.m_size_X
+		&& m_size_Y == s.m_size_Y
+		&& m_uv_move_X == s.m_uv_move_X
+		&& m_uv_move_Y == s.m_uv_move_Y
+		&& m_uv_rotation == s.m_uv_rotation
+		&& m_uv_scale_X == s.m_uv_scale_X
+		&& m_uv_scale_Y == s.m_uv_scale_Y
+		&& m_boundingRadius == s.m_boundingRadius
+		&& m_isVisibled == s.m_isVisibled
+		&& m_flipX == s.m_flipX
+		&& m_flipY == s.m_flipY
+		&& m_blendfunc == s.m_blendfunc
+		&& m_colorBlendFunc == s.m_colorBlendFunc
+		&& m_colorBlendType == s.m_colorBlendType
+		//&& m_quad == s.m_quad		//memo:CustomSpriteの実装には比較を行おうとした形跡がある
+		&& m_instanceValue_curKeyframe == s.m_instanceValue_curKeyframe
+		&& m_instanceValue_startFrame == s.m_instanceValue_startFrame
+		&& m_instanceValue_endFrame == s.m_instanceValue_endFrame
+		&& m_instanceValue_loopNum == s.m_instanceValue_loopNum
+		&& m_instanceValue_speed == s.m_instanceValue_speed
+		&& m_instanceValue_loopflag == s.m_instanceValue_loopflag
+		&& m_effectValue_curKeyframe == s.m_effectValue_curKeyframe
+		&& m_effectValue_startTime == s.m_effectValue_startTime
+		&& m_effectValue_speed == s.m_effectValue_speed
+		&& m_effectValue_loopflag == s.m_effectValue_loopflag
+	);
+}
+
+
 }	// namespace ss

@@ -70,7 +70,7 @@ struct SSCellPartState
 	//readerを介してデータを読み取る
 	void readData(DataArrayReader &reader, const AnimationInitialData *init);
 
-	
+	bool isStateChanged(const SSCellPartState& s) const;
 	void init();
 
 	SSCellPartState() { init(); }
