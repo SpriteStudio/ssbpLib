@@ -355,15 +355,18 @@ public:
 };
 	
 /**
-* カラー構造体
-*/
-typedef struct _SSColor4B
-{
+ * カラー構造体
+ */
+struct SSColor4B{
 	unsigned char r;
 	unsigned char g;
 	unsigned char b;
 	unsigned char a;
-} SSColor4B;
+
+	using uchar = unsigned char;
+	SSColor4B() :r(0), g(0), b(0), a(0){}
+	SSColor4B(uchar r_, uchar g_, uchar b_, uchar a_) :r(r_), g(g_), b(b_), a(a_){}
+};
 
 
 /**
