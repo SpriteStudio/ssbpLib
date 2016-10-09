@@ -1362,7 +1362,7 @@ void Player::play(AnimeRef* animeRef, int loop, int startFrameNo)
 	{
 		_currentAnimeRef = animeRef;
 		
-		allocParts(animeRef->animePackData->numParts, false);
+		allocParts(animeRef->animePackData->numParts);
 		setPartsParentage();
 	}
 	_playingFrame = static_cast<float>(startFrameNo);
@@ -1585,7 +1585,7 @@ void Player::updateFrame(float dt)
 }
 
 
-void Player::allocParts(int numParts, bool useCustomShaderProgram)
+void Player::allocParts(int numParts)
 {
 	for (int i = 0; i < _parts.size(); i++)
 	{
@@ -1605,7 +1605,6 @@ void Player::allocParts(int numParts, bool useCustomShaderProgram)
 		{
 			CustomSprite* sprite =  CustomSprite::create();
 			sprite->_ssplayer = NULL;
-			sprite->changeShaderProgram(useCustomShaderProgram);
 
 			_parts.push_back(sprite);
 		}
@@ -2228,27 +2227,12 @@ void Player::setFrame(int frameNo, float dt)
 		sprite->setFlippedX(state.m_flipX);
 		sprite->setFlippedY(state.m_flipY);
 
-		bool setBlendEnabled = true;
-
 		if (cellRef)
 		{
 			//各パーツのテクスチャ情報を設定
 			state.m_texture = cellRef->texture;
 			state.m_rect = cellRef->rect;
 			state.m_blendfunc = partData->alphaBlendType;
-
-			if (setBlendEnabled)
-			{
-				if (flags & PART_FLAG_COLOR_BLEND)
-				{
-					//カラーブレンドを行うときはカスタムシェーダーを使用する
-					sprite->changeShaderProgram(true);
-				}
-				else
-				{
-					sprite->changeShaderProgram(false);
-				}
-			}
 		}
 		else
 		{
@@ -2259,7 +2243,6 @@ void Player::setFrame(int frameNo, float dt)
 				state.m_isVisibled = false;
 			}
 		}
-		sprite->setOpacity(state.m_opacity);
 
 		//頂点データの設定
 		//quadにはプリミティブの座標（頂点変形を含む）、UV、カラー値が設定されます。
@@ -2399,7 +2382,6 @@ void Player::setFrame(int frameNo, float dt)
 			int cb_flags = (typeAndFlags >> 8) & 0xff;
 			float blend_rate = 1.0f;
 
-			sprite->setColorBlendFunc(funcNo);
 			sprite->_state.m_colorBlendFunc = funcNo;
 			sprite->_state.m_colorBlendType = cb_flags;
 

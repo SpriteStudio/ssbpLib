@@ -14,8 +14,6 @@ class SsEffectRenderV2;
  */
 class CustomSprite{
 private:
-	float				_opacity;
-	int					_colorBlendFuncNo;
 	bool				_flipX;
 	bool				_flipY;
 
@@ -72,13 +70,6 @@ public:
 		_state = state;
 	}
 
-
-	// override
-	virtual void setOpacity(unsigned char opacity);
-
-	// original functions
-	void changeShaderProgram(bool useCustomShaderProgram);
-	void setColorBlendFunc(int colorBlendFuncNo);
 
 	void setFlippedX(bool flip);
 	void setFlippedY(bool flip);

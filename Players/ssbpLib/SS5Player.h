@@ -914,7 +914,7 @@ public:
 
 
 protected:
-	void allocParts(int numParts, bool useCustomShaderProgram);
+	void allocParts(int numParts);
 	void releaseParts();
 	void setPartsParentage();
 
