@@ -70,6 +70,12 @@ struct SSCellPartState
 	//readerを介してデータを読み取る
 	void readData(DataArrayReader &reader, const AnimationInitialData *init);
 
+	
+	//現在の情報を元にverexを計算する
+	void vertexCompute(SSV3F_C4B_T2F_Quad *q, const SSRect &cellRect) const;
+	
+
+
 	bool isStateChanged(const SSCellPartState& s) const;
 	void init();
 

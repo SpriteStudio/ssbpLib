@@ -2247,63 +2247,13 @@ void Player::setFrame(int frameNo, float dt)
 		//頂点データの設定
 		//quadにはプリミティブの座標（頂点変形を含む）、UV、カラー値が設定されます。
 		SSV3F_C4B_T2F_Quad quad;
-		if (cellRef)
-		{
-			//頂点を設定する
-			float width_h = cellRef->rect.size.width / 2;
-			float height_h = cellRef->rect.size.height / 2;
-			float x1 = -width_h;
-			float y1 = -height_h;
-			float x2 = width_h;
-			float y2 = height_h;
-
-#ifdef UP_MINUS
-			quad.tl.vertices = SSVertex3F(x1, y1, 0);
-			quad.tr.vertices = SSVertex3F(x2, y1, 0);
-			quad.bl.vertices = SSVertex3F(x1, y2, 0);
-			quad.br.vertices = SSVertex3F(x2, y2, 0);
-#else
-			quad.tl.vertices = SSVertex3F(x1, y2, 0);
-			quad.tr.vertices = SSVertex3F(x2, y2, 0);
-			quad.bl.vertices = SSVertex3F(x1, y1, 0);
-			quad.br.vertices = SSVertex3F(x2, y1, 0);
-#endif
+		SSRect cellRect;
+		if(cellRef){
+			cellRect = cellRef->rect;
 		}
+		state.vertexCompute(&quad, cellRect);
 
-		//サイズ設定
-		//頂点をサイズに合わせて変形させる
-		if (flags & PART_FLAG_SIZE_X)
-		{
-			float w = 0;
-			float center = 0;
-			w = (quad.tr.vertices.x - quad.tl.vertices.x) / 2.0f;
-			if (w!= 0.0f)
-			{
-				center = quad.tl.vertices.x + w;
-				float scale = (state.m_size_X / 2.0f) / w;
 
-				quad.bl.vertices.x = center - (w * scale);
-				quad.br.vertices.x = center + (w * scale);
-				quad.tl.vertices.x = center - (w * scale);
-				quad.tr.vertices.x = center + (w * scale);
-			}
-		}
-		if (flags & PART_FLAG_SIZE_Y)
-		{
-			float h = 0;
-			float center = 0;
-			h = (quad.bl.vertices.y - quad.tl.vertices.y) / 2.0f;
-			if (h != 0.0f)
-			{
-				center = quad.tl.vertices.y + h;
-				float scale = (state.m_size_Y / 2.0f) / h;
-
-				quad.bl.vertices.y = center - (h * scale);
-				quad.br.vertices.y = center - (h * scale);
-				quad.tl.vertices.y = center + (h * scale);
-				quad.tr.vertices.y = center + (h * scale);
-			}
-		}
 		// 頂点変形のオフセット値を反映
 		if (flags & PART_FLAG_VERTEX_TRANSFORM)
 		{

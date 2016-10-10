@@ -129,6 +129,71 @@ void SSCellPartState::readData(DataArrayReader &reader, const AnimationInitialDa
 }
 
 
+
+//頂点計算
+void SSCellPartState::vertexCompute(SSV3F_C4B_T2F_Quad *q, const SSRect &cellRect) const
+{
+	//頂点を設定する
+	float width_h = cellRect.size.width / 2;
+	float height_h = cellRect.size.height / 2;
+	float x1 = -width_h;
+	float y1 = -height_h;
+	float x2 = width_h;
+	float y2 = height_h;
+
+#ifdef UP_MINUS
+	q->tl.vertices = SSVertex3F(x1, y1, 0);
+	q->tr.vertices = SSVertex3F(x2, y1, 0);
+	q->bl.vertices = SSVertex3F(x1, y2, 0);
+	q->br.vertices = SSVertex3F(x2, y2, 0);
+#else
+	q->tl.vertices = SSVertex3F(x1, y2, 0);
+	q->tr.vertices = SSVertex3F(x2, y2, 0);
+	q->bl.vertices = SSVertex3F(x1, y1, 0);
+	q->br.vertices = SSVertex3F(x2, y1, 0);
+#endif
+
+
+
+	//サイズ設定
+	//頂点をサイズに合わせて変形させる
+	if(m_flags & PART_FLAG_SIZE_X)
+	{
+		float w = 0;
+		float center = 0;
+		w = (q->tr.vertices.x - q->tl.vertices.x) / 2.0f;
+		if(w != 0.0f)
+		{
+			center = q->tl.vertices.x + w;
+			float scale = (m_size_X / 2.0f) / w;
+
+			q->bl.vertices.x = center - (w * scale);
+			q->br.vertices.x = center + (w * scale);
+			q->tl.vertices.x = center - (w * scale);
+			q->tr.vertices.x = center + (w * scale);
+		}
+	}
+	if(m_flags & PART_FLAG_SIZE_Y)
+	{
+		float h = 0;
+		float center = 0;
+		h = (q->bl.vertices.y - q->tl.vertices.y) / 2.0f;
+		if(h != 0.0f)
+		{
+			center = q->tl.vertices.y + h;
+			float scale = (m_size_Y / 2.0f) / h;
+
+			q->bl.vertices.y = center - (h * scale);
+			q->br.vertices.y = center - (h * scale);
+			q->tl.vertices.y = center + (h * scale);
+			q->tr.vertices.y = center + (h * scale);
+		}
+	}
+
+}
+
+
+
 bool SSCellPartState::isStateChanged(const SSCellPartState& s) const
 {
 	return !(
