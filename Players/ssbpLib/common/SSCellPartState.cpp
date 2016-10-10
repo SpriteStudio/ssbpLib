@@ -157,25 +157,17 @@ void SSCellPartState::vertexCompute(SSV3F_C4B_T2F_Quad *q, const SSRect &cellRec
 
 	//サイズ設定
 	//頂点をサイズに合わせて変形させる
-	if(m_flags & PART_FLAG_SIZE_X)
-	{
-		if(width_h != 0.0f)
-		{
-			q->bl.vertices.x = - (m_size_X / 2.0f);
-			q->br.vertices.x = + (m_size_X / 2.0f);
-			q->tl.vertices.x = - (m_size_X / 2.0f);
-			q->tr.vertices.x = + (m_size_X / 2.0f);
-		}
+	if(m_flags & PART_FLAG_SIZE_X){
+		q->bl.vertices.x = - (m_size_X / 2.0f);
+		q->br.vertices.x = + (m_size_X / 2.0f);
+		q->tl.vertices.x = - (m_size_X / 2.0f);
+		q->tr.vertices.x = + (m_size_X / 2.0f);
 	}
-	if(m_flags & PART_FLAG_SIZE_Y)
-	{
-		if(height_h != 0.0f)
-		{
-			q->bl.vertices.y = - (m_size_Y / 2.0f);
-			q->br.vertices.y = - (m_size_Y / 2.0f);
-			q->tl.vertices.y = + (m_size_Y / 2.0f);
-			q->tr.vertices.y = + (m_size_Y / 2.0f);
-		}
+	if(m_flags & PART_FLAG_SIZE_Y){
+		q->bl.vertices.y = - (m_size_Y / 2.0f);
+		q->br.vertices.y = - (m_size_Y / 2.0f);
+		q->tl.vertices.y = + (m_size_Y / 2.0f);
+		q->tr.vertices.y = + (m_size_Y / 2.0f);
 	}
 
 }
