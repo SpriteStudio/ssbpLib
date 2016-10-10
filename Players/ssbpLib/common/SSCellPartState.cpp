@@ -133,43 +133,42 @@ void SSCellPartState::readData(DataArrayReader &reader, const AnimationInitialDa
 //頂点計算
 void SSCellPartState::vertexCompute(SSV3F_C4B_T2F_Quad *q, const SSRect &cellRect) const
 {
-	//頂点を設定する
-	float width_h = cellRect.size.width / 2;
-	float height_h = cellRect.size.height / 2;
-	float x1 = -width_h;
-	float y1 = -height_h;
-	float x2 = width_h;
-	float y2 = height_h;
+	//memo:scaleとかrotateとかは後でmatrixを掛けて反映させる。ここでは中心(0,0)基準の矩形(+頂点変化)を作るだけ
+
+	//ひとまずrectをベースに矩形をセットする
+	float width = cellRect.size.width;
+	float height = cellRect.size.height;
+	q->bl.vertices = SSVertex3F(0, 0, 0);
+	q->br.vertices = SSVertex3F(width, 0, 0);
+	q->tl.vertices = SSVertex3F(0, height, 0);
+	q->tr.vertices = SSVertex3F(width, height, 0);  //yが上方向+と考えれば、左下基準(0,0)の矩形になる
+
+	//サイズ変化しているなら、そちらに設定を合わせる
+	//普通はscaleで指定されるので、このフラグがONになるのはレアケース
+	//詳しくは http://www.webtech.co.jp/help/ja/spritestudio/window/attributewindow/
+	//「アンカー機能を持つ特殊なパーツ」についての項目を参照
+	if(m_flags & PART_FLAG_SIZE_X){
+		q->br.vertices.x = m_size_X;
+		q->tr.vertices.x = m_size_X;
+	}
+	if(m_flags & PART_FLAG_SIZE_Y){
+		q->tl.vertices.y = m_size_Y;
+		q->tr.vertices.y = m_size_Y;
+	}
 
 #ifdef UP_MINUS
-	q->tl.vertices = SSVertex3F(x1, y1, 0);
-	q->tr.vertices = SSVertex3F(x2, y1, 0);
-	q->bl.vertices = SSVertex3F(x1, y2, 0);
-	q->br.vertices = SSVertex3F(x2, y2, 0);
-#else
-	q->tl.vertices = SSVertex3F(x1, y2, 0);
-	q->tr.vertices = SSVertex3F(x2, y2, 0);
-	q->bl.vertices = SSVertex3F(x1, y1, 0);
-	q->br.vertices = SSVertex3F(x2, y1, 0);
+	//座標系がy上方向が-になるように調整
+	std::swap(q->tl.vertices.y, q->bl.vertices.y);
+	std::swap(q->tr.vertices.y, q->br.vertices.y);
 #endif
 
 
-
-	//サイズ設定
-	//頂点をサイズに合わせて変形させる
-	if(m_flags & PART_FLAG_SIZE_X){
-		q->bl.vertices.x = - (m_size_X / 2.0f);
-		q->br.vertices.x = + (m_size_X / 2.0f);
-		q->tl.vertices.x = - (m_size_X / 2.0f);
-		q->tr.vertices.x = + (m_size_X / 2.0f);
-	}
-	if(m_flags & PART_FLAG_SIZE_Y){
-		q->bl.vertices.y = - (m_size_Y / 2.0f);
-		q->br.vertices.y = - (m_size_Y / 2.0f);
-		q->tl.vertices.y = + (m_size_Y / 2.0f);
-		q->tr.vertices.y = + (m_size_Y / 2.0f);
-	}
-
+	//中心が(0,0)になるようにオフセットを追加
+	SSVertex3F center = (q->bl.vertices + q->tr.vertices) / 2;
+	q->bl.vertices -= center;
+	q->br.vertices -= center;
+	q->tl.vertices -= center;
+	q->tr.vertices -= center;
 }
 
 
