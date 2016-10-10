@@ -2253,32 +2253,12 @@ void Player::setFrame(int frameNo, float dt)
 		}
 		state.vertexCompute(&quad, cellRect);
 
-
 		// 頂点変形のオフセット値を反映
-		if (flags & PART_FLAG_VERTEX_TRANSFORM)
-		{
-			int vt_flags = reader.readU16();
-			if (vt_flags & VERTEX_FLAG_LT)
-			{
-				quad.tl.vertices.x += reader.readS16();
-				quad.tl.vertices.y += reader.readS16();
-			}
-			if (vt_flags & VERTEX_FLAG_RT)
-			{
-				quad.tr.vertices.x += reader.readS16();
-				quad.tr.vertices.y += reader.readS16();
-			}
-			if (vt_flags & VERTEX_FLAG_LB)
-			{
-				quad.bl.vertices.x += reader.readS16();
-				quad.bl.vertices.y += reader.readS16();
-			}
-			if (vt_flags & VERTEX_FLAG_RB)
-			{
-				quad.br.vertices.x += reader.readS16();
-				quad.br.vertices.y += reader.readS16();
-			}
+		if(flags & PART_FLAG_VERTEX_TRANSFORM){
+			SSQuad3 vertexOffset;
+			quad += vertexOffset;
 		}
+		
 		
 		//頂点情報の取得
 		unsigned char alpha = (unsigned char)state.m_opacity;

@@ -13,6 +13,7 @@ namespace ss
 {
 class SSSize;
 class SSPoint;
+class DataArrayReader;
 
 
 #ifdef _DEBUG
@@ -441,14 +442,17 @@ inline const SSVertex3F operator *(float s, const SSVertex3F &o){
 
 
 /**
-* ４頂点座標構造体
-*/
-typedef struct _SSQuad3 {
+ * ４頂点座標構造体
+ */
+struct SSQuad3 {
 	SSVertex3F        bl;
 	SSVertex3F        br;
 	SSVertex3F        tl;
 	SSVertex3F        tr;
-} SSQuad3;
+
+	//頂点オフセットの読み取り
+	void readVertexTransform(DataArrayReader &reader);
+};
 
 
 /**
@@ -551,7 +555,7 @@ struct SSV3F_C4B_T2F_Quad{
 	SSV3F_C4B_T2F    br;
 
 	//4頂点の加算
-	SSV3F_C4B_T2F_Quad& operator +=(const _SSQuad3 &o){
+	SSV3F_C4B_T2F_Quad& operator +=(const SSQuad3 &o){
 		tl.vertices += o.tl;
 		bl.vertices += o.bl;
 		tr.vertices += o.tr;
