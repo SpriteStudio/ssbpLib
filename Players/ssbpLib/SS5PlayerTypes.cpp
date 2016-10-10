@@ -4,6 +4,33 @@
 
 namespace ss{
 
+//カラーの読み取り
+void SSColor4B::readColor(DataArrayReader &reader){
+	unsigned int raw = reader.readU32();
+	a = static_cast<unsigned char>(raw >> 24);
+	r = static_cast<unsigned char>(raw >> 16);
+	g = static_cast<unsigned char>(raw >> 8);
+	b = static_cast<unsigned char>(raw);
+}
+
+//rateを考慮して読む
+void SSColor4B::readColorWithRate(DataArrayReader &reader){
+	float blend_rate = reader.readFloat();					//レート読み込み
+	readColor(reader);
+
+	//ssbpではカラーブレンドのレート（％）は使用できません。
+	//制限となります。
+	//a = static_cast<int>(blend_rate * 255);	//レートをアルファ値として設定
+}
+
+
+//unsigned long化
+unsigned long SSColor4B::pack() const{
+	//memo:参考		D3DCOLOR_ARGB(a,r,g,b)	((D3DCOLOR)((((a)&0xff)<<24)|(((r)&0xff)<<16)|(((g)&0xff)<<8)|((b)&0xff)))
+	return ((unsigned long)((((a)&0xff)<<24)|(((r)&0xff)<<16)|(((g)&0xff)<<8)|((b)&0xff)));
+}
+
+
 
 //頂点オフセットの読み取り
 void SSQuad3::readVertexTransform(DataArrayReader &reader){

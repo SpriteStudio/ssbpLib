@@ -367,6 +367,14 @@ struct SSColor4B{
 	using uchar = unsigned char;
 	SSColor4B() :r(0), g(0), b(0), a(0){}
 	SSColor4B(uchar r_, uchar g_, uchar b_, uchar a_) :r(r_), g(g_), b(b_), a(a_){}
+
+	//カラーの読み取り
+	void readColor(DataArrayReader &reader);
+	//カラーの読み取り(rateを考慮して読む)
+	void readColorWithRate(DataArrayReader &reader);
+
+	//unsigned longにパラメータを固める
+	unsigned long pack() const;
 };
 
 

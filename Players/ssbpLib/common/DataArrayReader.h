@@ -36,14 +36,6 @@ public:
 		return c.f;
 	}
 
-	void readColor(SSColor4B& color){
-		unsigned int raw = readU32();
-		color.a = static_cast<unsigned char>(raw >> 24);
-		color.r = static_cast<unsigned char>(raw >> 16);
-		color.g = static_cast<unsigned char>(raw >> 8);
-		color.b = static_cast<unsigned char>(raw);
-	}
-
 	ss_offset readOffset(){
 		return static_cast<ss_offset>(readS32());
 	}

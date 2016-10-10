@@ -2261,13 +2261,7 @@ void Player::setFrame(int frameNo, float dt)
 		
 		
 		//頂点情報の取得
-		unsigned char alpha = (unsigned char)state.m_opacity;
 		SSColor4B color4 = { 0xff, 0xff, 0xff, 0xff };
-
-		color4.r = color4.r * _col_r / 255;
-		color4.g = color4.g * _col_g / 255;
-		color4.b = color4.b * _col_b / 255;
-
 		quad.tl.colors =
 		quad.tr.colors =
 		quad.bl.colors =
@@ -2275,63 +2269,46 @@ void Player::setFrame(int frameNo, float dt)
 
 
 		// カラーブレンドの反映
-		if (flags & PART_FLAG_COLOR_BLEND)
-		{
+		if (flags & PART_FLAG_COLOR_BLEND){
 
 			int typeAndFlags = reader.readU16();
 			int funcNo = typeAndFlags & 0xff;
 			int cb_flags = (typeAndFlags >> 8) & 0xff;
-			float blend_rate = 1.0f;
 
 			sprite->_state.m_colorBlendFunc = funcNo;
 			sprite->_state.m_colorBlendType = cb_flags;
 
 			//ssbpではカラーブレンドのレート（％）は使用できません。
 			//制限となります。
-			if (cb_flags & VERTEX_FLAG_ONE)
-			{
-				blend_rate = reader.readFloat();
-				reader.readColor(color4);
-
-
-				color4.r = color4.r * _col_r / 255;
-				color4.g = color4.g * _col_g / 255;
-				color4.b = color4.b * _col_b / 255;
-				color4.a = color4.a * alpha / 255;
-
+			if (cb_flags & VERTEX_FLAG_ONE){
+				
+				color4.readColorWithRate(reader);
 				quad.tl.colors =
 				quad.tr.colors =
 				quad.bl.colors =
 				quad.br.colors = color4;
 			}
-			else
-			{
-				if (cb_flags & VERTEX_FLAG_LT)
-				{
-					blend_rate = reader.readFloat();
-					reader.readColor(color4);
-					quad.tl.colors = color4;
+			else{
+				if (cb_flags & VERTEX_FLAG_LT){
+					quad.tl.colors.readColorWithRate(reader);
 				}
-				if (cb_flags & VERTEX_FLAG_RT)
-				{
-					blend_rate = reader.readFloat();
-					reader.readColor(color4);
-					quad.tr.colors = color4;
+				if (cb_flags & VERTEX_FLAG_RT){
+					quad.tr.colors.readColorWithRate(reader);;
 				}
-				if (cb_flags & VERTEX_FLAG_LB)
-				{
-					blend_rate = reader.readFloat();
-					reader.readColor(color4);
-					quad.bl.colors = color4;
+				if (cb_flags & VERTEX_FLAG_LB){
+					quad.bl.colors.readColorWithRate(reader);
 				}
-				if (cb_flags & VERTEX_FLAG_RB)
-				{
-					blend_rate = reader.readFloat();
-					reader.readColor(color4);
-					quad.br.colors = color4;
+				if (cb_flags & VERTEX_FLAG_RB){
+					quad.br.colors.readColorWithRate(reader);
 				}
 			}
 		}
+		quad.colorsForeach([&](SSColor4B& color){
+			color.r *= (_col_r / 255.0);
+			color.g *= (_col_g / 255.0);
+			color.b *= (_col_b / 255.0);
+			color.a *= (state.m_opacity / 255.0);
+		});
 
 		
 		//UVを設定する
