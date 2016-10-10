@@ -186,69 +186,48 @@ void SSCellPartState::uvCompute(SSV3F_C4B_T2F_Quad *q, SSTex2F uv0, SSTex2F uv1)
 	q->br.texCoords.v = uv1.v;
 	
 	//uvスクロール
-	if(m_flags & PART_FLAG_U_MOVE)
 	{
-		q->tl.texCoords.u += m_uv_move_X;
-		q->tr.texCoords.u += m_uv_move_X;
-		q->bl.texCoords.u += m_uv_move_X;
-		q->br.texCoords.u += m_uv_move_X;
-	}
-	if(m_flags & PART_FLAG_V_MOVE)
-	{
-		q->tl.texCoords.v += m_uv_move_Y;
-		q->tr.texCoords.v += m_uv_move_Y;
-		q->bl.texCoords.v += m_uv_move_Y;
-		q->br.texCoords.v += m_uv_move_Y;
+		SSTex2F uvMove(m_uv_move_X, m_uv_move_Y);
+		q->uvForeach([&uvMove](SSTex2F &uv){
+			uv += uvMove;
+		});
 	}
 
 
-	float u_wide = 0;
-	float v_height = 0;
-	float u_center = 0;
-	float v_center = 0;
-	float u_code = 1;
-	float v_code = 1;
+	//計算用にuv中心を求めておく
+	SSTex2F uvCenter = (q->br.texCoords + q->tl.texCoords) / 2.0f;
 
-	//UVを作成、反転の結果UVが反転する
-	u_wide = (q->tr.texCoords.u - q->tl.texCoords.u) / 2.0f;
-	u_center = q->tl.texCoords.u + u_wide;
-	if(m_flags & PART_FLAG_FLIP_H)
-	{
-		//左右反転を行う場合は符号を逆にする
-		u_code = -1;
-	}
-	v_height = (q->bl.texCoords.v - q->tl.texCoords.v) / 2.0f;
-	v_center = q->tl.texCoords.v + v_height;
-	if(m_flags & PART_FLAG_FLIP_V)
-	{
-		//上下反転を行う場合はテクスチャUVを逆にする
-		v_code = -1;
-	}
+
 	//UV回転
-	if(m_flags & PART_FLAG_UV_ROTATION)
-	{
+	if(m_flags & PART_FLAG_UV_ROTATION){
 		//頂点位置を回転させる
-		get_uv_rotation(&q->tl.texCoords.u, &q->tl.texCoords.v, u_center, v_center, m_uv_rotation);
-		get_uv_rotation(&q->tr.texCoords.u, &q->tr.texCoords.v, u_center, v_center, m_uv_rotation);
-		get_uv_rotation(&q->bl.texCoords.u, &q->bl.texCoords.v, u_center, v_center, m_uv_rotation);
-		get_uv_rotation(&q->br.texCoords.u, &q->br.texCoords.v, u_center, v_center, m_uv_rotation);
+		float rotateRadian = DegreeToRadian(m_uv_rotation);
+		q->uvForeach([&](SSTex2F &uv){
+			uv.rotate(rotateRadian, uvCenter);
+		});
 	}
 
-	//UVスケール || 反転
-	if((m_flags & PART_FLAG_U_SCALE) || (m_flags & PART_FLAG_FLIP_H))
-	{
-		q->tl.texCoords.u = u_center - (u_wide * m_uv_scale_X * u_code);
-		q->tr.texCoords.u = u_center + (u_wide * m_uv_scale_X * u_code);
-		q->bl.texCoords.u = u_center - (u_wide * m_uv_scale_X * u_code);
-		q->br.texCoords.u = u_center + (u_wide * m_uv_scale_X * u_code);
+	//UVスケール
+	if((m_flags & PART_FLAG_U_SCALE) || (m_flags & PART_FLAG_V_SCALE)){
+		q->uvForeach([&](SSTex2F &uv){
+			//中心を基準として拡大縮小させる
+			uv -= uvCenter;
+			uv.u *= m_uv_scale_X;
+			uv.v *= m_uv_scale_Y;
+			uv += uvCenter;
+		});
 	}
-	if((m_flags & PART_FLAG_V_SCALE) || (m_flags & PART_FLAG_FLIP_V))
-	{
-		q->tl.texCoords.v = v_center - (v_height * m_uv_scale_Y * v_code);
-		q->tr.texCoords.v = v_center - (v_height * m_uv_scale_Y * v_code);
-		q->bl.texCoords.v = v_center + (v_height * m_uv_scale_Y * v_code);
-		q->br.texCoords.v = v_center + (v_height * m_uv_scale_Y * v_code);
-	}
+
+	//UV反転はflipの項目で処理してるのでここでは処理しない
+	////UV反転
+	//if (m_flags & PART_FLAG_FLIP_H){	//左右反転を行う場合はlr入れ替え
+	//	std::swap(q->tr.texCoords.u, q->tl.texCoords.u);
+	//	std::swap(q->br.texCoords.u, q->bl.texCoords.u);
+	//}
+	//if (m_flags & PART_FLAG_FLIP_H){	//上下反転を行う場合はtb入れ替え
+	//	std::swap(q->tr.texCoords.v, q->br.texCoords.v);
+	//	std::swap(q->tl.texCoords.v, q->bl.texCoords.v);
+	//}
 }
 
 
