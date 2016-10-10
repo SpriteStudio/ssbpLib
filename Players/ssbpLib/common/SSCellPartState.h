@@ -73,7 +73,8 @@ struct SSCellPartState
 	
 	//現在の情報を元にverexを計算する
 	void vertexCompute(SSV3F_C4B_T2F_Quad *q, const SSRect &cellRect) const;
-	
+	//現在のStateの情報を元にuvを計算する
+	void uvCompute(SSV3F_C4B_T2F_Quad *q, SSTex2F uv0, SSTex2F uv1) const;
 
 
 	bool isStateChanged(const SSCellPartState& s) const;

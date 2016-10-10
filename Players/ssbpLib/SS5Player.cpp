@@ -2333,83 +2333,16 @@ void Player::setFrame(int frameNo, float dt)
 			}
 		}
 
-
+		
 		//UVを設定する
-		if(cellRef)
-		{
-			quad.tl.texCoords.u = cellRef->cell->u1;
-			quad.tl.texCoords.v = cellRef->cell->v1;
-			quad.tr.texCoords.u = cellRef->cell->u2;
-			quad.tr.texCoords.v = cellRef->cell->v1;
-			quad.bl.texCoords.u = cellRef->cell->u1;
-			quad.bl.texCoords.v = cellRef->cell->v2;
-			quad.br.texCoords.u = cellRef->cell->u2;
-			quad.br.texCoords.v = cellRef->cell->v2;
+		SSTex2F uv0, uv1;
+		if(cellRef){
+			uv0 = SSTex2F(cellRef->cell->u1, cellRef->cell->v1);
+			uv1 = SSTex2F(cellRef->cell->u2, cellRef->cell->v2);
 		}
-		//uvスクロール
-		if (flags & PART_FLAG_U_MOVE)
-		{
-			quad.tl.texCoords.u += state.m_uv_move_X;
-			quad.tr.texCoords.u += state.m_uv_move_X;
-			quad.bl.texCoords.u += state.m_uv_move_X;
-			quad.br.texCoords.u += state.m_uv_move_X;
-		}
-		if (flags & PART_FLAG_V_MOVE)
-		{
-			quad.tl.texCoords.v += state.m_uv_move_Y;
-			quad.tr.texCoords.v += state.m_uv_move_Y;
-			quad.bl.texCoords.v += state.m_uv_move_Y;
-			quad.br.texCoords.v += state.m_uv_move_Y;
-		}
-
-
-		float u_wide = 0;
-		float v_height = 0;
-		float u_center = 0;
-		float v_center = 0;
-		float u_code = 1;
-		float v_code = 1;
-
-		//UVを作成、反転の結果UVが反転する
-		u_wide = (quad.tr.texCoords.u - quad.tl.texCoords.u) / 2.0f;
-		u_center = quad.tl.texCoords.u + u_wide;
-		if (flags & PART_FLAG_FLIP_H)
-		{
-			//左右反転を行う場合は符号を逆にする
-			u_code = -1;
-		}
-		v_height = (quad.bl.texCoords.v - quad.tl.texCoords.v) / 2.0f;
-		v_center = quad.tl.texCoords.v + v_height;
-		if (flags & PART_FLAG_FLIP_V)
-		{
-			//上下反転を行う場合はテクスチャUVを逆にする
-			v_code = -1;
-		}
-		//UV回転
-		if (flags & PART_FLAG_UV_ROTATION)
-		{
-			//頂点位置を回転させる
-			get_uv_rotation(&quad.tl.texCoords.u, &quad.tl.texCoords.v, u_center, v_center, state.m_uv_rotation);
-			get_uv_rotation(&quad.tr.texCoords.u, &quad.tr.texCoords.v, u_center, v_center, state.m_uv_rotation);
-			get_uv_rotation(&quad.bl.texCoords.u, &quad.bl.texCoords.v, u_center, v_center, state.m_uv_rotation);
-			get_uv_rotation(&quad.br.texCoords.u, &quad.br.texCoords.v, u_center, v_center, state.m_uv_rotation);
-		}
-
-		//UVスケール || 反転
-		if ((flags & PART_FLAG_U_SCALE) || (flags & PART_FLAG_FLIP_H))
-		{
-			quad.tl.texCoords.u = u_center - (u_wide * state.m_uv_scale_X * u_code);
-			quad.tr.texCoords.u = u_center + (u_wide * state.m_uv_scale_X * u_code);
-			quad.bl.texCoords.u = u_center - (u_wide * state.m_uv_scale_X * u_code);
-			quad.br.texCoords.u = u_center + (u_wide * state.m_uv_scale_X * u_code);
-		}
-		if ((flags & PART_FLAG_V_SCALE) || (flags & PART_FLAG_FLIP_V))
-		{
-			quad.tl.texCoords.v = v_center - (v_height * state.m_uv_scale_Y * v_code);
-			quad.tr.texCoords.v = v_center - (v_height * state.m_uv_scale_Y * v_code);
-			quad.bl.texCoords.v = v_center + (v_height * state.m_uv_scale_Y * v_code);
-			quad.br.texCoords.v = v_center + (v_height * state.m_uv_scale_Y * v_code);
-		}
+		state.uvCompute(&quad, uv0, uv1);
+		
+		
 		state.m_quad = quad;
 
 
