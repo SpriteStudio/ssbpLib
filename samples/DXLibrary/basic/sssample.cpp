@@ -1,5 +1,5 @@
 ﻿#include "DxLib.h"
-#include "SSPlayer\SS5Player.h"
+#include "../../../Players/ssbpLib/SS5Player.h"
 
 static int previousTime;
 static int waitTime;
@@ -81,14 +81,14 @@ void init( void )
 	//アニメデータをリソースに追加
 
 	//それぞれのプラットフォームに合わせたパスへ変更してください。
-	resman->addData("character_template_comipo\\character_template1.ssbp");
+	resman->addData("Resources/character_template_comipo/character_template1.ssbp");
 	//プレイヤーにリソースを割り当て
 	ssplayer->setData("character_template1");        // ssbpファイル名（拡張子不要）
 	//再生するモーションを設定
 	ssplayer->play("character_template_3head/stance");				 // アニメーション名を指定(ssae名/アニメーション名も可能、詳しくは後述)
 
 	//表示位置を設定
-	ssplayer->setPosition(1280/2, 600);
+	ssplayer->setPosition(1280/2, 300);
 	//スケール設定
 	ssplayer->setScale(0.5f, 0.5f);
 	//回転を設定
@@ -104,10 +104,11 @@ void init( void )
 //Zボタンでアニメをポーズ、再開を切り替えできます。
 //ポーズ中は左右キーで再生するフレームを変更できます。
 bool push = false;
-int count = 0;
 bool pause = false;
 void update(float dt)
 {
+	static int count = 0;
+
 	char str[128];
 
 	//パーツ名から座標等のステートの取得を行う場合はgetPartStateを使用します。
@@ -134,12 +135,12 @@ void update(float dt)
 			{
 				pause = true;
 				count = 0;
-				ssplayer->pause();
+				ssplayer->animePause();
 			}
 			else
 			{
 				pause = false;
-				ssplayer->resume();
+				ssplayer->animeResume();
 			}
 		}
 		push = true;

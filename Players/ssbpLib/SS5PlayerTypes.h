@@ -13,6 +13,7 @@ namespace ss
 {
 class SSSize;
 class SSPoint;
+class DataArrayReader;
 
 
 #ifdef _DEBUG
@@ -355,43 +356,192 @@ public:
 };
 	
 /**
-* カラー構造体
-*/
-typedef struct _SSColor4B
-{
+ * カラー構造体
+ */
+struct SSColor4B{
 	unsigned char r;
 	unsigned char g;
 	unsigned char b;
 	unsigned char a;
-} SSColor4B;
+
+	using uchar = unsigned char;
+	SSColor4B() :r(0), g(0), b(0), a(0){}
+	SSColor4B(uchar r_, uchar g_, uchar b_, uchar a_) :r(r_), g(g_), b(b_), a(a_){}
+
+	//カラーの読み取り
+	void readColor(DataArrayReader &reader);
+	//カラーの読み取り(rateを考慮して読む)
+	void readColorWithRate(DataArrayReader &reader);
+
+	//unsigned longにパラメータを固める
+	unsigned long pack() const;
+};
+
 
 /**
-* 頂点座標構造体
-*/
-typedef struct _SSVertex3F
-{
+ * 頂点座標構造体
+ */
+struct SSVertex3F{
 	float x;
 	float y;
 	float z;
-} SSVertex3F;
+
+	SSVertex3F() :x(0), y(0), z(0){}
+	SSVertex3F(float x_, float y_, float z_) : x(x_), y(y_), z(z_){}
+	SSVertex3F(const SSVertex3F &o) : x(o.x), y(o.y), z(o.z){}
+
+	SSVertex3F& operator =(const SSVertex3F &o){
+		x = o.x;	y = o.y;	z = o.z;
+		return *this;
+	}
+	bool operator ==(const SSVertex3F &o) const{
+		return (x == o.x && y == o.y && z == o.z);
+	}
+	bool operator !=(const SSVertex3F &o) const{
+		return !(*this == o);
+	}
+
+	const SSVertex3F operator -() const{
+		return SSVertex3F(-x, -y, -z);
+	}
+	const SSVertex3F operator +(const SSVertex3F &o) const{
+		return SSVertex3F(x + o.x, y + o.y, z + o.z);
+	}
+	const SSVertex3F operator -(const SSVertex3F &o) const{
+		return SSVertex3F(x - o.x, y - o.y, z - o.z);
+	}
+	const float operator *(const SSVertex3F &o) const{	//内積
+		return x*o.x + y*o.y + z*o.z;
+	}
+	const SSVertex3F operator *(float s) const{
+		return SSVertex3F(x*s, y*s, z*s);
+	}
+	const SSVertex3F operator /(float s) const{
+		assert(s);								//ゼロ除算チェック
+		float oneOverS = 1.0f / s;
+		return SSVertex3F(x*oneOverS, y*oneOverS, z*oneOverS);
+	}
+
+	SSVertex3F& operator +=(const SSVertex3F &o){
+		x += o.x;	y += o.y;	z += o.z;
+		return *this;
+	}
+	SSVertex3F &operator -=(const SSVertex3F &o){
+		x -= o.x;	y -= o.y;	z -= o.z;
+		return *this;
+	}
+	SSVertex3F &operator *=(float s){
+		x *= s;	y *= s;	z *= s;
+		return *this;
+	}
+	SSVertex3F &operator /=(float s){
+		assert(s);
+		float oneOverS = 1.0f / s;
+		x *= oneOverS;	y *= oneOverS;	z *= oneOverS;
+		return *this;
+	}
+};
+
+//! スカラー乗算の対称性のために定義しておく
+inline const SSVertex3F operator *(float s, const SSVertex3F &o){
+	return SSVertex3F(s*o.x, s*o.y, s*o.z);
+}
+
+
 
 /**
-* ４頂点座標構造体
-*/
-typedef struct _SSQuad3 {
+ * ４頂点座標構造体
+ */
+struct SSQuad3 {
 	SSVertex3F        bl;
 	SSVertex3F        br;
 	SSVertex3F        tl;
 	SSVertex3F        tr;
-} SSQuad3;
+
+	//頂点オフセットの読み取り
+	void readVertexTransform(DataArrayReader &reader);
+};
+
 
 /**
-* UV構造体
-*/
-typedef struct _SSTex2F {
+ * UV構造体
+ *  2Dベクトルの演算が使えます
+ */
+struct SSTex2F {
 	float u;
 	float v;
-} SSTex2F;
+
+	SSTex2F() :u(0), v(0){}
+	SSTex2F(float u_, float v_) :u(u_), v(v_){}
+	SSTex2F(const SSTex2F& o) : u(o.u), v(o.v) {}
+
+	SSTex2F &operator =(const SSTex2F &o){
+		u = o.u;
+		v = o.v;
+		return *this;
+	}
+	bool operator ==(const SSTex2F &o) const{
+		return (u == o.u && v == o.v);
+	}
+	bool operator !=(const SSTex2F &o) const{
+		return (u != o.u || v != o.v);
+	}
+
+	const SSTex2F operator -() const{
+		return SSTex2F(-u, -v);
+	}
+	const SSTex2F operator +(const SSTex2F &o) const{
+		return SSTex2F(u + o.u, v + o.v);
+	}
+	const SSTex2F operator -(const SSTex2F &o) const{
+		return SSTex2F(u - o.u, v - o.v);
+	}
+	const float operator *(const SSTex2F &o) const{	//内積
+		return u*o.u + v*o.v;
+	}
+	const SSTex2F operator *(float s) const{
+		return SSTex2F(u*s, v*s);
+	}
+	const SSTex2F operator /(float s) const{
+		assert(s);								//ゼロ除算チェック
+		float oneOverS = 1.0f / s;
+		return SSTex2F(u*oneOverS, v*oneOverS);
+	}
+
+	SSTex2F &operator +=(const SSTex2F &o){
+		u += o.u;	v += o.v;
+		return *this;
+	}
+	SSTex2F &operator -=(const SSTex2F &o){
+		u -= o.u;	v -= o.v;
+		return *this;
+	}
+	SSTex2F &operator *=(float s){
+		u *= s;		v *= s;
+		return *this;
+	}
+	SSTex2F &operator /=(float s){
+		assert(s);
+		float oneOverS = 1.0f / s;
+		u *= oneOverS;	v *= oneOverS;
+		return *this;
+	}
+
+	//! 回転させる
+	void rotate(float angleRadian){
+		float tu = u;
+		u = tu * cos(angleRadian) - v *sin(angleRadian);
+		v = tu * sin(angleRadian) + v * cos(angleRadian);
+	}
+	//! 基準点を中心として回転させる
+	void rotate(float angleRadian, const SSTex2F &offset){
+		*this -= offset;
+		rotate(angleRadian);
+		*this += offset;
+	}
+};
+
+
 
 /**
 * 頂点構造体
@@ -406,13 +556,48 @@ typedef struct _ccV3F_C4B_T2F
 /**
 * ４頂点構造体
 */
-typedef struct _SSV3F_C4B_T2F_Quad
-{
+struct SSV3F_C4B_T2F_Quad{
 	SSV3F_C4B_T2F    tl;
 	SSV3F_C4B_T2F    bl;
 	SSV3F_C4B_T2F    tr;
 	SSV3F_C4B_T2F    br;
-} SSV3F_C4B_T2F_Quad;
+
+	//4頂点の加算
+	SSV3F_C4B_T2F_Quad& operator +=(const SSQuad3 &o){
+		tl.vertices += o.tl;
+		bl.vertices += o.bl;
+		tr.vertices += o.tr;
+		br.vertices += o.br;
+		return *this;
+	}
+
+	//vertex各要素に演算を適用させる
+	template<class F>
+	void vertexForeach(F func){
+		func(tl.vertices);
+		func(tr.vertices);
+		func(bl.vertices);
+		func(br.vertices);
+	}
+
+	//uv各要素に演算を適用させる
+	template<class F>
+	void uvForeach(F func){
+		func(tl.texCoords);
+		func(tr.texCoords);
+		func(bl.texCoords);
+		func(br.texCoords);
+	}
+
+	//color各要素に演算を適用させる
+	template<class F>
+	void colorsForeach(F func){
+		func(tl.colors);
+		func(tr.colors);
+		func(bl.colors);
+		func(br.colors);
+	}
+};
 
 //テクスチャデータ
 struct TextuerData
