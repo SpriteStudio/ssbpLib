@@ -393,6 +393,8 @@ public:
 	bool _isContentScaleFactorAuto;
 	CustomSprite						*_parentSprite;
 
+	int			_drawSpritecount;
+
 public:
 
 
@@ -480,6 +482,8 @@ public:
 	//親になるスプライトを設定する
 	void setContentScaleEneble(bool eneble) { _isContentScaleFactorAuto = eneble; }
 	void setParentSprite(CustomSprite* sprite) { _parentSprite = sprite; }
+
+	int	getDrawSpritecount() { return _drawSpritecount; }
 };
 
 };

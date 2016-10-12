@@ -569,7 +569,7 @@ void	SsEffectRenderParticle::draw(SsEffectRenderer* render)
 	state = render->_parentSprite->_state;		//親パーツの情報をコピー
 	for (int i = 0; i < 16; i++)
 	{
-		state.mat[i] = matrix[i];				//マトリクスのコピー
+		state.mat._m[i] = matrix[i];				//マトリクスのコピー
 	}
 	state.texture = dispCell->refCell.texture;	//テクスチャID	
 	state.rect = dispCell->refCell.rect;		//セルの矩形をコピー	
@@ -660,8 +660,7 @@ void	SsEffectRenderParticle::draw(SsEffectRenderer* render)
 #endif
 	get_uv_rotation(&cx, &cy, 0, 0, state.rotationZ);
 
-	state.mat[12] += cx;
-	state.mat[13] += cy;
+	state.mat.addTranslation(cx, cy, 0);
 
 	SSDrawSprite(state);	//描画
 }

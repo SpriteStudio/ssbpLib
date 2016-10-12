@@ -1,5 +1,5 @@
 ﻿#include "DxLib.h"
-#include "SSPlayer\SS5Player.h"
+#include "SSPlayer/SS5Player.h"
 
 static int previousTime;
 static int waitTime;
@@ -68,7 +68,7 @@ void init( void )
 	/**********************************************************************************
 
 	SSアニメ表示のサンプルコード
-	Visual Studio Express 2013 for Windows Desktop、DXライブラリで動作を確認しています。
+	Visual Studio Community、DXライブラリで動作を確認しています。
 	ssbpとpngがあれば再生する事ができますが、Resourcesフォルダにsspjも含まれています。
 
 	**********************************************************************************/
@@ -81,14 +81,14 @@ void init( void )
 	//アニメデータをリソースに追加
 
 	//それぞれのプラットフォームに合わせたパスへ変更してください。
-	resman->addData("character_template_comipo\\character_template1.ssbp");
+	resman->addData("Resources/character_template_comipo/character_template1.ssbp");
 	//プレイヤーにリソースを割り当て
 	ssplayer->setData("character_template1");        // ssbpファイル名（拡張子不要）
 	//再生するモーションを設定
 	ssplayer->play("character_template_3head/stance");				 // アニメーション名を指定(ssae名/アニメーション名も可能、詳しくは後述)
 
 	//表示位置を設定
-	ssplayer->setPosition(1280/2, 600);
+	ssplayer->setPosition(1280/2, 300);
 	//スケール設定
 	ssplayer->setScale(0.5f, 0.5f);
 	//回転を設定
@@ -103,9 +103,9 @@ void init( void )
 //メインループ
 //Zボタンでアニメをポーズ、再開を切り替えできます。
 //ポーズ中は左右キーで再生するフレームを変更できます。
-bool push = false;
-int count = 0;
-bool pause = false;
+static bool sstest_push = false;
+static int sstest_count = 0;
+static bool sstest_pause = false;
 void update(float dt)
 {
 	char str[128];
@@ -128,83 +128,83 @@ void update(float dt)
 
 	if (CheckHitKey(KEY_INPUT_Z))
 	{
-		if (push == false )
+		if (sstest_push == false )
 		{
-			if (pause == false )
+			if (sstest_pause == false )
 			{
-				pause = true;
-				count = 0;
-				ssplayer->pause();
+				sstest_pause = true;
+				sstest_count = 0;
+				ssplayer->animePause();
 			}
 			else
 			{
-				pause = false;
-				ssplayer->resume();
+				sstest_pause = false;
+				ssplayer->animeResume();
 			}
 		}
-		push = true;
+		sstest_push = true;
 
 	}
 	else if (CheckHitKey(KEY_INPUT_UP))
 	{
-		if (push == false)
+		if (sstest_push == false)
 		{
-			count += 20;
-			if (count >= animax)
+			sstest_count += 20;
+			if (sstest_count >= animax)
 			{
-				count = 0;
+				sstest_count = 0;
 			}
 		}
-		push = true;
+		sstest_push = true;
 	}
 	else if (CheckHitKey(KEY_INPUT_DOWN))
 	{
-		if (push == false)
+		if (sstest_push == false)
 		{
-			count -= 20;
-			if (count < 0)
+			sstest_count -= 20;
+			if (sstest_count < 0)
 			{
-				count = animax - 1;
+				sstest_count = animax - 1;
 			}
 		}
-		push = true;
+		sstest_push = true;
 	}
 	else if (CheckHitKey(KEY_INPUT_LEFT))
 	{
-		if (push == false)
+		if (sstest_push == false)
 		{
-			count--;
-			if (count < 0)
+			sstest_count--;
+			if (sstest_count < 0)
 			{
-				count = animax-1;
+				sstest_count = animax-1;
 			}
 		}
-		push = true;
+		sstest_push = true;
 	}
 	else if (CheckHitKey(KEY_INPUT_RIGHT))
 	{
-		if (push == false)
+		if (sstest_push == false)
 		{
-			count++;
-			if (count >= animax)
+			sstest_count++;
+			if (sstest_count >= animax)
 			{
-				count = 0;
+				sstest_count = 0;
 			}
 		}
-		push = true;
+		sstest_push = true;
 	}
 	else
 	{
-		push = false;
+		sstest_push = false;
 	}
 
-	if (pause == true)
+	if (sstest_pause == true)
 	{
-		ssplayer->setFrameNo(count % animax);
+		ssplayer->setFrameNo(sstest_count % animax);
 	}
 
 	//アニメーションのフレームを表示
-	sprintf(str, "play:%d frame:%d", (int)pause, count );
+	sprintf(str, "play:%d frame:%d drawCount:%d", (int)sstest_pause, sstest_count, ssplayer->getDrawSpriteCount());
 	DrawString(100, 100, str, GetColor(255, 255, 255));
 
 	//プレイヤーの更新、引数は前回の更新処理から経過した時間
@@ -225,8 +225,6 @@ void draw(void)
 void relese( void )
 {
 
-	//テクスチャの解放
-	resman->releseTexture("character_template1");
 	//SS5Playerの削除
 	delete (ssplayer);	
 	delete (resman);
