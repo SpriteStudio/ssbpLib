@@ -202,6 +202,10 @@ void update(float dt)
 	{
 		ssplayer->setFrameNo(sstest_count % animax);
 	}
+	else
+	{
+		sstest_count = ssplayer->getFrameNo();
+	}
 
 	//アニメーションのフレームを表示
 	sprintf(str, "play:%d frame:%d drawCount:%d", (int)sstest_pause, sstest_count, ssplayer->getDrawSpriteCount());

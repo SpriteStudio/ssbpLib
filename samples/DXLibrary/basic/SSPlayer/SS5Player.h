@@ -72,8 +72,8 @@ https://github.com/SpriteStudio/SpriteStudio5-SDK/wiki/%E3%82%B3%E3%83%B3%E3%83%
 #ifndef SS5Player_h
 #define SS5Player_h
 
-#include "SS5PlayerData.h"
-#include "SS5PlayerTypes.h"
+#include "./common/SS5PlayerLibs/SS5PlayerData.h"
+#include "./common/SS5PlayerLibs/SS5PlayerTypes.h"
 #include "SS5PlayerPlatform.h"
 #include <map>
 #include <vector>
@@ -83,12 +83,12 @@ https://github.com/SpriteStudio/SpriteStudio5-SDK/wiki/%E3%82%B3%E3%83%B3%E3%83%
 #include <time.h>
 
 //エフェクト関連
-#include "./Common/loader/ssloader.h"
-#include "./Common/Animator/ssplayer_macro.h"
-#include "./Common/Animator/ssplayer_matrix.h"
-#include "./Common/Animator/ssplayer_effectfunction.h"
-#include "./Common/Animator/ssplayer_cellmap.h"
-#include "./Common/Animator/ssplayer_PartState.h"
+#include "./common/loader/ssloader.h"
+#include "./common/Animator/ssplayer_macro.h"
+#include "./common/Animator/ssplayer_matrix.h"
+#include "./common/Animator/ssplayer_effectfunction.h"
+#include "./common/Animator/ssplayer_cellmap.h"
+#include "./common/Animator/ssplayer_PartState.h"
 //#include "./Common/Animator/MersenneTwister.h"
 
 #pragma warning(disable : 4996)
