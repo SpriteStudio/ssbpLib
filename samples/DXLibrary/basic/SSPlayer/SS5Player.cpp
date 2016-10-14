@@ -79,8 +79,8 @@ void get_uv_rotation(float *u, float *v, float cu, float cv, float deg)
 	float dx = *u - cu; // 中心からの距離(X)
 	float dy = *v - cv; // 中心からの距離(Y)
 
-	float tmpX = (dx * cosf(RadianToDegree(deg))) - (dy * sinf(RadianToDegree(deg))); // 回転
-	float tmpY = (dx * sinf(RadianToDegree(deg))) + (dy * cosf(RadianToDegree(deg)));
+	float tmpX = (dx * cosf(DegreeToRadian(deg))) - (dy * sinf(DegreeToRadian(deg))); // 回転
+	float tmpY = (dx * sinf(DegreeToRadian(deg))) + (dy * cosf(DegreeToRadian(deg)));
 
 	*u = (cu + tmpX); // 元の座標にオフセットする
 	*v = (cv + tmpY);
@@ -1375,7 +1375,7 @@ void Player::play(AnimeRef* animeRef, int loop, int startFrameNo)
 	{
 		_currentAnimeRef = animeRef;
 		
-		allocParts(animeRef->animePackData->numParts, false);
+		allocParts(animeRef->animePackData->numParts);
 		setPartsParentage();
 	}
 	_playingFrame = static_cast<float>(startFrameNo);
@@ -1598,7 +1598,7 @@ void Player::updateFrame(float dt)
 }
 
 
-void Player::allocParts(int numParts, bool useCustomShaderProgram)
+void Player::allocParts(int numParts)
 {
 	for (int i = 0; i < _parts.size(); i++)
 	{
@@ -1618,8 +1618,6 @@ void Player::allocParts(int numParts, bool useCustomShaderProgram)
 		{
 			CustomSprite* sprite =  CustomSprite::create();
 			sprite->_ssplayer = NULL;
-			sprite->changeShaderProgram(useCustomShaderProgram);
-
 			_parts.push_back(sprite);
 		}
 	}
@@ -2338,27 +2336,12 @@ void Player::setFrame(int frameNo, float dt)
 		sprite->setFlippedX(flipX);
 		sprite->setFlippedY(flipY);
 
-		bool setBlendEnabled = true;
-
 		if (cellRef)
 		{
 			//各パーツのテクスチャ情報を設定
 			state.texture = cellRef->texture;
 			state.rect = cellRef->rect;
 			state.blendfunc = partData->alphaBlendType;
-
-			if (setBlendEnabled)
-			{
-				if (flags & PART_FLAG_COLOR_BLEND)
-				{
-					//カラーブレンドを行うときはカスタムシェーダーを使用する
-					sprite->changeShaderProgram(true);
-				}
-				else
-				{
-					sprite->changeShaderProgram(false);
-				}
-			}
 		}
 		else
 		{
@@ -2369,96 +2352,52 @@ void Player::setFrame(int frameNo, float dt)
 				state.isVisibled = false;
 			}
 		}
-		sprite->setOpacity(opacity);
 
 		//頂点データの設定
 		//quadにはプリミティブの座標（頂点変形を含む）、UV、カラー値が設定されます。
 		SSV3F_C4B_T2F_Quad quad;
 		memset(&quad, 0, sizeof(quad));
+
+		float width_h = 0;
+		float height_h = 0;
 		if (cellRef)
 		{
 			//頂点を設定する
-			float width_h = cellRef->rect.size.width / 2;
-			float height_h = cellRef->rect.size.height / 2;
+			width_h = cellRef->rect.size.width / 2;
+			height_h = cellRef->rect.size.height / 2;
 			float x1 = -width_h;
 			float y1 = -height_h;
 			float x2 = width_h;
 			float y2 = height_h;
 
 #ifdef UP_MINUS
-			quad.tl.vertices.x = x1;
-			quad.tl.vertices.y = y1;
-			quad.tr.vertices.x = x2;
-			quad.tr.vertices.y = y1;
-			quad.bl.vertices.x = x1;
-			quad.bl.vertices.y = y2;
-			quad.br.vertices.x = x2;
-			quad.br.vertices.y = y2;
+			quad.tl.vertices = SSVertex3F(x1, y1, 0);
+			quad.tr.vertices = SSVertex3F(x2, y1, 0);
+			quad.bl.vertices = SSVertex3F(x1, y2, 0);
+			quad.br.vertices = SSVertex3F(x2, y2, 0); 
 #else
-			quad.tl.vertices.x = x1;
-			quad.tl.vertices.y = y2;
-			quad.tr.vertices.x = x2;
-			quad.tr.vertices.y = y2;
-			quad.bl.vertices.x = x1;
-			quad.bl.vertices.y = y1;
-			quad.br.vertices.x = x2;
-			quad.br.vertices.y = y1;
+			quad.tl.vertices = SSVertex3F(x1, y2, 0);
+			quad.tr.vertices = SSVertex3F(x2, y2, 0);
+			quad.bl.vertices = SSVertex3F(x1, y1, 0);
+			quad.br.vertices = SSVertex3F(x2, y1, 0); 
 #endif
-			//UVを設定する
-			quad.tl.texCoords.u = 0;
-			quad.tl.texCoords.v = 0;
-			quad.tr.texCoords.u = 0;
-			quad.tr.texCoords.v = 0;
-			quad.bl.texCoords.u = 0;
-			quad.bl.texCoords.v = 0;
-			quad.br.texCoords.u = 0;
-			quad.br.texCoords.v = 0;
-			if (cellRef)
-			{
-				quad.tl.texCoords.u = cellRef->cell->u1;
-				quad.tl.texCoords.v = cellRef->cell->v1;
-				quad.tr.texCoords.u = cellRef->cell->u2;
-				quad.tr.texCoords.v = cellRef->cell->v1;
-				quad.bl.texCoords.u = cellRef->cell->u1;
-				quad.bl.texCoords.v = cellRef->cell->v2;
-				quad.br.texCoords.u = cellRef->cell->u2;
-				quad.br.texCoords.v = cellRef->cell->v2;
-			}
 		}
 
 		//サイズ設定
 		//頂点をサイズに合わせて変形させる
 		if (flags & PART_FLAG_SIZE_X)
 		{
-			float w = 0;
-			float center = 0;
-			w = (quad.tr.vertices.x - quad.tl.vertices.x) / 2.0f;
-			if (w!= 0.0f)
-			{
-				center = quad.tl.vertices.x + w;
-				float scale = (size_X / 2.0f) / w;
-
-				quad.bl.vertices.x = center - (w * scale);
-				quad.br.vertices.x = center + (w * scale);
-				quad.tl.vertices.x = center - (w * scale);
-				quad.tr.vertices.x = center + (w * scale);
-			}
+			quad.bl.vertices.x = - (size_X / 2.0f);
+			quad.br.vertices.x = + (size_X / 2.0f);
+			quad.tl.vertices.x = - (size_X / 2.0f);
+			quad.tr.vertices.x = + (size_X / 2.0f);
 		}
 		if (flags & PART_FLAG_SIZE_Y)
 		{
-			float h = 0;
-			float center = 0;
-			h = (quad.bl.vertices.y - quad.tl.vertices.y) / 2.0f;
-			if (h != 0.0f)
-			{
-				center = quad.tl.vertices.y + h;
-				float scale = (size_Y / 2.0f) / h;
-
-				quad.bl.vertices.y = center - (h * scale);
-				quad.br.vertices.y = center - (h * scale);
-				quad.tl.vertices.y = center + (h * scale);
-				quad.tr.vertices.y = center + (h * scale);
-			}
+			quad.bl.vertices.y = - (size_Y / 2.0f);
+			quad.br.vertices.y = - (size_Y / 2.0f);
+			quad.tl.vertices.y = + (size_Y / 2.0f);
+			quad.tr.vertices.y = + (size_Y / 2.0f);
 		}
 		// 頂点変形のオフセット値を反映
 		if (flags & PART_FLAG_VERTEX_TRANSFORM)
@@ -2509,7 +2448,6 @@ void Player::setFrame(int frameNo, float dt)
 			int cb_flags = (typeAndFlags >> 8) & 0xff;
 			float blend_rate = 1.0f;
 
-			sprite->setColorBlendFunc(funcNo);
 			sprite->_state.colorBlendFunc = funcNo;
 			sprite->_state.colorBlendType = cb_flags;
 
@@ -2559,6 +2497,18 @@ void Player::setFrame(int frameNo, float dt)
 				}
 			}
 		}
+		//UVを設定する
+		if (cellRef)
+		{
+			quad.tl.texCoords.u = cellRef->cell->u1;
+			quad.tl.texCoords.v = cellRef->cell->v1;
+			quad.tr.texCoords.u = cellRef->cell->u2;
+			quad.tr.texCoords.v = cellRef->cell->v1;
+			quad.bl.texCoords.u = cellRef->cell->u1;
+			quad.bl.texCoords.v = cellRef->cell->v2;
+			quad.br.texCoords.u = cellRef->cell->u2;
+			quad.br.texCoords.v = cellRef->cell->v2;
+		}
 		//uvスクロール
 		if (flags & PART_FLAG_U_MOVE)
 		{
@@ -2598,15 +2548,6 @@ void Player::setFrame(int frameNo, float dt)
 			//上下反転を行う場合はテクスチャUVを逆にする
 			v_code = -1;
 		}
-		//UV回転
-		if (flags & PART_FLAG_UV_ROTATION)
-		{
-			//頂点位置を回転させる
-			get_uv_rotation(&quad.tl.texCoords.u, &quad.tl.texCoords.v, u_center, v_center, uv_rotation);
-			get_uv_rotation(&quad.tr.texCoords.u, &quad.tr.texCoords.v, u_center, v_center, uv_rotation);
-			get_uv_rotation(&quad.bl.texCoords.u, &quad.bl.texCoords.v, u_center, v_center, uv_rotation);
-			get_uv_rotation(&quad.br.texCoords.u, &quad.br.texCoords.v, u_center, v_center, uv_rotation);
-		}
 
 		//UVスケール || 反転
 		if ((flags & PART_FLAG_U_SCALE) || (flags & PART_FLAG_FLIP_H))
@@ -2622,6 +2563,16 @@ void Player::setFrame(int frameNo, float dt)
 			quad.tr.texCoords.v = v_center - (v_height * uv_scale_Y * v_code);
 			quad.bl.texCoords.v = v_center + (v_height * uv_scale_Y * v_code);
 			quad.br.texCoords.v = v_center + (v_height * uv_scale_Y * v_code);
+		}
+
+		//UV回転
+		if (flags & PART_FLAG_UV_ROTATION)
+		{
+			//頂点位置を回転させる
+			get_uv_rotation(&quad.tl.texCoords.u, &quad.tl.texCoords.v, u_center, v_center, uv_rotation);
+			get_uv_rotation(&quad.tr.texCoords.u, &quad.tr.texCoords.v, u_center, v_center, uv_rotation);
+			get_uv_rotation(&quad.bl.texCoords.u, &quad.bl.texCoords.v, u_center, v_center, uv_rotation);
+			get_uv_rotation(&quad.br.texCoords.u, &quad.br.texCoords.v, u_center, v_center, uv_rotation);
 		}
 		state.quad = quad;
 
@@ -3275,10 +3226,6 @@ void Player::update_matrix_ss4(CustomSprite *sprite, CustomSprite *parent, const
  //カラーブレンド用のシェーダー処理は汎用的に使用する事ができないためすべてコメントにしてあります。
  //カラーブレンドを再現するための参考にしてください。
 
-unsigned int CustomSprite::ssSelectorLocation = 0;
-unsigned int CustomSprite::ssAlphaLocation = 0;
-unsigned int CustomSprite::sshasPremultipliedAlpha = 0;
-
 //static const GLchar * ssPositionTextureColor_frag =
 //#include "ssShader_frag.h"
 
@@ -3306,204 +3253,17 @@ CustomSprite::~CustomSprite()
 	SS_SAFE_DELETE(_ssplayer);
 }
 
-/*
-CCGLProgram* CustomSprite::getCustomShaderProgram()
-{
-	using namespace cocos2d;
-
-	static CCGLProgram* p = NULL;
-	static bool constructFailed = false;
-	if (!p && !constructFailed)
-	{
-		p = new CCGLProgram();
-		p->initWithVertexShaderByteArray(
-			ccPositionTextureColor_vert,
-			ssPositionTextureColor_frag);
-		p->addAttribute(kCCAttributeNamePosition, kCCVertexAttrib_Position);
-		p->addAttribute(kCCAttributeNameColor, kCCVertexAttrib_Color);
-		p->addAttribute(kCCAttributeNameTexCoord, kCCVertexAttrib_TexCoords);
-
-		if (!p->link())
-		{
-			constructFailed = true;
-			return NULL;
-		}
-		
-		p->updateUniforms();
-		
-		ssSelectorLocation = glGetUniformLocation(p->getProgram(), "u_selector");
-		ssAlphaLocation = glGetUniformLocation(p->getProgram(), "u_alpha");
-		sshasPremultipliedAlpha = glGetUniformLocation(p->getProgram(), "u_hasPremultipliedAlpha");
-		if (ssSelectorLocation == GL_INVALID_VALUE
-		 || ssAlphaLocation == GL_INVALID_VALUE)
-		{
-			delete p;
-			p = NULL;
-			constructFailed = true;
-			return NULL;
-		}
-
-		glUniform1i(ssSelectorLocation, 0);
-		glUniform1f(ssAlphaLocation, 1.0f);
-		glUniform1i(sshasPremultipliedAlpha, 0);
-	}
-	return p;
-}
-*/
-
 CustomSprite* CustomSprite::create()
 {
 	CustomSprite *pSprite = new CustomSprite();
 	if (pSprite)
 	{
 		pSprite->initState();
-//		pSprite->_defaultShaderProgram = pSprite->getShaderProgram();
-//		pSprite->autorelease();
 		return pSprite;
 	}
 	SS_SAFE_DELETE(pSprite);
 	return NULL;
 }
-
-void CustomSprite::changeShaderProgram(bool useCustomShaderProgram)
-{
-/*
-	if (useCustomShaderProgram != _useCustomShaderProgram)
-	{
-		if (useCustomShaderProgram)
-		{
-			CCGLProgram *shaderProgram = getCustomShaderProgram();
-			if (shaderProgram == NULL)
-			{
-				// Not use custom shader.
-				shaderProgram = _defaultShaderProgram;
-				useCustomShaderProgram = false;
-			}
-			this->setShaderProgram(shaderProgram);
-			_useCustomShaderProgram = useCustomShaderProgram;
-		}
-		else
-		{
-			this->setShaderProgram(_defaultShaderProgram);
-			_useCustomShaderProgram = false;
-		}
-	}
-*/
-}
-
-void CustomSprite::sethasPremultipliedAlpha(int PremultipliedAlpha)
-{
-	_hasPremultipliedAlpha = PremultipliedAlpha;
-}
-
-bool CustomSprite::isCustomShaderProgramEnabled() const
-{
-	return _useCustomShaderProgram;
-}
-
-void CustomSprite::setColorBlendFunc(int colorBlendFuncNo)
-{
-	_colorBlendFuncNo = colorBlendFuncNo;
-}
-
-SSV3F_C4B_T2F_Quad& CustomSprite::getAttributeRef()
-{
-	return _sQuad;
-}
-
-void CustomSprite::setOpacity(unsigned char opacity)
-{
-//	CCSprite::setOpacity(opacity);
-	_opacity = static_cast<float>(opacity) / 255.0f;
-}
-
-
-#if 1
-void CustomSprite::draw(void)
-{
-/*
-	CC_PROFILER_START_CATEGORY(kCCProfilerCategorySprite, "SSSprite - draw");
-
-
-	if (!_useCustomShaderProgram)
-	{
-		CCSprite::draw();
-		return;
-	}
-
-
-	SS_ASSERT2(!m_pobBatchNode, "If CCSprite is being rendered by CCSpriteBatchNode, CCSprite#draw SHOULD NOT be called");
-
-	CC_NODE_DRAW_SETUP();
-
-	ccGLBlendFunc(m_sBlendFunc.src, m_sBlendFunc.dst);
-
-	if (m_pobTexture != NULL)
-	{
-		ccGLBindTexture2D(m_pobTexture->getName());
-	}
-	else
-	{
-		ccGLBindTexture2D(0);
-	}
-
-	glUniform1i(ssSelectorLocation, _colorBlendFuncNo);
-	glUniform1f(ssAlphaLocation, _opacity);
-	glUniform1i(sshasPremultipliedAlpha, _hasPremultipliedAlpha);
-
-	//
-	// Attributes
-	//
-
-	ccGLEnableVertexAttribs(kCCVertexAttribFlag_PosColorTex);
-
-#define kQuadSize sizeof(m_sQuad.bl)
-	long offset = (long)&m_sQuad;
-
-	// vertex
-	int diff = offsetof(ccV3F_C4B_T2F, vertices);
-	glVertexAttribPointer(kCCVertexAttrib_Position, 3, GL_FLOAT, GL_FALSE, kQuadSize, (void*)(offset + diff));
-
-	// texCoods
-	diff = offsetof(ccV3F_C4B_T2F, texCoords);
-	glVertexAttribPointer(kCCVertexAttrib_TexCoords, 2, GL_FLOAT, GL_FALSE, kQuadSize, (void*)(offset + diff));
-
-	// color
-	diff = offsetof(ccV3F_C4B_T2F, colors);
-	glVertexAttribPointer(kCCVertexAttrib_Color, 4, GL_UNSIGNED_BYTE, GL_TRUE, kQuadSize, (void*)(offset + diff));
-
-
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-//	CHECK_GL_ERROR_DEBUG();
-
-
-#if CC_SPRITE_DEBUG_DRAW == 1
-	// draw bounding box
-	CCPoint vertices[4] = {
-		ccp(m_sQuad.tl.vertices.x, m_sQuad.tl.vertices.y),
-		ccp(m_sQuad.bl.vertices.x, m_sQuad.bl.vertices.y),
-		ccp(m_sQuad.br.vertices.x, m_sQuad.br.vertices.y),
-		ccp(m_sQuad.tr.vertices.x, m_sQuad.tr.vertices.y),
-	};
-	ccDrawPoly(vertices, 4, true);
-#elif CC_SPRITE_DEBUG_DRAW == 2
-	// draw texture box
-	CCSize s = this->getTextureRect().size;
-	CCPoint offsetPix = this->getOffsetPosition();
-	CCPoint vertices[4] = {
-		ccp(offsetPix.x,offsetPix.y), ccp(offsetPix.x+s.width,offsetPix.y),
-		ccp(offsetPix.x+s.width,offsetPix.y+s.height), ccp(offsetPix.x,offsetPix.y+s.height)
-	};
-	ccDrawPoly(vertices, 4, true);
-#endif // CC_SPRITE_DEBUG_DRAW
-
-	CC_INCREMENT_GL_DRAWS(1);
-
-	CC_PROFILER_STOP_CATEGORY(kCCProfilerCategorySprite, "CCSprite - draw");
-*/
-}
-#endif
 
 void CustomSprite::setFlippedX(bool flip)
 {

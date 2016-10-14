@@ -91,7 +91,7 @@ struct State
 		flipX = false;
 		flipY = false;
 		isVisibled = false;
-		memset(&quad, 0, sizeof(quad));
+		quad = SSV3F_C4B_T2F_Quad();
 		texture.handle = 0;
 		texture.size_w = 0;
 		texture.size_h = 0;

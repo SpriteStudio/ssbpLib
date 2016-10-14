@@ -133,7 +133,7 @@ void update(float dt)
 			if (sstest_pause == false )
 			{
 				sstest_pause = true;
-				sstest_count = 0;
+				sstest_count = ssplayer->getFrameNo();;
 				ssplayer->animePause();
 			}
 			else
