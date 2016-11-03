@@ -24,7 +24,9 @@ namespace ss
 		{
 		    // read the file from hardware
 			FILE *fp = fopen(pszFileName, pszMode);
-		    SS_BREAK_IF(!fp);
+		    if(!fp){
+				break;
+			}
 		    
 		    fseek(fp,0,SEEK_END);
 		    *pSize = ftell(fp);
