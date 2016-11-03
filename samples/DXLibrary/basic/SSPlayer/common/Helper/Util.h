@@ -46,7 +46,7 @@ static std::string Format(const char* format, ...){
 	{
 		va_copy(args, source);
 		//Windows
-		if (_vsnprintf(&tmp[0], tmp.size(), format, args) == -1)
+		if (_vsnprintf_s(&tmp[0], tmp.size(), _TRUNCATE, format, args) == -1)
 		{
 			tmp.resize(tmp.size() * 2);
 		}
