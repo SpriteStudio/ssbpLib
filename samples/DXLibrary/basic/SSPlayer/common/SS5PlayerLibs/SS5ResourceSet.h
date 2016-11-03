@@ -13,18 +13,15 @@ namespace ss{
 class ResourceSet{
 public:
 	const ProjectData* data;
-	bool isDataAutoRelease;
 	EffectCache* effectCache;
 	CellCache* cellCache;
 	AnimeCache* animeCache;
 
 	virtual ~ResourceSet()
 	{
-		if (isDataAutoRelease)
-		{
-			delete data;
-			data = NULL;
-		}
+		delete data;
+		data = NULL;
+		
 		if (animeCache)
 		{
 			delete animeCache;
