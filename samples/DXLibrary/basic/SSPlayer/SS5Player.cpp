@@ -9,6 +9,7 @@
 #include "common/SS5PlayerLibs/SS5CellCache.h"
 #include "common/SS5PlayerLibs/SS5AnimCache.h"
 #include "common/SS5PlayerLibs/SS5EffectCache.h"
+#include "common/SS5PlayerLibs/SS5ResourceSet.h"
 #include "common/Animator/ssplayer_matrix.h"
 #include "common/Animator/ssplayer_macro.h"
 
@@ -103,45 +104,6 @@ unsigned int getRandomSeed()
 	return(rc);
 }
 
-
-
-
-
-/**
- * ResourceSet
- */
-struct ResourceSet
-{
-	const ProjectData* data;
-	bool isDataAutoRelease;
-	EffectCache* effectCache;
-	CellCache* cellCache;
-	AnimeCache* animeCache;
-
-	virtual ~ResourceSet()
-	{
-		if (isDataAutoRelease)
-		{
-			delete data;
-			data = NULL;
-		}
-		if (animeCache)
-		{
-			delete animeCache;
-			animeCache = NULL;
-		}
-		if (cellCache)
-		{
-			delete cellCache;
-			cellCache = NULL;
-		}
-		if (effectCache)
-		{
-			delete effectCache;
-			effectCache = NULL;
-		}
-	}
-};
 
 
 /**
