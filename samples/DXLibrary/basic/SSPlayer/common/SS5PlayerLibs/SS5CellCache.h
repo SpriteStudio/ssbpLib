@@ -6,7 +6,7 @@
 
 
 namespace ss{
-class Cell;
+struct Cell;
 struct ProjectData;
 
 
@@ -48,7 +48,7 @@ private:
 
 	void addTexture(const std::string& imagePath, const std::string& imageBaseDir, SsTexWrapMode::_enum  wrapmode, SsTexFilterMode::_enum filtermode);
 
-protected:
+private:
 	std::vector<std::string>			_texname;
 	std::vector<TextuerData>			_textures;
 	std::vector<CellRef*>				_refs;
