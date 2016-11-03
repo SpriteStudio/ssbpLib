@@ -23,7 +23,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 {
 	//DXライブラリの初期化
 	ChangeWindowMode(true);	//ウインドウモード
-	SetGraphMode(1280, 720, GetColorBitDepth() );
+	SetGraphMode(800, 600, GetColorBitDepth() );
 	if (DxLib_Init() == -1)		// ＤＸライブラリ初期化処理
 	{
 		return -1;			// エラーが起きたら直ちに終了
@@ -88,7 +88,7 @@ void init( void )
 	ssplayer->play("character_template_3head/stance");				 // アニメーション名を指定(ssae名/アニメーション名も可能、詳しくは後述)
 
 	//表示位置を設定
-	ssplayer->setPosition(1280/2, 300);
+	ssplayer->setPosition(800/2, 100);
 	//スケール設定
 	ssplayer->setScale(0.5f, 0.5f);
 	//回転を設定

@@ -2,11 +2,9 @@
 #ifndef __XORSHIFT32__
 #define __XORSHIFT32__
 
-#ifdef WIN32
 
-	#ifndef uint32_t	
-		typedef unsigned int _uint32_t;
-	#endif
+#ifndef uint32_t	
+	typedef unsigned int _uint32_t;
 #else
 	typedef  uint32_t	_uint32_t;
 #endif
