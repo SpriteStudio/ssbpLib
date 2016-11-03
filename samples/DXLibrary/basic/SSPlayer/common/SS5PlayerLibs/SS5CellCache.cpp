@@ -6,18 +6,9 @@
 namespace ss{
 
 
-CellCache* CellCache::create(const ProjectData* data, const std::string& imageBaseDir)
+CellCache::CellCache(const ProjectData* data, const std::string& imageBaseDir)
 {
-	CellCache* obj = new CellCache();
-	if (obj){
-		obj->init(data, imageBaseDir);
-	}
-	return obj;
-}
-
-
-CellCache::CellCache()
-{
+	init(data, imageBaseDir);
 }
 
 CellCache::~CellCache()

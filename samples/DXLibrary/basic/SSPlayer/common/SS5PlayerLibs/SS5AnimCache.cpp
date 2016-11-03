@@ -5,19 +5,9 @@
 namespace ss{
 
 
-AnimeCache* AnimeCache::create(const ProjectData* data)
+AnimeCache::AnimeCache(const ProjectData* data)
 {
-	AnimeCache* obj = new AnimeCache();
-	if (obj)
-	{
-		obj->init(data);
-	}
-	return obj;
-}
-
-
-AnimeCache::AnimeCache()
-{
+	init(data);
 }
 
 AnimeCache::~AnimeCache()

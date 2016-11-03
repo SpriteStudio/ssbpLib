@@ -7,20 +7,9 @@
 namespace ss{
 	
 
-EffectCache* EffectCache::create(const ProjectData* data, const std::string& imageBaseDir, CellCache* cellCache)
+EffectCache::EffectCache(const ProjectData* data, const std::string& imageBaseDir, CellCache* cellCache)
 {
-	EffectCache* obj = new EffectCache();
-	if (obj)
-	{
-		obj->init(data, imageBaseDir, cellCache);
-		//			obj->autorelease();
-	}
-	return obj;
-}
-
-
-EffectCache::EffectCache()
-{
+	init(data, imageBaseDir, cellCache);
 }
 
 EffectCache::~EffectCache()

@@ -87,11 +87,11 @@ std::string ResourceManager::addData(const std::string& dataKey, const ProjectDa
 	}
 
 	//アニメはエフェクトを参照し、エフェクトはセルを参照するのでこの順番で生成する必要がある
-	CellCache* cellCache = CellCache::create(data, baseDir);
+	CellCache* cellCache = new CellCache(data, baseDir);
 
-	EffectCache* effectCache = EffectCache::create(data, baseDir, cellCache);	//
+	EffectCache* effectCache = new EffectCache(data, baseDir, cellCache);	//
 
-	AnimeCache* animeCache = AnimeCache::create(data);
+	AnimeCache* animeCache = new AnimeCache(data);
 
 	ResourceSet* rs = new ResourceSet();
 	rs->data = data;

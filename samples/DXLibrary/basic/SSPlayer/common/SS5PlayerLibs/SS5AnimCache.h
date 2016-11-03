@@ -23,9 +23,8 @@ struct AnimeRef{
  */
 class AnimeCache{
 public:
-	AnimeCache();
+	AnimeCache(const ProjectData* data);
 	~AnimeCache();
-	static AnimeCache* create(const ProjectData* data);
 
 	/**
 	 * packNameとanimeNameを指定してAnimeRefを得る
