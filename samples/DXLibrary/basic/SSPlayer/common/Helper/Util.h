@@ -67,4 +67,33 @@ static std::string Format(const char* format, ...){
 
 
 
+//配列のサイズを返す
+template<class TYPE, size_t N>
+size_t lengthof(const TYPE(&ar)[N]){
+	return N;
+}
+
+//[minVal:maxVal]の範囲にする
+template<class T>
+T clamp(T val, T minVal, T maxVal){
+	assert(minVal <= maxVal);
+	return std::min(std::max(val, minVal), maxVal);
+}
+
+//[minVal:maxVal)の範囲でループさせる
+template<class T>
+T wrap(T val, T minVal, T maxVal){
+	assert(minVal < maxVal);
+	int n = (val - minVal) % (maxVal - minVal);
+	return (n >= 0) ? (n + minVal) : (n + maxVal);
+}
+
+template<class T>
+T fwrap(T val, T minVal, T maxVal){
+	assert(minVal < maxVal);
+	double n = fmod(val - minVal, maxVal - minVal);
+	return (n >= 0) ? (n + minVal) : (n + maxVal);
+}
+
+
 } //namespace sss
