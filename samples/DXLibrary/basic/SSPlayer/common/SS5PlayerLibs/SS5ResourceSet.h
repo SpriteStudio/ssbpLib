@@ -12,30 +12,30 @@ namespace ss{
  */
 class ResourceSet{
 public:
-	const ProjectData* data;
-	EffectCache* effectCache;
-	CellCache* cellCache;
-	AnimeCache* animeCache;
+	const ProjectData* m_data;
+	EffectCache* m_effectCache;
+	CellCache* m_cellCache;
+	AnimeCache* m_animeCache;
 
-	virtual ~ResourceSet()
+	~ResourceSet()
 	{
-		delete data;
-		data = NULL;
+		delete m_data;
+		m_data = NULL;
 		
-		if (animeCache)
+		if (m_animeCache)
 		{
-			delete animeCache;
-			animeCache = NULL;
+			delete m_animeCache;
+			m_animeCache = NULL;
 		}
-		if (cellCache)
+		if (m_cellCache)
 		{
-			delete cellCache;
-			cellCache = NULL;
+			delete m_cellCache;
+			m_cellCache = NULL;
 		}
-		if (effectCache)
+		if (m_effectCache)
 		{
-			delete effectCache;
-			effectCache = NULL;
+			delete m_effectCache;
+			m_effectCache = NULL;
 		}
 	}
 };

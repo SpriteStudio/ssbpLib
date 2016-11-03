@@ -225,11 +225,11 @@ void Player::setData(const std::string& dataKey)
 	_rootPartFunctionAsVer4 = false;			
 	_dontUseMatrixForTransform = false;			
 #ifdef	USE_VER4TRANSFORM
-	if ((rs->data->flags & HEAD_FLAG_rootPartFunctionAsVer4) != 0)
+	if ((rs->m_data->flags & HEAD_FLAG_rootPartFunctionAsVer4) != 0)
 	{
 		_rootPartFunctionAsVer4 = true;			//不透明度・反転・非表示アトリビュートの継承方法をVer.4と同様にする
 	}
-	if ((rs->data->flags & HEAD_FLAG_dontUseMatrixForTransform) != 0)
+	if ((rs->m_data->flags & HEAD_FLAG_dontUseMatrixForTransform) != 0)
 	{
 		_dontUseMatrixForTransform = true;		//親子の座標変換にマトリックスを使用しない（Ver4互換）
 	}
@@ -257,7 +257,7 @@ void Player::play(const std::string& animeName, int loop, int startFrameNo)
 {
 	SS_ASSERT2(_currentRs != NULL, "Not select data");
 
-	AnimeRef* animeRef = _currentRs->animeCache->getReference(animeName);
+	AnimeRef* animeRef = _currentRs->m_animeCache->getReference(animeName);
 	if (animeRef == NULL)
 	{
 		std::string msg = Format("Not found animation > anime=%s", animeName.c_str());
@@ -361,7 +361,7 @@ void Player::update(float dt)
 void Player::updateFrame(float dt)
 {
 	if (!_currentAnimeRef) return;
-	if (!_currentRs->data) return;
+	if (!_currentRs->m_data) return;
 
 	int startFrame = 0;
 	int endFrame = _currentAnimeRef->animationData->numFrames;
@@ -531,7 +531,7 @@ void Player::releaseParts()
 		if (_currentAnimeRef)
 		{
 
-			ToPointer ptr(_currentRs->data);
+			ToPointer ptr(_currentRs->m_data);
 			const AnimePackData* packData = _currentAnimeRef->animePackData;
 			const PartData* parts = ptr.toPartData(packData);
 			if (_parts.size() > 0)
@@ -552,7 +552,7 @@ void Player::setPartsParentage()
 {
 	if (!_currentAnimeRef) return;
 
-	ToPointer ptr(_currentRs->data);
+	ToPointer ptr(_currentRs->m_data);
 	const AnimePackData* packData = _currentAnimeRef->animePackData;
 	const PartData* parts = ptr.toPartData(packData);
 
@@ -595,7 +595,7 @@ void Player::setPartsParentage()
 		std::string refeffectName = ptr.toString(partData->effectfilename);
 		if (refeffectName != "")
 		{
-			SsEffectModel* effectmodel = _currentRs->effectCache->getReference(refeffectName);
+			SsEffectModel* effectmodel = _currentRs->m_effectCache->getReference(refeffectName);
 			if (effectmodel)
 			{
 				//エフェクトクラスにパラメータを設定する
@@ -617,7 +617,7 @@ void Player::setPartsParentage()
 //再生しているアニメーションに含まれるパーツ数を取得
 int Player::getPartsCount(void)
 {
-	ToPointer ptr(_currentRs->data);
+	ToPointer ptr(_currentRs->m_data);
 	const AnimePackData* packData = _currentAnimeRef->animePackData;
 	return packData->numParts;
 }
@@ -625,7 +625,7 @@ int Player::getPartsCount(void)
 //indexからパーツ名を取得
 const char* Player::getPartName(int partId) const
 {
-	ToPointer ptr(_currentRs->data);
+	ToPointer ptr(_currentRs->m_data);
 
 	const AnimePackData* packData = _currentAnimeRef->animePackData;
 	SS_ASSERT2(partId >= 0 && partId < packData->numParts, "partId is out of range.");
@@ -677,7 +677,7 @@ bool Player::getPartState(ResluteState& result, const char* name, int frameNo)
 				setFrame(frameNo);
 			}
 
-			ToPointer ptr(_currentRs->data);
+			ToPointer ptr(_currentRs->m_data);
 
 			const AnimePackData* packData = _currentAnimeRef->animePackData;
 			const PartData* parts = ptr.toPartData(packData);
@@ -800,7 +800,7 @@ int Player::getLabelToFrame(char* findLabelName)
 {
 	int rc = -1;
 
-	ToPointer ptr(_currentRs->data);
+	ToPointer ptr(_currentRs->m_data);
 	const AnimationData* animeData = _currentAnimeRef->animationData;
 
 	if (!animeData->labelData) return -1;
@@ -840,7 +840,7 @@ void Player::setPartVisible(std::string partsname, bool flg)
 	bool rc = false;
 	if (_currentAnimeRef)
 	{
-		ToPointer ptr(_currentRs->data);
+		ToPointer ptr(_currentRs->m_data);
 
 		const AnimePackData* packData = _currentAnimeRef->animePackData;
 		const PartData* parts = ptr.toPartData(packData);
@@ -866,17 +866,17 @@ void Player::setPartCell(std::string partsname, std::string sscename, std::strin
 	bool rc = false;
 	if (_currentAnimeRef)
 	{
-		ToPointer ptr(_currentRs->data);
+		ToPointer ptr(_currentRs->m_data);
 
 		int changeCellIndex = -1;
 		if ((sscename != "") && (cellname != ""))
 		{
 			//セルマップIDを取得する
-			const Cell* cells = ptr.toCell(_currentRs->data);
+			const Cell* cells = ptr.toCell(_currentRs->m_data);
 
 			//名前からインデックスの取得
 			int cellindex = -1;
-			for (int i = 0; i < _currentRs->data->numCells; i++)
+			for (int i = 0; i < _currentRs->m_data->numCells; i++)
 			{
 				const Cell* cell = &cells[i];
 				const char* name1 = ptr.toString(cell->name);
@@ -919,7 +919,7 @@ bool Player::changeInstanceAnime(std::string partsname, std::string animename, b
 	bool rc = false;
 	if (_currentAnimeRef)
 	{
-		ToPointer ptr(_currentRs->data);
+		ToPointer ptr(_currentRs->m_data);
 
 		const AnimePackData* packData = _currentAnimeRef->animePackData;
 		const PartData* parts = ptr.toPartData(packData);
@@ -1028,7 +1028,7 @@ int Player::getDrawSpriteCount(void)
 void Player::setFrame(int frameNo, float dt)
 {
 	if (!_currentAnimeRef) return;
-	if (!_currentRs->data) return;
+	if (!_currentRs->m_data) return;
 
 	bool forceUpdate = false;
 	{
@@ -1045,7 +1045,7 @@ void Player::setFrame(int frameNo, float dt)
 	//インスタンスアニメがあるので毎フレーム更新するためコメントに変更
 	//	if (!forceUpdate && frameNo == _prevDrawFrameNo) return;
 
-	ToPointer ptr(_currentRs->data);
+	ToPointer ptr(_currentRs->m_data);
 
 	const AnimePackData* packData = _currentAnimeRef->animePackData;
 	const PartData* parts = ptr.toPartData(packData);
@@ -1148,7 +1148,7 @@ void Player::setFrame(int frameNo, float dt)
 		}
 
 		//セルの原点設定を反映させる
-		CellRef* cellRef = cellIndex >= 0 ? _currentRs->cellCache->getReference(cellIndex) : nullptr;
+		CellRef* cellRef = cellIndex >= 0 ? _currentRs->m_cellCache->getReference(cellIndex) : nullptr;
 		if (cellRef)
 		{
 			float cpx = 0;
@@ -1823,7 +1823,7 @@ void Player::draw()
 	if (!_currentAnimeRef) return;
 
 	_draw_count = 0;	//表示スプライト数クリア
-	ToPointer ptr(_currentRs->data);
+	ToPointer ptr(_currentRs->m_data);
 	const AnimePackData* packData = _currentAnimeRef->animePackData;
 
 	for (int index = 0; index < packData->numParts; index++)
@@ -1869,7 +1869,7 @@ void Player::draw()
 
 void Player::checkUserData(int frameNo)
 {
-	ToPointer ptr(_currentRs->data);
+	ToPointer ptr(_currentRs->m_data);
 
 	const AnimePackData* packData = _currentAnimeRef->animePackData;
 	const AnimationData* animeData = _currentAnimeRef->animationData;

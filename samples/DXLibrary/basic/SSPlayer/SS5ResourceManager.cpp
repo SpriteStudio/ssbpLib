@@ -94,10 +94,10 @@ std::string ResourceManager::addData(const std::string& dataKey, const ProjectDa
 	AnimeCache* animeCache = new AnimeCache(data);
 
 	ResourceSet* rs = new ResourceSet();
-	rs->data = data;
-	rs->cellCache = cellCache;
-	rs->animeCache = animeCache;
-	rs->effectCache = effectCache;
+	rs->m_data = data;
+	rs->m_cellCache = cellCache;
+	rs->m_animeCache = animeCache;
+	rs->m_effectCache = effectCache;
 	_dataDic.insert(std::map<std::string, ResourceSet*>::value_type(dataKey, rs));
 
 	return dataKey;
@@ -208,7 +208,7 @@ bool ResourceManager::changeTexture(char* ssbpName, char* ssceName, long texture
 	bool rc = false;
 
 	ResourceSet* rs = getData(ssbpName);
-	rc = rs->cellCache->setCellRefTexture(rs->data, ssceName, texture);
+	rc = rs->m_cellCache->setCellRefTexture(rs->m_data, ssceName, texture);
 
 	return(rc);
 }
@@ -218,7 +218,7 @@ bool ResourceManager::releseTexture(std::string ssbpName)
 {
 
 	ResourceSet* rs = getData(ssbpName);
-	bool rc = rs->cellCache->releseTexture(rs->data);
+	bool rc = rs->m_cellCache->releseTexture(rs->m_data);
 
 	return(rc);
 }
@@ -229,7 +229,7 @@ int ResourceManager::getMaxFrame(std::string ssbpName, std::string animeName)
 	int rc = -1;
 
 	ResourceSet* rs = getData(ssbpName);
-	AnimeRef* animeRef = rs->animeCache->getReference(animeName);
+	AnimeRef* animeRef = rs->m_animeCache->getReference(animeName);
 	if (animeRef == NULL)
 	{
 		std::string msg = Format("Not found animation > anime=%s", animeName.c_str());
