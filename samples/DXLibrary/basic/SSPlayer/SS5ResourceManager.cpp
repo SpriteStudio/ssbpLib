@@ -134,10 +134,6 @@ std::string ResourceManager::addDataWithKey(const std::string& dataKey, const st
 
 	addData(dataKey, data, baseDir);
 	
-	// リソースが破棄されるとき一緒にロードしたデータも破棄する
-	ResourceSet* rs = getData(dataKey);
-	SS_ASSERT2(rs != NULL, "");
-	
 	return dataKey;
 }
 

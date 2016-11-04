@@ -101,9 +101,7 @@ Player::~Player()
 	}
 
 	releaseParts();
-	releaseData();
 	releaseResourceManager();
-	releaseAnime();
 }
 
 Player* Player::create(ResourceManager* resman)
@@ -215,11 +213,7 @@ void Player::setData(const std::string& dataKey)
 		SS_ASSERT2(rs != NULL, msg.c_str());
 	}
 	
-	if (_currentRs != rs)
-	{
-//		releaseData();
-		_currentRs = rs;
-	}
+	_currentRs = rs;
 
 	//Ver4互換設定
 	_rootPartFunctionAsVer4 = false;			
@@ -236,16 +230,6 @@ void Player::setData(const std::string& dataKey)
 #endif
 }
 
-void Player::releaseData()
-{
-	releaseAnime();
-}
-
-
-void Player::releaseAnime()
-{
-	releaseParts();
-}
 
 void Player::play(const std::string& ssaeName, const std::string& motionName, int loop, int startFrameNo)
 {
@@ -499,50 +483,24 @@ void Player::updateFrame(float dt)
 
 void Player::allocParts(int numParts)
 {
-	for (int i = 0; i < _parts.size(); i++)
-	{
-		CustomSprite* sprite = _parts.at(i);
-		if (sprite)
-		{
-			delete sprite;
-			sprite = 0;
-		}
-	}
-
-	_parts.clear();	//すべてのパーツを消す
-	{
-		// パーツ数だけCustomSpriteを作成する
-//		// create CustomSprite objects.
-		for (int i = 0; i < numParts; i++)
-		{
-			CustomSprite* sprite =  CustomSprite::create();
-			sprite->_ssplayer = NULL;
-			_parts.push_back(sprite);
-		}
+	releaseParts();		//すべてのパーツを消す
+	
+	// パーツ数だけCustomSpriteを作成する
+	for (int i = 0; i < numParts; i++){
+		CustomSprite* sprite =  CustomSprite::create();
+		sprite->_ssplayer = NULL;
+		_parts.push_back(sprite);
 	}
 }
 
 void Player::releaseParts()
 {
-	// パーツの子CustomSpriteを全て削除
-	// remove children CCSprite objects.
-	if (_currentRs)
-	{
-		if (_currentAnimeRef)
-		{
+	SS_ASSERT(_currentRs);
+	SS_ASSERT(_currentAnimeRef);
 
-			ToPointer ptr(_currentRs->m_data);
-			const AnimePackData* packData = _currentAnimeRef->animePackData;
-			const PartData* parts = ptr.toPartData(packData);
-			if (_parts.size() > 0)
-			{
-				for (int partIndex = 0; partIndex < packData->numParts; partIndex++)
-				{
-					CustomSprite* sprite = static_cast<CustomSprite*>(_parts.at(partIndex));
-					SS_SAFE_DELETE(sprite->_ssplayer);
-				}
-			}
-		}
+	// パーツの子CustomSpriteを全て削除
+	for(CustomSprite *sprite : _parts){
+		SS_SAFE_DELETE(sprite);
 	}
 
 	_parts.clear();
