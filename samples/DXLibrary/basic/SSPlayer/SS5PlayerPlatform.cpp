@@ -197,31 +197,11 @@ namespace ss
 		quad.br.vertices.x += cx;
 		quad.br.vertices.y += cy;
 
-		float x, y;
-		SSMatrix t;
-		t.setupTranslation(quad.tl.vertices.x, quad.tl.vertices.y, 0.0f);
-		t *= state.mat;
-		t.getTranslation(&x, &y);
-		quad.tl.vertices.x = x;
-		quad.tl.vertices.y = y;
 
-		t.setupTranslation(quad.tr.vertices.x, quad.tr.vertices.y, 0.0f);
-		t *= state.mat;
-		t.getTranslation(&x, &y);
-		quad.tr.vertices.x = x;
-		quad.tr.vertices.y = y;
+		quad.vertexForeach([&](SSVertex3F &v){
+			v *= state.mat;
+		});
 
-		t.setupTranslation(quad.bl.vertices.x, quad.bl.vertices.y, 0.0f);
-		t *= state.mat;
-		t.getTranslation(&x, &y);
-		quad.bl.vertices.x = x;
-		quad.bl.vertices.y = y;
-
-		t.setupTranslation(quad.br.vertices.x, quad.br.vertices.y, 0.0f);
-		t *= state.mat;
-		t.getTranslation(&x, &y);
-		quad.br.vertices.x = x;
-		quad.br.vertices.y = y;
 #else
 		float x, y;
 		state.mat.getTranslation(&x, &y);	/// 表示座標はマトリクスから取得します。		float rotationZ = state.Calc_rotationZ;		/// 回転値

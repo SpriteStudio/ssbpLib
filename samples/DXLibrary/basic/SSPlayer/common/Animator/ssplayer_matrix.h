@@ -3,6 +3,7 @@
 
 
 #include <array>
+#include "common/SS5PlayerLibs/SS5PlayerTypes.h"
 
 namespace ss
 {
@@ -44,6 +45,8 @@ public:
 
 };
 
+SSVertex3F operator*(const SSVertex3F &p, const SSMatrix &m);
+SSVertex3F &operator*=(SSVertex3F &p, const SSMatrix &m);
 
 
 
