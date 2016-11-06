@@ -40,17 +40,22 @@ ResourceManager* ResourceManager::create()
 
 ResourceSet* ResourceManager::getData(const std::string& dataKey)
 {
-	ResourceSet* rs = _dataDic.at(dataKey);
-	return rs;
+	auto it = _dataDic.find(dataKey);
+	SS_ASSERT(it != _dataDic.end());
+
+	RefcountResourceSet* rrs = it->second;
+	return rrs->getResourceSet();
 }
 
-bool ResourceManager::regist(const void *data, size_t dataSize, const std::string &dataKey, const std::string &imageBaseDir)
+int ResourceManager::regist(const void *data, size_t dataSize, const std::string &dataKey, const std::string &imageBaseDir)
 {
 	SS_ASSERT2(data, "Invalid data");
 	SS_ASSERT2(dataSize > 0, "dataSize is zero");
 	//登録済みかどうかの判定
 	if(_dataDic.find(dataKey) != _dataDic.end()){
-		return false;
+		RefcountResourceSet* ref = _dataDic.at(dataKey);
+		ref->incCount();	//登録済みの場合はカウントアップするだけ。dataの内容は無視(最初に登録されてたもの優先)
+		return ref->getCount();
 	}
 
 	/***** 新規登録 *****/
@@ -59,10 +64,10 @@ bool ResourceManager::regist(const void *data, size_t dataSize, const std::strin
 	std::string baseDir = getImageBaseDir(imageBaseDir, static_cast<const ProjectData*>(data));
 
 	//データを作って登録
-	ResourceSet* rs = new ResourceSet(static_cast<const char*>(data), dataSize, baseDir);
+	RefcountResourceSet* rs = new RefcountResourceSet(static_cast<const char*>(data), dataSize, baseDir);
 
 	_dataDic.insert(std::make_pair(dataKey, rs));
-	return true;
+	return rs->getCount();
 }
 
 
@@ -82,14 +87,20 @@ std::string ResourceManager::getImageBaseDir(const std::string &imageBaseDir, co
 
 void ResourceManager::unregist(const std::string& dataKey)
 {
-	ResourceSet* rs = getData(dataKey);
+	auto it = _dataDic.find(dataKey);
+	SS_ASSERT(it != _dataDic.end());
 
-	//テクスチャの解放
-	releseTexture(dataKey);
+	RefcountResourceSet* ref = it->second;
+	ref->decCount();
+	SS_ASSERT(ref->getCount() >= 0);	//マイナスにはならない
+
+	if(ref->getCount() == 0){
+		//消してOKなので消す
+		releseTexture(dataKey);		//テクスチャの解放
 	
-	//バイナリデータの削除
-	delete rs;
-	_dataDic.erase(dataKey);
+		SS_SAFE_DELETE(ref);
+		_dataDic.erase(it);
+	}
 }
 
 void ResourceManager::unregistAll()
@@ -97,7 +108,7 @@ void ResourceManager::unregistAll()
 	//全リソースの解放
 	while (!_dataDic.empty())
 	{
-		std::map<std::string, ResourceSet*>::iterator it = _dataDic.begin();
+		auto it = _dataDic.begin();
 		std::string ssbpName = it->first;
 		unregist(ssbpName);
 	}
@@ -145,7 +156,7 @@ int ResourceManager::getMaxFrame(std::string ssbpName, std::string animeName)
 //ssbpファイルが登録されているかを調べる
 bool ResourceManager::isDataKeyExists(const std::string& dataKey) {
 	// 登録されている名前か判定する
-	std::map<std::string, ResourceSet*>::iterator it = _dataDic.find(dataKey);
+	auto it = _dataDic.find(dataKey);
 	if (it != _dataDic.end()) {
 		//登録されている
 		return true;

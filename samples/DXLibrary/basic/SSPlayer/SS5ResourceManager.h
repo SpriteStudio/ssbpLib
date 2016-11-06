@@ -1,6 +1,8 @@
 ﻿#pragma once
 #include <string>
 #include <map>
+#include <memory>
+#include "common/SS5PlayerLibs/SS5ResourceSet.h"
 
 namespace ss{
 struct ProjectData;
@@ -28,14 +30,12 @@ public:
 	 * @param  dataKey		登録名
 	 * @param  imageBaseDir 画像ファイルの読み込み元ルートパス. 省略時はコンバート時に指定されたパスを使用する
 	 */
-	bool regist(const void *data, size_t dataSize, const std::string &dataKey, const std::string &imageBaseDir = s_null);
+	int regist(const void *data, size_t dataSize, const std::string &dataKey, const std::string &imageBaseDir = s_null);
 
 	/** 指定データを解放します。登録名を指定してください */
 	void unregist(const std::string& dataKey);
 
-	/**
-	 * 全てのデータを解放します.
-	 */
+	/** 全てのデータを解放します. */
 	void unregistAll();
 
 	/**
@@ -90,7 +90,31 @@ private:
 	//imageBaseDirの指定がないときはdataの中を見てディレクトリを返す
 	std::string getImageBaseDir(const std::string &imageBaseDir, const ProjectData *data) const;
 
-	std::map<std::string, ResourceSet*>	_dataDic;
+
+	/** regist数をカウントするための構造 */
+	class RefcountResourceSet{
+	public:
+		RefcountResourceSet(const char *data, size_t dataSize, const std::string &imageBaseDir)
+			: m_refCount(0), m_resourceSet(new ResourceSet(data, dataSize, imageBaseDir)){
+			incCount();
+		}
+		~RefcountResourceSet(){}
+
+		int getCount() const{ return m_refCount; }
+		void incCount(){ ++m_refCount; }
+		void decCount(){ --m_refCount; }
+
+		ResourceSet* getResourceSet() const{
+			return m_resourceSet.get();
+		}
+
+	private:
+		int m_refCount;
+		std::unique_ptr<ResourceSet> m_resourceSet;
+	};
+
+
+	std::map<std::string, RefcountResourceSet*>	_dataDic;	//ここにデータを登録する
 };
 
 
