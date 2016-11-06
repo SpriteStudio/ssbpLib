@@ -2,75 +2,23 @@
 //  SS5Player.cpp
 //
 #include "SS5Player.h"
+#include "SS5ResourceManager.h"
 #include "common/SS5PlayerLibs/SS5PlayerData.h"
 #include "common/SS5PlayerLibs/SS5PlayerTypes.h"
 #include "common/SS5PlayerLibs/SS5PlayerToPointer.h"
 #include "common/SS5PlayerLibs/SS5PlayerDataArrayReader.h"
+#include "common/SS5PlayerLibs/SS5CellCache.h"
+#include "common/SS5PlayerLibs/SS5AnimCache.h"
+#include "common/SS5PlayerLibs/SS5EffectCache.h"
+#include "common/SS5PlayerLibs/SS5ResourceSet.h"
+#include "common/SS5PlayerLibs/SS5CustomSprite.h"
+#include "common/Helper/Util.h"
 #include "common/Animator/ssplayer_matrix.h"
 #include "common/Animator/ssplayer_macro.h"
 
 namespace ss
 {
 
-/**
- * definition
- */
-
-static const ss_u32 DATA_ID = 0x42505353;
-static const ss_u32 DATA_VERSION = 4;
-
-
-/**
- * utilites
- */
-static void splitPath(std::string& directoty, std::string& filename, const std::string& path)
-{
-    std::string f = path;
-    std::string d = "";
-
-    size_t pos = path.find_last_of("/");
-	if (pos == std::string::npos) pos = path.find_last_of("\\");	// for win
-
-    if (pos != std::string::npos)
-    {
-        d = path.substr(0, pos+1);
-        f = path.substr(pos+1);
-    }
-
-	directoty = d;
-	filename = f;
-}
-
-// printf 形式のフォーマット
-#ifndef va_copy
-#    define va_copy(dest, src) ((dest) = (src))
-#endif
-static std::string Format(const char* format, ...){
-
-	static std::vector<char> tmp(1000);
-
-	va_list args, source;
-	va_start(args, format);
-	va_copy( source , args );
-
-	while (1)
-	{
-		va_copy( args , source );
-		//Windows
-		if (_vsnprintf(&tmp[0], tmp.size(), format, args) == -1)
-		{
-			tmp.resize(tmp.size() * 2);
-		}
-		else
-		{
-			break;
-		}
-	}
-	tmp.push_back('\0');
-	std::string ret = &(tmp[0]);
-	va_end(args);
-	return ret;
-}
 
 //座標回転処理
 //指定した座標を中心に回転後した座標を取得します
@@ -101,1055 +49,6 @@ unsigned int getRandomSeed()
 }
 
 
-/**
- * CellRef
- */
-struct CellRef
-{
-	const Cell* cell;
-	TextuerData texture;
-	SSRect rect;
-	std::string texname;
-};
-
-
-/**
- * CellCache
- */
-class CellCache
-{
-public:
-	CellCache()
-	{
-	}
-	~CellCache()
-	{
-		releseReference();
-	}
-
-	static CellCache* create(const ProjectData* data, const std::string& imageBaseDir)
-	{
-		CellCache* obj = new CellCache();
-		if (obj)
-		{
-			obj->init(data, imageBaseDir);
-		}
-		return obj;
-	}
-
-	CellRef* getReference(int index)
-	{
-		if (index < 0 || index >= (int)_refs.size())
-		{
-			SSLOGERROR("Index out of range > %d", index);
-			SS_ASSERT(0);
-		}
-		CellRef* ref = _refs.at(index);
-		return ref;
-	}
-
-	//指定した名前のセルの参照テクスチャを変更する
-	bool setCellRefTexture(const ProjectData* data, const char* cellName, long texture)
-	{
-		bool rc = false;
-
-		ToPointer ptr(data);
-		const Cell* cells = static_cast<const Cell*>(ptr.toCell(data));
-
-		//名前からインデックスの取得
-		int cellindex = -1;
-		for (int i = 0; i < data->numCells; i++)
-		{
-			const Cell* cell = &cells[i];
-			const CellMap* cellMap = static_cast<const CellMap*>(ptr.toCellMap(cell));
-			const char* name = ptr.toString(cellMap->name);
-			if (strcmp(cellName, name) == 0)
-			{
-				CellRef* ref = getReference(i);
-				ref->texture.handle = texture;
-				rc = true;
-			}
-		}
-
-		return(rc);
-	}
-
-	//指定したデータのテクスチャを破棄する
-	bool releseTexture(const ProjectData* data)
-	{
-		bool rc = false;
-
-		for (int i = 0; i < data->numCells; i++)
-		{
-			CellRef* ref = _refs.at(i);
-			if (ref->texture.handle != -1 )
-			{
-				SSTextureRelese(ref->texture.handle);
-				ref->texture.handle = -1;
-				rc = true;
-			}
-		}
-		return(rc);
-	}
-
-protected:
-	void init(const ProjectData* data, const std::string& imageBaseDir)
-	{
-
-		SS_ASSERT2(data != NULL, "Invalid data");
-		
-		_textures.clear();
-		_refs.clear();
-		_texname.clear();
-
-		ToPointer ptr(data);
-		const Cell* cells = ptr.toCell(data);
-
-		for (int i = 0; i < data->numCells; i++)
-		{
-			const Cell* cell = &cells[i];
-			const CellMap* cellMap = ptr.toCellMap(cell);
-			
-			if (cellMap->index >= (int)_textures.size())
-			{
-				const char* imagePath = ptr.toString(cellMap->imagePath);
-				addTexture(imagePath, imageBaseDir, (SsTexWrapMode::_enum)cellMap->wrapmode, (SsTexFilterMode::_enum)cellMap->filtermode);
-			}
-
-			//セル情報だけ入れておく
-			//テクスチャの読み込みはゲーム側に任せる
-			CellRef* ref = new CellRef();
-			ref->cell = cell;
-			ref->texture = _textures.at(cellMap->index);
-			ref->texname = _texname.at(cellMap->index);
-			ref->rect = SSRect(cell->x, cell->y, cell->width, cell->height);
-			_refs.push_back(ref);
-		}
-
-	}
-	//キャッシュの削除
-	void releseReference(void)
-	{
-		for (int i = 0; i < _refs.size(); i++)
-		{
-			CellRef* ref = _refs.at(i);
-			if (ref->texture.handle != -1 )
-			{
-				SSTextureRelese(ref->texture.handle);
-				ref->texture.handle = -1;
-			}
-			delete ref;
-		}
-		_refs.clear();
-	}
-
-	void addTexture(const std::string& imagePath, const std::string& imageBaseDir, SsTexWrapMode::_enum  wrapmode, SsTexFilterMode::_enum filtermode)
-	{
-		std::string path = "";
-		
-		if (isAbsolutePath(imagePath))
-		{
-			// 絶対パスのときはそのまま扱う
-			path = imagePath;
-		}
-		else
-		{
-			// 相対パスのときはimageBaseDirを付与する
-			path.append(imageBaseDir);
-			size_t pathLen = path.length();
-			if (pathLen && path.at(pathLen-1) != '/' && path.at(pathLen-1) != '\\')
-			{
-				path.append("/");
-			}
-			path.append(imagePath);
-		}
-
-		//テクスチャの読み込み
-		long tex = SSTextureLoad(path.c_str(), wrapmode, filtermode);
-		SSLOG("load: %s", path.c_str());
-		TextuerData texdata;
-		texdata.handle = tex;
-		int w;
-		int h;
-		SSGetTextureSize(texdata.handle, w, h);
-		texdata.size_w = w;
-		texdata.size_h = h;
-
-		_textures.push_back(texdata);
-		_texname.push_back(path);
-
-	}
-
-protected:
-	std::vector<std::string>			_texname;
-	std::vector<TextuerData>			_textures;
-	std::vector<CellRef*>				_refs;
-};
-
-
-/**
-* EffectCache
-*/
-class EffectCache
-{
-public:
-	EffectCache()
-	{
-	}
-	~EffectCache()
-	{
-		releseReference();
-	}
-
-	static EffectCache* create(const ProjectData* data, const std::string& imageBaseDir, CellCache* cellCache)
-	{
-		EffectCache* obj = new EffectCache();
-		if (obj)
-		{
-			obj->init(data, imageBaseDir, cellCache);
-			//			obj->autorelease();
-		}
-		return obj;
-	}
-
-	/**
-	* エフェクトファイル名を指定してEffectRefを得る
-	*/
-	SsEffectModel* getReference(const std::string& name)
-	{
-		SsEffectModel* ref = _dic.at(name);
-		return ref;
-	}
-
-	void dump()
-	{
-		std::map<std::string, SsEffectModel*>::iterator it = _dic.begin();
-		while (it != _dic.end())
-		{
-			SSLOG("%s", (*it).second);
-			++it;
-		}
-	}
-protected:
-	void init(const ProjectData* data, const std::string& imageBaseDir, CellCache* cellCache)
-	{
-		SS_ASSERT2(data != NULL, "Invalid data");
-
-		ToPointer ptr(data);
-
-		//ssbpからエフェクトファイル配列を取得
-		const EffectFile* effectFileArray = static_cast<const EffectFile*>(ptr(data->effectFileList));
-
-		for (int listindex = 0; listindex < data->numEffectFileList; listindex++)
-		{
-			//エフェクトファイル配列からエフェクトファイルを取得
-			const EffectFile* effectFile = &effectFileArray[listindex];
-
-			//保持用のエフェクトファイル情報を作成
-			SsEffectModel *effectmodel = new SsEffectModel();
-			std::string effectFileName = static_cast<const char*>(ptr(effectFile->name));
-
-			//エフェクトファイルからエフェクトノード配列を取得
-			const EffectNode* effectNodeArray = static_cast<const EffectNode*>(ptr(effectFile->effectNode));
-			for (int nodeindex = 0; nodeindex < effectFile->numNodeList; nodeindex++)
-			{
-				const EffectNode* effectNode = &effectNodeArray[nodeindex];		//エフェクトノード配列からエフェクトノードを取得
-
-				SsEffectNode *node = new SsEffectNode();
-				node->arrayIndex = effectNode->arrayIndex;
-				node->parentIndex = effectNode->parentIndex;
-				node->type = (SsEffectNodeType::_enum)effectNode->type;
-				node->visible = true;
-
-				SsEffectBehavior behavior;
-				//セル情報を作成
-				behavior.CellIndex = effectNode->cellIndex;
-				CellRef* cellRef = behavior.CellIndex >= 0 ? cellCache->getReference(behavior.CellIndex) : NULL;
-				if (cellRef)
-				{
-					behavior.refCell.pivot_X = cellRef->cell->pivot_X;
-					behavior.refCell.pivot_Y = cellRef->cell->pivot_Y;
-					behavior.refCell.texture = cellRef->texture;
-					behavior.refCell.texname = cellRef->texname;
-					behavior.refCell.rect = cellRef->rect;
-					behavior.refCell.cellIndex = behavior.CellIndex;
-					std::string name = static_cast<const char*>(ptr(cellRef->cell->name));
-					behavior.refCell.cellName = name;
-
-				}
-				//				behavior.CellName;
-				//				behavior.CellMapName;
-				behavior.blendType = (SsRenderBlendType::_enum)effectNode->blendType;
-
-				//エフェクトノードからビヘイビア配列を取得
-				const ss_offset* behaviorArray = static_cast<const ss_offset*>(ptr(effectNode->Behavior));
-				for (int behaviorindex = 0; behaviorindex < effectNode->numBehavior; behaviorindex++)
-				{
-					//ビヘイビア配列からビヘイビアを取得
-					const ss_u16* behavior_adr = static_cast<const ss_u16*>(ptr(behaviorArray[behaviorindex]));
-					DataArrayReader reader(behavior_adr);
-
-					//パラメータを作ってpush_backで登録していく
-					int type = reader.readS32();
-					switch (type)
-					{
-					case SsEffectFunctionType::Basic:
-					{
-						//基本情報
-						EffectParticleElementBasic readparam;
-						readparam.priority = reader.readU32();			//表示優先度
-						readparam.maximumParticle = reader.readU32();		//最大パーティクル数
-						readparam.attimeCreate = reader.readU32();		//一度に作成するパーティクル数
-						readparam.interval = reader.readU32();			//生成間隔
-						readparam.lifetime = reader.readU32();			//エミッター生存時間
-						readparam.speedMinValue = reader.readFloat();		//初速最小
-						readparam.speedMaxValue = reader.readFloat();		//初速最大
-						readparam.lifespanMinValue = reader.readU32();	//パーティクル生存時間最小
-						readparam.lifespanMaxValue = reader.readU32();	//パーティクル生存時間最大
-						readparam.angle = reader.readFloat();				//射出方向
-						readparam.angleVariance = reader.readFloat();		//射出方向範囲
-
-						ParticleElementBasic *effectParam = new ParticleElementBasic();
-						effectParam->setType((SsEffectFunctionType::enum_)type);				//コマンドの種類
-						effectParam->priority = readparam.priority;							//表示優先度
-						effectParam->maximumParticle = readparam.maximumParticle;			//最大パーティクル数
-						effectParam->attimeCreate = readparam.attimeCreate;					//一度に作成するパーティクル数
-						effectParam->interval = readparam.interval;							//生成間隔
-						effectParam->lifetime = readparam.lifetime;							//エミッター生存時間
-						effectParam->speed.setMinMax(readparam.speedMinValue, readparam.speedMaxValue);				//初速
-						effectParam->lifespan.setMinMax(readparam.lifespanMinValue, readparam.lifespanMaxValue);	//パーティクル生存時間
-						effectParam->angle = readparam.angle;								//射出方向
-						effectParam->angleVariance = readparam.angleVariance;				//射出方向範囲
-
-						behavior.plist.push_back(effectParam);												//パラメータを追加
-						break;
-					}
-					case SsEffectFunctionType::RndSeedChange:
-					{
-						//シード上書き
-						EffectParticleElementRndSeedChange readparam;
-						readparam.Seed = reader.readU32();				//上書きするシード値
-
-						ParticleElementRndSeedChange *effectParam = new ParticleElementRndSeedChange();
-						effectParam->setType((SsEffectFunctionType::enum_)type);				//コマンドの種類
-						effectParam->Seed = readparam.Seed;							//上書きするシード値
-
-						behavior.plist.push_back(effectParam);												//パラメータを追加
-						break;
-					}
-					case SsEffectFunctionType::Delay:
-					{
-						//発生：タイミング
-						EffectParticleElementDelay readparam;
-						readparam.DelayTime = reader.readU32();			//遅延時間
-
-						ParticleElementDelay *effectParam = new ParticleElementDelay();
-						effectParam->setType((SsEffectFunctionType::enum_)type);				//コマンドの種類
-						effectParam->DelayTime = readparam.DelayTime;			//遅延時間
-
-						behavior.plist.push_back(effectParam);												//パラメータを追加
-						break;
-					}
-					case SsEffectFunctionType::Gravity:
-					{
-						//重力を加える
-						EffectParticleElementGravity readparam;
-						readparam.Gravity_x = reader.readFloat();			//X方向の重力
-						readparam.Gravity_y = reader.readFloat();			//Y方向の重力
-
-						ParticleElementGravity *effectParam = new ParticleElementGravity();
-						effectParam->setType((SsEffectFunctionType::enum_)type);				//コマンドの種類
-						effectParam->Gravity.x = readparam.Gravity_x;			//X方向の重力
-						effectParam->Gravity.y = readparam.Gravity_y;			//Y方向の重力
-
-						behavior.plist.push_back(effectParam);												//パラメータを追加
-						break;
-					}
-					case SsEffectFunctionType::Position:
-					{
-						//座標：生成時
-						EffectParticleElementPosition readparam;
-						readparam.OffsetXMinValue = reader.readFloat();	//X座標に加算最小
-						readparam.OffsetXMaxValue = reader.readFloat();	//X座標に加算最大
-						readparam.OffsetYMinValue = reader.readFloat();	//X座標に加算最小
-						readparam.OffsetYMaxValue = reader.readFloat();	//X座標に加算最大
-
-						ParticleElementPosition *effectParam = new ParticleElementPosition();
-						effectParam->setType((SsEffectFunctionType::enum_)type);				//コマンドの種類
-						effectParam->OffsetX.setMinMax(readparam.OffsetXMinValue, readparam.OffsetXMaxValue); 	//X座標に加算最小
-						effectParam->OffsetY.setMinMax(readparam.OffsetYMinValue, readparam.OffsetYMaxValue);	//X座標に加算最小
-
-						behavior.plist.push_back(effectParam);												//パラメータを追加
-						break;
-					}
-					case SsEffectFunctionType::Rotation:
-					{
-						//Z回転を追加
-						EffectParticleElementRotation readparam;
-						readparam.RotationMinValue = reader.readFloat();		//角度初期値最小
-						readparam.RotationMaxValue = reader.readFloat();		//角度初期値最大
-						readparam.RotationAddMinValue = reader.readFloat();	//角度初期加算値最小
-						readparam.RotationAddMaxValue = reader.readFloat();	//角度初期加算値最大
-
-						ParticleElementRotation *effectParam = new ParticleElementRotation();
-						effectParam->setType((SsEffectFunctionType::enum_)type);				//コマンドの種類
-						effectParam->Rotation.setMinMax(readparam.RotationMinValue, readparam.RotationMaxValue);		//角度初期値最小
-						effectParam->RotationAdd.setMinMax(readparam.RotationAddMinValue, readparam.RotationAddMaxValue);	//角度初期加算値最小
-
-						behavior.plist.push_back(effectParam);												//パラメータを追加
-						break;
-					}
-					case SsEffectFunctionType::TransRotation:
-					{
-						//Z回転速度変更
-						EffectParticleElementRotationTrans readparam;
-						readparam.RotationFactor = reader.readFloat();		//角度目標加算値
-						readparam.EndLifeTimePer = reader.readFloat();		//到達時間
-
-						ParticleElementRotationTrans *effectParam = new ParticleElementRotationTrans();
-						effectParam->setType((SsEffectFunctionType::enum_)type);				//コマンドの種類
-						effectParam->RotationFactor = readparam.RotationFactor;		//角度目標加算値
-						effectParam->EndLifeTimePer = readparam.EndLifeTimePer;		//到達時間
-
-						behavior.plist.push_back(effectParam);												//パラメータを追加
-						break;
-					}
-					case SsEffectFunctionType::TransSpeed:
-					{
-						//速度：変化
-						EffectParticleElementTransSpeed readparam;
-						readparam.SpeedMinValue = reader.readFloat();			//速度目標値最小
-						readparam.SpeedMaxValue = reader.readFloat();			//速度目標値最大
-
-						ParticleElementTransSpeed *effectParam = new ParticleElementTransSpeed();
-						effectParam->setType((SsEffectFunctionType::enum_)type);				//コマンドの種類
-						effectParam->Speed.setMinMax(readparam.SpeedMinValue, readparam.SpeedMaxValue);			//速度目標値最小
-
-						behavior.plist.push_back(effectParam);												//パラメータを追加
-						break;
-					}
-					case SsEffectFunctionType::TangentialAcceleration:
-					{
-						//接線加速度
-						EffectParticleElementTangentialAcceleration readparam;
-						readparam.AccelerationMinValue = reader.readFloat();	//設定加速度最小
-						readparam.AccelerationMaxValue = reader.readFloat();	//設定加速度最大
-
-						ParticleElementTangentialAcceleration *effectParam = new ParticleElementTangentialAcceleration();
-						effectParam->setType((SsEffectFunctionType::enum_)type);				//コマンドの種類
-						effectParam->Acceleration.setMinMax(readparam.AccelerationMinValue, readparam.AccelerationMaxValue);	//設定加速度最小
-
-						behavior.plist.push_back(effectParam);												//パラメータを追加
-						break;
-					}
-					case SsEffectFunctionType::InitColor:
-					{
-						//カラーRGBA：生成時
-						EffectParticleElementInitColor readparam;
-						readparam.ColorMinValue = reader.readU32();			//設定カラー最小
-						readparam.ColorMaxValue = reader.readU32();			//設定カラー最大
-
-						ParticleElementInitColor *effectParam = new ParticleElementInitColor();
-						effectParam->setType((SsEffectFunctionType::enum_)type);				//コマンドの種類
-
-						int a = (readparam.ColorMinValue & 0xFF000000) >> 24;
-						int r = (readparam.ColorMinValue & 0x00FF0000) >> 16;
-						int g = (readparam.ColorMinValue & 0x0000FF00) >> 8;
-						int b = (readparam.ColorMinValue & 0x000000FF) >> 0;
-						SsU8Color mincol(r, g, b, a);
-						a = (readparam.ColorMaxValue & 0xFF000000) >> 24;
-						r = (readparam.ColorMaxValue & 0x00FF0000) >> 16;
-						g = (readparam.ColorMaxValue & 0x0000FF00) >> 8;
-						b = (readparam.ColorMaxValue & 0x000000FF) >> 0;
-						SsU8Color maxcol(r, g, b, a);
-						effectParam->Color.setMinMax(mincol, maxcol);			//設定カラー最小
-
-						behavior.plist.push_back(effectParam);												//パラメータを追加
-						break;
-					}
-					case SsEffectFunctionType::TransColor:
-					{
-						//カラーRGB：変化
-						EffectParticleElementTransColor readparam;
-						readparam.ColorMinValue = reader.readU32();			//設定カラー最小
-						readparam.ColorMaxValue = reader.readU32();			//設定カラー最大
-
-						ParticleElementTransColor *effectParam = new ParticleElementTransColor();
-						effectParam->setType((SsEffectFunctionType::enum_)type);				//コマンドの種類
-
-						int a = (readparam.ColorMinValue & 0xFF000000) >> 24;
-						int r = (readparam.ColorMinValue & 0x00FF0000) >> 16;
-						int g = (readparam.ColorMinValue & 0x0000FF00) >> 8;
-						int b = (readparam.ColorMinValue & 0x000000FF) >> 0;
-						SsU8Color mincol(r, g, b, a);
-						a = (readparam.ColorMaxValue & 0xFF000000) >> 24;
-						r = (readparam.ColorMaxValue & 0x00FF0000) >> 16;
-						g = (readparam.ColorMaxValue & 0x0000FF00) >> 8;
-						b = (readparam.ColorMaxValue & 0x000000FF) >> 0;
-						SsU8Color maxcol(r, g, b, a);
-						effectParam->Color.setMinMax(mincol, maxcol);			//設定カラー最小
-
-						behavior.plist.push_back(effectParam);												//パラメータを追加
-						break;
-					}
-					case SsEffectFunctionType::AlphaFade:
-					{
-						//フェード
-						EffectParticleElementAlphaFade readparam;
-						readparam.disprangeMinValue = reader.readFloat();		//表示区間開始
-						readparam.disprangeMaxValue = reader.readFloat();		//表示区間終了
-
-						ParticleElementAlphaFade *effectParam = new ParticleElementAlphaFade();
-						effectParam->setType((SsEffectFunctionType::enum_)type);				//コマンドの種類
-						effectParam->disprange.setMinMax(readparam.disprangeMinValue, readparam.disprangeMaxValue);		//表示区間開始
-
-						behavior.plist.push_back(effectParam);												//パラメータを追加
-						break;
-					}
-					case SsEffectFunctionType::Size:
-					{
-						//スケール：生成時
-						EffectParticleElementSize readparam;
-						readparam.SizeXMinValue = reader.readFloat();			//幅倍率最小
-						readparam.SizeXMaxValue = reader.readFloat();			//幅倍率最大
-						readparam.SizeYMinValue = reader.readFloat();			//高さ倍率最小
-						readparam.SizeYMaxValue = reader.readFloat();			//高さ倍率最大
-						readparam.ScaleFactorMinValue = reader.readFloat();		//倍率最小
-						readparam.ScaleFactorMaxValue = reader.readFloat();		//倍率最大
-
-						ParticleElementSize *effectParam = new ParticleElementSize();
-						effectParam->setType((SsEffectFunctionType::enum_)type);				//コマンドの種類
-						effectParam->SizeX.setMinMax(readparam.SizeXMinValue, readparam.SizeXMaxValue);			//幅倍率最小
-						effectParam->SizeY.setMinMax(readparam.SizeYMinValue, readparam.SizeYMaxValue);			//高さ倍率最小
-						effectParam->ScaleFactor.setMinMax(readparam.ScaleFactorMinValue, readparam.ScaleFactorMaxValue);		//倍率最小
-
-						behavior.plist.push_back(effectParam);												//パラメータを追加
-						break;
-					}
-					case SsEffectFunctionType::TransSize:
-					{
-						//スケール：変化
-						EffectParticleElementTransSize readparam;
-						readparam.SizeXMinValue = reader.readFloat();			//幅倍率最小
-						readparam.SizeXMaxValue = reader.readFloat();			//幅倍率最大
-						readparam.SizeYMinValue = reader.readFloat();			//高さ倍率最小
-						readparam.SizeYMaxValue = reader.readFloat();			//高さ倍率最大
-						readparam.ScaleFactorMinValue = reader.readFloat();		//倍率最小
-						readparam.ScaleFactorMaxValue = reader.readFloat();		//倍率最大
-
-						ParticleElementTransSize *effectParam = new ParticleElementTransSize();
-						effectParam->setType((SsEffectFunctionType::enum_)type);				//コマンドの種類
-						effectParam->SizeX.setMinMax(readparam.SizeXMinValue, readparam.SizeXMaxValue);			//幅倍率最小
-						effectParam->SizeY.setMinMax(readparam.SizeYMinValue, readparam.SizeYMaxValue);			//高さ倍率最小
-						effectParam->ScaleFactor.setMinMax(readparam.ScaleFactorMinValue, readparam.ScaleFactorMaxValue);		//倍率最小
-
-						behavior.plist.push_back(effectParam);												//パラメータを追加
-						break;
-					}
-					case SsEffectFunctionType::PointGravity:
-					{
-						//重力点の追加
-						EffectParticlePointGravity readparam;
-						readparam.Position_x = reader.readFloat();				//重力点X
-						readparam.Position_y = reader.readFloat();				//重力点Y
-						readparam.Power = reader.readFloat();					//パワー
-
-						ParticlePointGravity *effectParam = new ParticlePointGravity();
-						effectParam->setType((SsEffectFunctionType::enum_)type);				//コマンドの種類
-						effectParam->Position.x = readparam.Position_x;				//重力点X
-						effectParam->Position.y = readparam.Position_y;				//重力点Y
-						effectParam->Power = readparam.Power;					//パワー
-
-						behavior.plist.push_back(effectParam);												//パラメータを追加
-						break;
-					}
-					case SsEffectFunctionType::TurnToDirectionEnabled:
-					{
-						//進行方向に向ける
-						EffectParticleTurnToDirectionEnabled readparam;
-						readparam.Rotation = reader.readFloat();					//フラグ
-
-						ParticleTurnToDirectionEnabled *effectParam = new ParticleTurnToDirectionEnabled();
-						effectParam->Rotation = readparam.Rotation;
-						effectParam->setType((SsEffectFunctionType::enum_)type);				//コマンドの種類
-
-						behavior.plist.push_back(effectParam);												//パラメータを追加
-						break;
-					}
-					case SsEffectFunctionType::InfiniteEmitEnabled:
-					{
-						EffectParticleInfiniteEmitEnabled readparam;
-						readparam.flag = reader.readS32();					//フラグ
-
-						ParticleInfiniteEmitEnabled *effectParam = new ParticleInfiniteEmitEnabled();
-						effectParam->setType((SsEffectFunctionType::enum_)type);				//コマンドの種類
-
-						behavior.plist.push_back(effectParam);												//パラメータを追加
-						break;
-					}
-					default:
-						break;
-					}
-				}
-				node->behavior = behavior;
-				effectmodel->nodeList.push_back(node);
-				if (nodeindex == 0)
-				{
-				}
-			}
-			//ツリーの構築
-			if (effectmodel->nodeList.size() > 0)
-			{
-				effectmodel->root = effectmodel->nodeList[0];	//rootノードを追加
-				for (size_t i = 1; i < effectmodel->nodeList.size(); i++)
-				{
-					int pi = effectmodel->nodeList[i]->parentIndex;
-					if (pi >= 0)
-					{
-						effectmodel->nodeList[pi]->addChildEnd(effectmodel->nodeList[i]);
-					}
-				}
-			}
-			effectmodel->lockRandSeed = effectFile->lockRandSeed; 	 // ランダムシード固定値
-			effectmodel->isLockRandSeed = effectFile->isLockRandSeed;  // ランダムシードを固定するか否か
-			effectmodel->fps = effectFile->fps;             //
-			effectmodel->effectName = effectFileName;
-			effectmodel->layoutScaleX = effectFile->layoutScaleX;	//レイアウトスケールX
-			effectmodel->layoutScaleY = effectFile->layoutScaleY;	//レイアウトスケールY
-
-
-
-			SSLOG("effect key: %s", effectFileName.c_str());
-			_dic.insert(std::map<std::string, SsEffectModel*>::value_type(effectFileName, effectmodel));
-		}
-	}
-	//エフェクトファイル情報の削除
-	void releseReference(void)
-	{
-		std::map<std::string, SsEffectModel*>::iterator it = _dic.begin();
-		while (it != _dic.end())
-		{
-			SsEffectModel* effectmodel = it->second;
-
-			if (effectmodel)
-			{
-				for (int nodeindex = 0; nodeindex < effectmodel->nodeList.size(); nodeindex++)
-				{
-					SsEffectNode* node = effectmodel->nodeList.at(nodeindex);
-					for (int behaviorindex = 0; behaviorindex < node->behavior.plist.size(); behaviorindex++)
-					{
-						SsEffectElementBase* eb = node->behavior.plist.at(behaviorindex);
-						delete eb;
-					}
-					node->behavior.plist.clear();
-				}
-				if (effectmodel->nodeList.size() > 0)
-				{
-					SsEffectNode* node = effectmodel->nodeList.at(0);
-					delete node;
-					effectmodel->nodeList.clear();
-				}
-				effectmodel->root = 0;
-
-			}
-			delete effectmodel;
-			it++;
-		}
-		_dic.clear();
-	}
-protected:
-	std::map<std::string, SsEffectModel*>		_dic;
-};
-
-
-
-/**
- * AnimeRef
- */
-struct AnimeRef
-{
-	std::string				packName;
-	std::string				animeName;
-	const AnimationData*	animationData;
-	const AnimePackData*	animePackData;
-};
-
-
-/**
- * AnimeCache
- */
-class AnimeCache
-{
-public:
-	AnimeCache()
-	{
-	}
-	~AnimeCache()
-	{
-		releseReference();
-	}
-	static AnimeCache* create(const ProjectData* data)
-	{
-		AnimeCache* obj = new AnimeCache();
-		if (obj)
-		{
-			obj->init(data);
-		}
-		return obj;
-	}
-
-	/**
-	 * packNameとanimeNameを指定してAnimeRefを得る
-	 */
-	AnimeRef* getReference(const std::string& packName, const std::string& animeName)
-	{
-		std::string key = toPackAnimeKey(packName, animeName);
-		AnimeRef* ref = _dic.at(key);
-		return ref;
-	}
-
-	/**
-	 * animeNameのみ指定してAnimeRefを得る
-	 */
-	AnimeRef* getReference(const std::string& animeName)
-	{
-		AnimeRef* ref = _dic.at(animeName);
-		return ref;
-	}
-	
-	void dump()
-	{
-		std::map<std::string, AnimeRef*>::iterator it = _dic.begin();
-		while (it != _dic.end())
-		{
-			SSLOG("%s", (*it).second);
-			++it;
-		}
-	}
-
-protected:
-	void init(const ProjectData* data)
-	{
-		SS_ASSERT2(data != NULL, "Invalid data");
-		
-		ToPointer ptr(data);
-		const AnimePackData* animePacks = ptr.toAnimePackData(data);
-
-		for (int packIndex = 0; packIndex < data->numAnimePacks; packIndex++)
-		{
-			const AnimePackData* pack = &animePacks[packIndex];
-			const AnimationData* animations = ptr.toAnimationData(pack);
-			const char* packName = ptr.toString(pack->name);
-			
-			for (int animeIndex = 0; animeIndex < pack->numAnimations; animeIndex++)
-			{
-				const AnimationData* anime = &animations[animeIndex];
-				const char* animeName = ptr.toString(anime->name);
-				
-				AnimeRef* ref = new AnimeRef();
-				ref->packName = packName;
-				ref->animeName = animeName;
-				ref->animationData = anime;
-				ref->animePackData = pack;
-
-				// packName + animeNameでの登録
-				std::string key = toPackAnimeKey(packName, animeName);
-				SSLOG("anime key: %s", key.c_str());
-				_dic.insert(std::map<std::string, AnimeRef*>::value_type(key, ref));
-
-				// animeNameのみでの登録
-//				_dic.insert(std::map<std::string, AnimeRef*>::value_type(animeName, ref));
-				
-			}
-		}
-	}
-
-	static std::string toPackAnimeKey(const std::string& packName, const std::string& animeName)
-	{
-		return Format("%s/%s", packName.c_str(), animeName.c_str());
-	}
-
-	//キャッシュの削除
-	void releseReference(void)
-	{
-		std::map<std::string, AnimeRef*>::iterator it = _dic.begin();
-		while (it != _dic.end())
-		{
-			AnimeRef* ref = it->second;
-			if (ref)
-			{
-				delete ref;
-				it->second = 0;
-			}
-			it++;
-		}
-		_dic.clear();
-	}
-
-protected:
-	std::map<std::string, AnimeRef*>	_dic;
-};
-
-
-
-
-
-/**
- * ResourceSet
- */
-struct ResourceSet
-{
-	const ProjectData* data;
-	bool isDataAutoRelease;
-	EffectCache* effectCache;
-	CellCache* cellCache;
-	AnimeCache* animeCache;
-
-	virtual ~ResourceSet()
-	{
-		if (isDataAutoRelease)
-		{
-			delete data;
-			data = NULL;
-		}
-		if (animeCache)
-		{
-			delete animeCache;
-			animeCache = NULL;
-		}
-		if (cellCache)
-		{
-			delete cellCache;
-			cellCache = NULL;
-		}
-		if (effectCache)
-		{
-			delete effectCache;
-			effectCache = NULL;
-		}
-	}
-};
-
-
-/**
- * ResourceManager
- */
-
-static ResourceManager* defaultInstance = NULL;
-const std::string ResourceManager::s_null;
-
-ResourceManager* ResourceManager::getInstance()
-{
-	if (!defaultInstance)
-	{
-		defaultInstance = ResourceManager::create();
-	}
-	return defaultInstance;
-}
-
-ResourceManager::ResourceManager(void)
-{
-}
-
-ResourceManager::~ResourceManager()
-{
-	removeAllData();
-}
-
-ResourceManager* ResourceManager::create()
-{
-	ResourceManager* obj = new ResourceManager();
-	return obj;
-}
-
-ResourceSet* ResourceManager::getData(const std::string& dataKey)
-{
-	ResourceSet* rs = _dataDic.at(dataKey);
-	return rs;
-}
-
-std::string ResourceManager::addData(const std::string& dataKey, const ProjectData* data, const std::string& imageBaseDir)
-{
-	SS_ASSERT2(data != NULL, "Invalid data");
-	SS_ASSERT2(data->dataId == DATA_ID, "Not data id matched");
-	SS_ASSERT2(data->version == DATA_VERSION, "Version number of data does not match");
-	
-	// imageBaseDirの指定がないときコンバート時に指定されたパスを使用する
-	std::string baseDir = imageBaseDir;
-	if (imageBaseDir == s_null && data->imageBaseDir)
-	{
-		ToPointer ptr(data);
-		const char* dir = ptr.toString(data->imageBaseDir);
-		baseDir = dir;
-	}
-
-	//アニメはエフェクトを参照し、エフェクトはセルを参照するのでこの順番で生成する必要がある
-	CellCache* cellCache = CellCache::create(data, baseDir);
-
-	EffectCache* effectCache = EffectCache::create(data, baseDir, cellCache);	//
-
-	AnimeCache* animeCache = AnimeCache::create(data);
-
-	ResourceSet* rs = new ResourceSet();
-	rs->data = data;
-	rs->isDataAutoRelease = false;
-	rs->cellCache = cellCache;
-	rs->animeCache = animeCache;
-	rs->effectCache = effectCache;
-	_dataDic.insert(std::map<std::string, ResourceSet*>::value_type(dataKey, rs));
-
-	return dataKey;
-}
-
-std::string ResourceManager::addDataWithKey(const std::string& dataKey, const std::string& ssbpFilepath, const std::string& imageBaseDir)
-{
-
-	std::string fullpath = ssbpFilepath;
-
-	unsigned long nSize = 0;
-	void* loadData = SSFileOpen(fullpath.c_str(), "rb", &nSize);
-	if (loadData == NULL)
-	{
-		std::string msg = "Can't load project data > " + fullpath;
-		SS_ASSERT2(loadData != NULL, msg.c_str());
-	}
-	
-	const ProjectData* data = static_cast<const ProjectData*>(loadData);
-	SS_ASSERT2(data->dataId == DATA_ID, "Not data id matched");
-	SS_ASSERT2(data->version == DATA_VERSION, "Version number of data does not match");
-	
-	std::string baseDir = imageBaseDir;
-	if (imageBaseDir == s_null)
-	{
-		// imageBaseDirの指定がないとき
-		if (data->imageBaseDir)
-		{
-			// コンバート時に指定されたパスを使用する
-			ToPointer ptr(data);
-			const char* dir = ptr.toString(data->imageBaseDir);
-			baseDir = dir;
-		}
-		else
-		{
-			// プロジェクトファイルと同じディレクトリを指定する
-			std::string directory;
-			std::string filename;
-			splitPath(directory, filename, ssbpFilepath);
-			baseDir = directory;
-		}
-		//SSLOG("imageBaseDir: %s", baseDir.c_str());
-	}
-
-	addData(dataKey, data, baseDir);
-	
-	// リソースが破棄されるとき一緒にロードしたデータも破棄する
-	ResourceSet* rs = getData(dataKey);
-	SS_ASSERT2(rs != NULL, "");
-	rs->isDataAutoRelease = true;
-	
-	return dataKey;
-}
-
-std::string ResourceManager::addData(const std::string& ssbpFilepath, const std::string& imageBaseDir)
-{
-	// ファイル名を取り出す
-	std::string directory;
-    std::string filename;
-	splitPath(directory, filename, ssbpFilepath);
-	
-	// 拡張子を取る
-	std::string dataKey = filename;
-	size_t pos = filename.find_last_of(".");
-    if (pos != std::string::npos)
-    {
-        dataKey = filename.substr(0, pos);
-    }
-
-	//登録されている名前か判定する
-	std::map<std::string, ResourceSet*>::iterator it = _dataDic.find(dataKey);
-	if (it != _dataDic.end())
-	{
-		//登録されている場合は処理を行わない
-		std::string str = "";
-		return str;
-	}
-
-	return addDataWithKey(dataKey, ssbpFilepath, imageBaseDir);
-}
-
-void ResourceManager::removeData(const std::string& dataKey)
-{
-	ResourceSet* rs = getData(dataKey);
-
-	//テクスチャの解放
-	releseTexture(dataKey);
-	
-	//バイナリデータの削除
-	delete rs;
-	_dataDic.erase(dataKey);
-}
-
-void ResourceManager::removeAllData()
-{
-	//全リソースの解放
-	while (!_dataDic.empty())
-	{
-		std::map<std::string, ResourceSet*>::iterator it = _dataDic.begin();
-		std::string ssbpName = it->first;
-		removeData(ssbpName);
-	}
-	_dataDic.clear();
-}
-
-//データ名、セル名を指定して、セルで使用しているテクスチャを変更する
-bool ResourceManager::changeTexture(char* ssbpName, char* ssceName, long texture)
-{
-	bool rc = false;
-
-	ResourceSet* rs = getData(ssbpName);
-	rc = rs->cellCache->setCellRefTexture(rs->data, ssceName, texture);
-
-	return(rc);
-}
-
-//指定したデータのテクスチャを破棄します
-bool ResourceManager::releseTexture(std::string ssbpName)
-{
-
-	ResourceSet* rs = getData(ssbpName);
-	bool rc = rs->cellCache->releseTexture(rs->data);
-
-	return(rc);
-}
-
-//アニメーションの総フレーム数を取得する
-int ResourceManager::getMaxFrame(std::string ssbpName, std::string animeName)
-{
-	int rc = -1;
-
-	ResourceSet* rs = getData(ssbpName);
-	AnimeRef* animeRef = rs->animeCache->getReference(animeName);
-	if (animeRef == NULL)
-	{
-		std::string msg = Format("Not found animation > anime=%s", animeName.c_str());
-		SS_ASSERT2(animeRef != NULL, msg.c_str());
-	}
-	rc = animeRef->animationData->numFrames;
-
-	return(rc);
-}
-
-//ssbpファイルが登録されているかを調べる
-bool ResourceManager::isDataKeyExists(const std::string& dataKey) {
-	// 登録されている名前か判定する
-	std::map<std::string, ResourceSet*>::iterator it = _dataDic.find(dataKey);
-	if (it != _dataDic.end()) {
-		//登録されている
-		return true;
-	}
-
-	return false;
-}
 
 /**
  * Player
@@ -1202,9 +101,7 @@ Player::~Player()
 	}
 
 	releaseParts();
-	releaseData();
 	releaseResourceManager();
-	releaseAnime();
 }
 
 Player* Player::create(ResourceManager* resman)
@@ -1316,37 +213,23 @@ void Player::setData(const std::string& dataKey)
 		SS_ASSERT2(rs != NULL, msg.c_str());
 	}
 	
-	if (_currentRs != rs)
-	{
-//		releaseData();
-		_currentRs = rs;
-	}
+	_currentRs = rs;
 
 	//Ver4互換設定
 	_rootPartFunctionAsVer4 = false;			
 	_dontUseMatrixForTransform = false;			
 #ifdef	USE_VER4TRANSFORM
-	if ((rs->data->flags & HEAD_FLAG_rootPartFunctionAsVer4) != 0)
+	if ((rs->m_data->flags & HEAD_FLAG_rootPartFunctionAsVer4) != 0)
 	{
 		_rootPartFunctionAsVer4 = true;			//不透明度・反転・非表示アトリビュートの継承方法をVer.4と同様にする
 	}
-	if ((rs->data->flags & HEAD_FLAG_dontUseMatrixForTransform) != 0)
+	if ((rs->m_data->flags & HEAD_FLAG_dontUseMatrixForTransform) != 0)
 	{
 		_dontUseMatrixForTransform = true;		//親子の座標変換にマトリックスを使用しない（Ver4互換）
 	}
 #endif
 }
 
-void Player::releaseData()
-{
-	releaseAnime();
-}
-
-
-void Player::releaseAnime()
-{
-	releaseParts();
-}
 
 void Player::play(const std::string& ssaeName, const std::string& motionName, int loop, int startFrameNo)
 {
@@ -1358,7 +241,7 @@ void Player::play(const std::string& animeName, int loop, int startFrameNo)
 {
 	SS_ASSERT2(_currentRs != NULL, "Not select data");
 
-	AnimeRef* animeRef = _currentRs->animeCache->getReference(animeName);
+	AnimeRef* animeRef = _currentRs->m_animeCache->getReference(animeName);
 	if (animeRef == NULL)
 	{
 		std::string msg = Format("Not found animation > anime=%s", animeName.c_str());
@@ -1375,7 +258,7 @@ void Player::play(AnimeRef* animeRef, int loop, int startFrameNo)
 	{
 		_currentAnimeRef = animeRef;
 		
-		allocParts(animeRef->animePackData->numParts);
+		allocParts(animeRef->numParts);
 		setPartsParentage();
 	}
 	_playingFrame = static_cast<float>(startFrameNo);
@@ -1462,7 +345,7 @@ void Player::update(float dt)
 void Player::updateFrame(float dt)
 {
 	if (!_currentAnimeRef) return;
-	if (!_currentRs->data) return;
+	if (!_currentRs->m_data) return;
 
 	int startFrame = 0;
 	int endFrame = _currentAnimeRef->animationData->numFrames;
@@ -1600,50 +483,24 @@ void Player::updateFrame(float dt)
 
 void Player::allocParts(int numParts)
 {
-	for (int i = 0; i < _parts.size(); i++)
-	{
-		CustomSprite* sprite = _parts.at(i);
-		if (sprite)
-		{
-			delete sprite;
-			sprite = 0;
-		}
-	}
-
-	_parts.clear();	//すべてのパーツを消す
-	{
-		// パーツ数だけCustomSpriteを作成する
-//		// create CustomSprite objects.
-		for (int i = 0; i < numParts; i++)
-		{
-			CustomSprite* sprite =  CustomSprite::create();
-			sprite->_ssplayer = NULL;
-			_parts.push_back(sprite);
-		}
+	releaseParts();		//すべてのパーツを消す
+	
+	// パーツ数だけCustomSpriteを作成する
+	for (int i = 0; i < numParts; i++){
+		CustomSprite* sprite =  CustomSprite::create();
+		sprite->_ssplayer = NULL;
+		_parts.push_back(sprite);
 	}
 }
 
 void Player::releaseParts()
 {
-	// パーツの子CustomSpriteを全て削除
-	// remove children CCSprite objects.
-	if (_currentRs)
-	{
-		if (_currentAnimeRef)
-		{
+	SS_ASSERT(_currentRs);
+	SS_ASSERT(_currentAnimeRef);
 
-			ToPointer ptr(_currentRs->data);
-			const AnimePackData* packData = _currentAnimeRef->animePackData;
-			const PartData* parts = ptr.toPartData(packData);
-			if (_parts.size() > 0)
-			{
-				for (int partIndex = 0; partIndex < packData->numParts; partIndex++)
-				{
-					CustomSprite* sprite = static_cast<CustomSprite*>(_parts.at(partIndex));
-					SS_SAFE_DELETE(sprite->_ssplayer);
-				}
-			}
-		}
+	// パーツの子CustomSpriteを全て削除
+	for(CustomSprite *sprite : _parts){
+		SS_SAFE_DELETE(sprite);
 	}
 
 	_parts.clear();
@@ -1653,12 +510,12 @@ void Player::setPartsParentage()
 {
 	if (!_currentAnimeRef) return;
 
-	ToPointer ptr(_currentRs->data);
-	const AnimePackData* packData = _currentAnimeRef->animePackData;
-	const PartData* parts = ptr.toPartData(packData);
+	ToPointer ptr(_currentRs->m_data);
+	int numParts = _currentAnimeRef->numParts;
+	const PartData* parts = _currentAnimeRef->partDatas;
 
 	//親子関係を設定
-	for (int partIndex = 0; partIndex < packData->numParts; partIndex++)
+	for (int partIndex = 0; partIndex < numParts; partIndex++)
 	{
 		const PartData* partData = &parts[partIndex];
 		CustomSprite* sprite = static_cast<CustomSprite*>(_parts.at(partIndex));
@@ -1696,7 +553,7 @@ void Player::setPartsParentage()
 		std::string refeffectName = ptr.toString(partData->effectfilename);
 		if (refeffectName != "")
 		{
-			SsEffectModel* effectmodel = _currentRs->effectCache->getReference(refeffectName);
+			SsEffectModel* effectmodel = _currentRs->m_effectCache->getReference(refeffectName);
 			if (effectmodel)
 			{
 				//エフェクトクラスにパラメータを設定する
@@ -1718,33 +575,27 @@ void Player::setPartsParentage()
 //再生しているアニメーションに含まれるパーツ数を取得
 int Player::getPartsCount(void)
 {
-	ToPointer ptr(_currentRs->data);
-	const AnimePackData* packData = _currentAnimeRef->animePackData;
-	return packData->numParts;
+	return _currentAnimeRef->numParts;
 }
 
 //indexからパーツ名を取得
 const char* Player::getPartName(int partId) const
 {
-	ToPointer ptr(_currentRs->data);
+	ToPointer ptr(_currentRs->m_data);
 
-	const AnimePackData* packData = _currentAnimeRef->animePackData;
-	SS_ASSERT2(partId >= 0 && partId < packData->numParts, "partId is out of range.");
+	SS_ASSERT2(partId >= 0 && partId < _currentAnimeRef->numParts, "partId is out of range.");
 
-	const PartData* partData = ptr.toPartData(packData);
-	const char* name = ptr.toString(partData[partId].name);
+	const PartData* parts = _currentAnimeRef->partDatas;
+	const char* name = ptr.toString(parts[partId].name);
 	return name;
 }
 
 //パーツ名からindexを取得
 int Player::indexOfPart(const char* partName) const
 {
-	const AnimePackData* packData = _currentAnimeRef->animePackData;
-	for (int i = 0; i < packData->numParts; i++)
-	{
+	for (int i = 0; i < _currentAnimeRef->numParts; i++){
 		const char* name = getPartName(i);
-		if (strcmp(partName, name) == 0)
-		{
+		if (strcmp(partName, name) == 0){
 			return i;
 		}
 	}
@@ -1778,12 +629,11 @@ bool Player::getPartState(ResluteState& result, const char* name, int frameNo)
 				setFrame(frameNo);
 			}
 
-			ToPointer ptr(_currentRs->data);
+			ToPointer ptr(_currentRs->m_data);
 
-			const AnimePackData* packData = _currentAnimeRef->animePackData;
-			const PartData* parts = ptr.toPartData(packData);
+			const PartData* parts = _currentAnimeRef->partDatas;
 
-			for (int index = 0; index < packData->numParts; index++)
+			for (int index = 0; index < _currentAnimeRef->numParts; index++)
 			{
 				int partIndex = _partIndex[index];
 
@@ -1901,7 +751,7 @@ int Player::getLabelToFrame(char* findLabelName)
 {
 	int rc = -1;
 
-	ToPointer ptr(_currentRs->data);
+	ToPointer ptr(_currentRs->m_data);
 	const AnimationData* animeData = _currentAnimeRef->animationData;
 
 	if (!animeData->labelData) return -1;
@@ -1938,26 +788,9 @@ int Player::getLabelToFrame(char* findLabelName)
 //プライオリティでソートされた後、上に配置された順にソートされて決定されます。
 void Player::setPartVisible(std::string partsname, bool flg)
 {
-	bool rc = false;
-	if (_currentAnimeRef)
-	{
-		ToPointer ptr(_currentRs->data);
-
-		const AnimePackData* packData = _currentAnimeRef->animePackData;
-		const PartData* parts = ptr.toPartData(packData);
-
-		for (int index = 0; index < packData->numParts; index++)
-		{
-			int partIndex = _partIndex[index];
-
-			const PartData* partData = &parts[partIndex];
-			const char* partName = ptr.toString(partData->name);
-			if (strcmp(partName, partsname.c_str()) == 0)
-			{
-				_partVisible[index] = flg;
-				break;
-			}
-		}
+	int index = indexOfPart(partsname.c_str());
+	if(index >= 0){
+		_partVisible[index] = flg;
 	}
 }
 
@@ -1967,17 +800,17 @@ void Player::setPartCell(std::string partsname, std::string sscename, std::strin
 	bool rc = false;
 	if (_currentAnimeRef)
 	{
-		ToPointer ptr(_currentRs->data);
+		ToPointer ptr(_currentRs->m_data);
 
 		int changeCellIndex = -1;
 		if ((sscename != "") && (cellname != ""))
 		{
 			//セルマップIDを取得する
-			const Cell* cells = ptr.toCell(_currentRs->data);
+			const Cell* cells = ptr.toCell(_currentRs->m_data);
 
 			//名前からインデックスの取得
 			int cellindex = -1;
-			for (int i = 0; i < _currentRs->data->numCells; i++)
+			for (int i = 0; i < _currentRs->m_data->numCells; i++)
 			{
 				const Cell* cell = &cells[i];
 				const char* name1 = ptr.toString(cell->name);
@@ -1994,10 +827,10 @@ void Player::setPartCell(std::string partsname, std::string sscename, std::strin
 			}
 		}
 
-		const AnimePackData* packData = _currentAnimeRef->animePackData;
-		const PartData* parts = ptr.toPartData(packData);
+		int numParts = _currentAnimeRef->numParts;
+		const PartData* parts = _currentAnimeRef->partDatas;
 
-		for (int index = 0; index < packData->numParts; index++)
+		for (int index = 0; index < numParts; index++)
 		{
 			int partIndex = _partIndex[index];
 
@@ -2020,12 +853,12 @@ bool Player::changeInstanceAnime(std::string partsname, std::string animename, b
 	bool rc = false;
 	if (_currentAnimeRef)
 	{
-		ToPointer ptr(_currentRs->data);
+		ToPointer ptr(_currentRs->m_data);
 
-		const AnimePackData* packData = _currentAnimeRef->animePackData;
-		const PartData* parts = ptr.toPartData(packData);
+		int numParts = _currentAnimeRef->numParts;
+		const PartData* parts = _currentAnimeRef->partDatas;
 
-		for (int index = 0; index < packData->numParts; index++)
+		for (int index = 0; index < numParts; index++)
 		{
 			int partIndex = _partIndex[index];
 
@@ -2129,7 +962,7 @@ int Player::getDrawSpriteCount(void)
 void Player::setFrame(int frameNo, float dt)
 {
 	if (!_currentAnimeRef) return;
-	if (!_currentRs->data) return;
+	if (!_currentRs->m_data) return;
 
 	bool forceUpdate = false;
 	{
@@ -2146,10 +979,9 @@ void Player::setFrame(int frameNo, float dt)
 	//インスタンスアニメがあるので毎フレーム更新するためコメントに変更
 	//	if (!forceUpdate && frameNo == _prevDrawFrameNo) return;
 
-	ToPointer ptr(_currentRs->data);
+	ToPointer ptr(_currentRs->m_data);
 
-	const AnimePackData* packData = _currentAnimeRef->animePackData;
-	const PartData* parts = ptr.toPartData(packData);
+	const PartData* parts = _currentAnimeRef->partDatas;
 
 	const AnimationData* animeData = _currentAnimeRef->animationData;
 	const ss_offset* frameDataIndex = static_cast<const ss_offset*>(ptr(animeData->frameData));
@@ -2162,7 +994,7 @@ void Player::setFrame(int frameNo, float dt)
 
 	State state;
 
-	for (int index = 0; index < packData->numParts; index++)
+	for (int index = 0; index < _currentAnimeRef->numParts; index++)
 	{
 		int partIndex = reader.readS16();
 		const PartData* partData = &parts[partIndex];
@@ -2249,7 +1081,7 @@ void Player::setFrame(int frameNo, float dt)
 		}
 
 		//セルの原点設定を反映させる
-		CellRef* cellRef = cellIndex >= 0 ? _currentRs->cellCache->getReference(cellIndex) : nullptr;
+		CellRef* cellRef = cellIndex >= 0 ? _currentRs->m_cellCache->getReference(cellIndex) : nullptr;
 		if (cellRef)
 		{
 			float cpx = 0;
@@ -2715,7 +1547,7 @@ void Player::setFrame(int frameNo, float dt)
 
 
 	// 親に変更があるときは自分も更新するようフラグを設定する
-	for (int partIndex = 1; partIndex < packData->numParts; partIndex++)
+	for (int partIndex = 1; partIndex < _currentAnimeRef->numParts; partIndex++)
 	{
 		const PartData* partData = &parts[partIndex];
 		CustomSprite* sprite = static_cast<CustomSprite*>(_parts.at(partIndex));
@@ -2728,7 +1560,7 @@ void Player::setFrame(int frameNo, float dt)
 	}
 
 	// 行列の更新
-	for (int partIndex = 0; partIndex < packData->numParts; partIndex++)
+	for (int partIndex = 0; partIndex < _currentAnimeRef->numParts; partIndex++)
 	{
 		const PartData* partData = &parts[partIndex];
 		CustomSprite* sprite = static_cast<CustomSprite*>(_parts.at(partIndex));
@@ -2842,7 +1674,7 @@ void Player::setFrame(int frameNo, float dt)
 	}
 
 	// 特殊パーツのアップデート
-	for (int partIndex = 0; partIndex < packData->numParts; partIndex++)
+	for (int partIndex = 0; partIndex < _currentAnimeRef->numParts; partIndex++)
 	{
 		const PartData* partData = &parts[partIndex];
 		CustomSprite* sprite = static_cast<CustomSprite*>(_parts.at(partIndex));
@@ -2924,10 +1756,8 @@ void Player::draw()
 	if (!_currentAnimeRef) return;
 
 	_draw_count = 0;	//表示スプライト数クリア
-	ToPointer ptr(_currentRs->data);
-	const AnimePackData* packData = _currentAnimeRef->animePackData;
 
-	for (int index = 0; index < packData->numParts; index++)
+	for (int index = 0; index < _currentAnimeRef->numParts; index++)
 	{
 		int partIndex = _partIndex[index];
 		//スプライトの表示
@@ -2970,11 +1800,10 @@ void Player::draw()
 
 void Player::checkUserData(int frameNo)
 {
-	ToPointer ptr(_currentRs->data);
+	ToPointer ptr(_currentRs->m_data);
 
-	const AnimePackData* packData = _currentAnimeRef->animePackData;
 	const AnimationData* animeData = _currentAnimeRef->animationData;
-	const PartData* parts = ptr.toPartData(packData);
+	const PartData* parts = _currentAnimeRef->partDatas;
 
 	if (!animeData->userData) return;
 	const ss_offset* userDataIndex = static_cast<const ss_offset*>(ptr(animeData->userData));
@@ -3219,68 +2048,6 @@ void Player::update_matrix_ss4(CustomSprite *sprite, CustomSprite *parent, const
 	sprite->_state.Calc_scaleY = sprite->_temp_scale.y;
 }
 
-
-/**
- * CustomSprite
- */
- //カラーブレンド用のシェーダー処理は汎用的に使用する事ができないためすべてコメントにしてあります。
- //カラーブレンドを再現するための参考にしてください。
-
-//static const GLchar * ssPositionTextureColor_frag =
-//#include "ssShader_frag.h"
-
-CustomSprite::CustomSprite():
-//	: _defaultShaderProgram(NULL)
-	  _useCustomShaderProgram(false)
-	, _opacity(1.0f)
-	, _colorBlendFuncNo(0)
-	, _liveFrame(0.0f)
-	, _hasPremultipliedAlpha(0)
-	, refEffect(0)
-	, _ssplayer(0)
-	,effectAttrInitialized(false)
-	,effectTimeTotal(0)
-{
-	_temp_position = SsVector3(0, 0, 0);
-	_temp_rotation = SsVector3(0, 0, 0);
-	_temp_scale = SsVector2(1.0f, 1.0f);
-}
-
-CustomSprite::~CustomSprite()
-{
-	//エフェクトクラスがある場合は解放する
-	SS_SAFE_DELETE(refEffect);
-	SS_SAFE_DELETE(_ssplayer);
-}
-
-CustomSprite* CustomSprite::create()
-{
-	CustomSprite *pSprite = new CustomSprite();
-	if (pSprite)
-	{
-		pSprite->initState();
-		return pSprite;
-	}
-	SS_SAFE_DELETE(pSprite);
-	return NULL;
-}
-
-void CustomSprite::setFlippedX(bool flip)
-{
-	_flipX = flip;
-}
-void CustomSprite::setFlippedY(bool flip)
-{
-	_flipY = flip;
-}
-bool CustomSprite::isFlippedX()
-{
-	return (_flipX);
-}
-bool CustomSprite::isFlippedY()
-{
-	return (_flipY);
-}
 
 
 };

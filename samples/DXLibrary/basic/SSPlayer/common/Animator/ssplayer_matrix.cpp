@@ -1,5 +1,6 @@
 ﻿#include "ssplayer_matrix.h"
 #include <math.h>
+#include "common/SS5PlayerLibs/SS5PlayerTypes.h"
 
 namespace ss
 {
@@ -130,10 +131,10 @@ SSMatrix SSMatrix::getRotationMatrix() const
 	/*
 	スケールS, 回転R, 平行移動T の行列はこうなってる
 
-	SxR00, SxR01, SxR02, 0
+	      SxR00, SxR01, SxR02, 0
 	mat = SyR10, SyR11, SyR12, 0
-	SzR20, SzR21, SzR22, 0
-	Tx,    Ty,    Tz,    1
+	      SzR20, SzR21, SzR22, 0
+	      Tx,    Ty,    Tz,    1
 
 	要素を打ち消してR成分だけにする
 	*/
@@ -184,6 +185,26 @@ SSMatrix& SSMatrix::operator*=(const SSMatrix &o) {
 	*this = *this * o;
 	return *this;
 }
+
+
+
+//頂点変換
+SSVertex3F operator*(const SSVertex3F &p, const SSMatrix &m){
+
+	//(x,y,z,w=1)*matrix の計算。実際にはwはないのでごまかしつつ計算
+	return SSVertex3F(
+		p.x*m._m[0] + p.y*m._m[4] + p.z*m._m[8] + m._m[12],
+		p.x*m._m[1] + p.y*m._m[5] + p.z*m._m[9] + m._m[13],
+		p.x*m._m[2] + p.y*m._m[6] + p.z*m._m[10] + m._m[14]
+	);
+}
+
+SSVertex3F &operator*=(SSVertex3F &p, const SSMatrix &m){
+	p = p * m;
+	return p;
+}
+
+
 
 
 void	IdentityMatrix( float* matrix )

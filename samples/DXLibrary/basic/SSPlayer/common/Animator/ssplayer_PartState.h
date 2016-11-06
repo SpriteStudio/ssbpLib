@@ -3,6 +3,7 @@
 
 //#include "../loader/ssloader.h"
 //#include "../Helper/ssHelper.h"
+#include "common/Loader/sstypes.h"
 namespace ss
 {
 
