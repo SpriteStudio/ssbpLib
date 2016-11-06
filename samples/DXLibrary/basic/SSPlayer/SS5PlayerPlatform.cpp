@@ -13,41 +13,6 @@
 namespace ss
 {
 	/**
-	* ファイル読み込み
-	*/
-	unsigned char* SSFileOpen(const char* pszFileName, const char* pszMode, unsigned long * pSize)
-	{
-		unsigned char * pBuffer = NULL;
-		SS_ASSERT2(pszFileName != NULL && pSize != NULL && pszMode != NULL, "Invalid parameters.");
-		*pSize = 0;
-		do
-		{
-		    // read the file from hardware
-			FILE *fp = fopen(pszFileName, pszMode);
-		    if(!fp){
-				break;
-			}
-		    
-		    fseek(fp,0,SEEK_END);
-		    *pSize = ftell(fp);
-		    fseek(fp,0,SEEK_SET);
-		    pBuffer = new unsigned char[*pSize];
-		    *pSize = fread(pBuffer,sizeof(unsigned char), *pSize,fp);
-		    fclose(fp);
-		} while (0);
-		if (! pBuffer)
-		{
-
-			std::string msg = "Get data from file(";
-		    msg.append(pszFileName).append(") failed!");
-		    
-		    SSLOG("%s", msg.c_str());
-
-		}
-		return pBuffer;
-	}
-
-	/**
 	* テクスチャの読み込み
 	*/
 	long SSTextureLoad(const char* pszFileName, SsTexWrapMode::_enum  wrapmode, SsTexFilterMode::_enum filtermode)

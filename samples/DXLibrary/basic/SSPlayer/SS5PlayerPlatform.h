@@ -15,7 +15,6 @@ namespace ss
 	struct UserData;
 	class Player;
 
-	extern unsigned char* SSFileOpen(const char* pszFileName, const char* pszMode, unsigned long * pSize);
 	extern long SSTextureLoad(const char* pszFileName, SsTexWrapMode::_enum  wrapmode, SsTexFilterMode::_enum filtermode);
 	extern bool SSTextureRelese(long handle);
 	extern bool isAbsolutePath(const std::string& strPath);

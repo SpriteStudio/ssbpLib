@@ -108,7 +108,7 @@ void init( void )
 	//アニメデータをリソースに追加
 
 	//それぞれのプラットフォームに合わせたパスへ変更してください。
-	resman->addData(
+	resman->regist(
 		buf.data(), buf.size(),
 		"character_template1",					//登録名
 		"Resources/character_template_comipo/"	//画像ファイルの読み込み元ルートパス
