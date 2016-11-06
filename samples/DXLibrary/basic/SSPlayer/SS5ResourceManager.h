@@ -20,6 +20,7 @@ public:
 	 */
 	static ResourceManager* getInstance();
 
+#if 0
 	/**
 	 * ssbpファイルを読み込み管理対象とします.
 	 * dataKeyはssbpのファイル名（拡張子なし）になります.
@@ -49,6 +50,17 @@ public:
 	 * @return dataKey
 	 */
 	std::string addData(const std::string& dataKey, const ProjectData* data, const std::string& imageBaseDir = s_null);
+#endif
+
+	/**
+	 * ssbpファイルを登録します
+	 *
+	 * @param  data			ssbpのデータ(中でコピーされます)
+	 * @param  dataSize		dataのサイズ
+	 * @param  dataKey		登録名
+	 * @param  imageBaseDir 画像ファイルの読み込み元ルートパス. 省略時はコンバート時に指定されたパスを使用する
+	 */
+	bool addData(const void *data, size_t dataSize, const std::string &dataKey, const std::string &imageBaseDir = s_null);
 
 	/**
 	 * 指定データを解放します.
@@ -111,7 +123,10 @@ public:
 	ResourceManager(void);
 	virtual ~ResourceManager();
 
-protected:
+private:
+	//imageBaseDirの指定がないときはdataの中を見てディレクトリを返す
+	std::string getImageBaseDir(const std::string &imageBaseDir, const ProjectData *data) const;
+
 	std::map<std::string, ResourceSet*>	_dataDic;
 };
 

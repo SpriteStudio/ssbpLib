@@ -1,7 +1,7 @@
 ﻿#include "DxLib.h"
+#include <fstream>
 #include "SSPlayer/SS5Player.h"
 #include "SSPlayer/SS5ResourceManager.h"
-
 //メモリリークチェック用---------------------------------------------------------
 #ifdef _DEBUG
 #define _CRTDBG_MAP_ALLOC
@@ -87,6 +87,19 @@ void init( void )
 
 	**********************************************************************************/
 
+	//ssbpファイルの読み込み
+	ifstream ifs("Resources/character_template_comipo/character_template1.ssbp", ios::in|ios::binary);
+	if(!ifs){
+		return;
+	}
+	ifs.seekg(0, fstream::end);
+	size_t filesize = ifs.tellg();
+	ifs.seekg(0, fstream::beg);
+	
+	vector<char> buf(filesize, 0);
+	ifs.read(buf.data(), filesize);
+
+	
 	//リソースマネージャの作成
 	resman = ss::ResourceManager::getInstance();
 	//プレイヤーの作成
@@ -95,9 +108,14 @@ void init( void )
 	//アニメデータをリソースに追加
 
 	//それぞれのプラットフォームに合わせたパスへ変更してください。
-	resman->addData("Resources/character_template_comipo/character_template1.ssbp");
+	resman->addData(
+		buf.data(), buf.size(),
+		"character_template1",					//登録名
+		"Resources/character_template_comipo/"	//画像ファイルの読み込み元ルートパス
+	);
+
 	//プレイヤーにリソースを割り当て
-	ssplayer->setData("character_template1");        // ssbpファイル名（拡張子不要）
+	ssplayer->setData("character_template1");	//addDataで指定した登録名
 	//再生するモーションを設定
 	ssplayer->play("character_template_3head/stance");				 // アニメーション名を指定(ssae名/アニメーション名も可能、詳しくは後述)
 

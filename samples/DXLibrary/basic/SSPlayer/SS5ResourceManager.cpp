@@ -9,11 +9,6 @@
 
 namespace ss{
 
-/**
- * definition
- */
-static const ss_u32 DATA_ID = 0x42505353;
-static const ss_u32 DATA_VERSION = 4;
 
 /**
  * utilites
@@ -71,11 +66,12 @@ ResourceSet* ResourceManager::getData(const std::string& dataKey)
 	return rs;
 }
 
+#if 0
 std::string ResourceManager::addData(const std::string& dataKey, const ProjectData* data, const std::string& imageBaseDir)
 {
 	SS_ASSERT2(data != NULL, "Invalid data");
-	SS_ASSERT2(data->dataId == DATA_ID, "Not data id matched");
-	SS_ASSERT2(data->version == DATA_VERSION, "Version number of data does not match");
+//	SS_ASSERT2(data->dataId == DATA_ID, "Not data id matched");
+//	SS_ASSERT2(data->version == DATA_VERSION, "Version number of data does not match");
 	
 	// imageBaseDirの指定がないときコンバート時に指定されたパスを使用する
 	std::string baseDir = imageBaseDir;
@@ -107,8 +103,8 @@ std::string ResourceManager::addDataWithKey(const std::string& dataKey, const st
 	}
 	
 	const ProjectData* data = static_cast<const ProjectData*>(loadData);
-	SS_ASSERT2(data->dataId == DATA_ID, "Not data id matched");
-	SS_ASSERT2(data->version == DATA_VERSION, "Version number of data does not match");
+//	SS_ASSERT2(data->dataId == DATA_ID, "Not data id matched");
+//	SS_ASSERT2(data->version == DATA_VERSION, "Version number of data does not match");
 	
 	std::string baseDir = imageBaseDir;
 	if (imageBaseDir == s_null)
@@ -163,6 +159,49 @@ std::string ResourceManager::addData(const std::string& ssbpFilepath, const std:
 
 	return addDataWithKey(dataKey, ssbpFilepath, imageBaseDir);
 }
+#endif
+
+bool ResourceManager::addData(const void *data, size_t dataSize, const std::string &dataKey, const std::string &imageBaseDir)
+{
+	SS_ASSERT2(data, "Invalid data");
+	SS_ASSERT2(dataSize > 0, "dataSize is zero");
+	//登録済みかどうかの判定
+	if(_dataDic.find(dataKey) != _dataDic.end()){
+		return false;
+	}
+
+	/***** 新規登録 *****/
+	
+	//画像ファイルのディレクトリパスを作る
+	std::string baseDir = getImageBaseDir(imageBaseDir, static_cast<const ProjectData*>(data));
+
+	//データを作って登録
+	ResourceSet* rs = new ResourceSet(static_cast<const char*>(data), dataSize, baseDir);
+
+	_dataDic.insert(std::make_pair(dataKey, rs));
+	return true;
+}
+
+
+std::string ResourceManager::getImageBaseDir(const std::string &imageBaseDir, const ProjectData *data) const
+{
+	if(imageBaseDir == s_null){	// imageBaseDirの指定がないときはパスを作る
+
+		if(data->imageBaseDir){
+			// コンバート時に指定されたパスを使用する
+			ToPointer ptr(data);
+			return ptr.toString(data->imageBaseDir);
+		}
+
+		//// プロジェクトファイルと同じディレクトリを指定する
+		//std::string directory;
+		//std::string filename;
+		//splitPath(directory, filename, ssbpFilepath);
+		//return directory;
+	}
+	return imageBaseDir;
+}
+
 
 void ResourceManager::removeData(const std::string& dataKey)
 {
