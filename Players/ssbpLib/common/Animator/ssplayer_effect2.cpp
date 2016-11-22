@@ -528,11 +528,7 @@ void	SsEffectRenderV2::drawSprite(
 
 	if (_parentSprite)
 	{
-		int i = 0;
-		for (i = 0; i < 16; i++)
-		{
-			matrix[i] = _parentSprite->_state.mat._m[i];
-		}
+		memcpy( matrix , _parentSprite->_state.mat , sizeof( float ) * 16 );
     	parentAlpha = _parentSprite->_state.opacity / 255.0f;
 	}
 
@@ -559,7 +555,7 @@ void	SsEffectRenderV2::drawSprite(
 	state = _parentSprite->_state;		//親パーツの情報をコピー
 	for (int i = 0; i < 16; i++)
 	{
-		state.mat._m[i] = matrix[i];				//マトリクスのコピー
+		state.mat[i] = matrix[i];				//マトリクスのコピー
 	}
 	state.cellIndex = dispCell->refCell.cellIndex;
 	state.texture = dispCell->refCell.texture;	//テクスチャID	
@@ -651,12 +647,12 @@ void	SsEffectRenderV2::drawSprite(
 #endif
 	get_uv_rotation(&cx, &cy, 0, 0, state.rotationZ);
 
-	state.mat.addTranslation(cx, cy, 0);
+	state.mat[12] += cx;
+	state.mat[13] += cy;
 
 	SSDrawSprite(state);	//描画
 
 	_drawSpritecount++;
-
 }
 
 
@@ -831,9 +827,10 @@ void	SsEffectRenderV2::update()
 
 void	SsEffectRenderV2::draw()
 {
+	_drawSpritecount = 0;	//表示スプライト数のクリア
+
 	if (nowFrame < 0) return;
 
-	_drawSpritecount = 0;	//表示スプライト数のクリア
 	for (size_t i = 0; i < updateList.size(); i++)
 	{
 		SsEffectEmitter* e = updateList[i];

@@ -393,7 +393,7 @@ public:
 	bool _isContentScaleFactorAuto;
 	CustomSprite						*_parentSprite;
 
-	int			_drawSpritecount;
+	int			_drawSpritecount; 
 
 public:
 
@@ -483,7 +483,7 @@ public:
 	void setContentScaleEneble(bool eneble) { _isContentScaleFactorAuto = eneble; }
 	void setParentSprite(CustomSprite* sprite) { _parentSprite = sprite; }
 
-	int	getDrawSpritecount() { return _drawSpritecount; }
+	int	getDrawSpriteCount() { return _drawSpritecount; }
 };
 
 };

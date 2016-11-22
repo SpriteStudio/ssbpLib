@@ -9,7 +9,6 @@
 */
 #include "DxLib.h"
 
-
 namespace ss
 {
 	/**
@@ -230,34 +229,28 @@ namespace ss
 		quad.br.vertices.x += cx;
 		quad.br.vertices.y += cy;
 
-		float x, y;
-		SSMatrix t;
-		t.setupTranslation(quad.tl.vertices.x, quad.tl.vertices.y, 0.0f);
-		t *= state.mat;
-		t.getTranslation(&x, &y);
-		quad.tl.vertices.x = x;
-		quad.tl.vertices.y = y;
+		float t[16];
+		TranslationMatrix(t, quad.tl.vertices.x, quad.tl.vertices.y, 0.0f);
 
-		t.setupTranslation(quad.tr.vertices.x, quad.tr.vertices.y, 0.0f);
-		t *= state.mat;
-		t.getTranslation(&x, &y);
-		quad.tr.vertices.x = x;
-		quad.tr.vertices.y = y;
-
-		t.setupTranslation(quad.bl.vertices.x, quad.bl.vertices.y, 0.0f);
-		t *= state.mat;
-		t.getTranslation(&x, &y);
-		quad.bl.vertices.x = x;
-		quad.bl.vertices.y = y;
-
-		t.setupTranslation(quad.br.vertices.x, quad.br.vertices.y, 0.0f);
-		t *= state.mat;
-		t.getTranslation(&x, &y);
-		quad.br.vertices.x = x;
-		quad.br.vertices.y = y;
+		MultiplyMatrix(t, state.mat, t);
+		quad.tl.vertices.x = t[12];
+		quad.tl.vertices.y = t[13];
+		TranslationMatrix(t, quad.tr.vertices.x, quad.tr.vertices.y, 0.0f);
+		MultiplyMatrix(t, state.mat, t);
+		quad.tr.vertices.x = t[12];
+		quad.tr.vertices.y = t[13];
+		TranslationMatrix(t, quad.bl.vertices.x, quad.bl.vertices.y, 0.0f);
+		MultiplyMatrix(t, state.mat, t);
+		quad.bl.vertices.x = t[12];
+		quad.bl.vertices.y = t[13];
+		TranslationMatrix(t, quad.br.vertices.x, quad.br.vertices.y, 0.0f);
+		MultiplyMatrix(t, state.mat, t);
+		quad.br.vertices.x = t[12];
+		quad.br.vertices.y = t[13];
 #else
-		float x, y;
-		state.mat.getTranslation(&x, &y);	/// 表示座標はマトリクスから取得します。		float rotationZ = state.Calc_rotationZ;		/// 回転値
+		float x = state.mat[12];	/// 表示座標はマトリクスから取得します。
+		float y = state.mat[13];	/// 表示座標はマトリクスから取得します。
+		float rotationZ = state.Calc_rotationZ;		/// 回転値
 		float scaleX = state.Calc_scaleX;							/// 拡大率
 		float scaleY = state.Calc_scaleY;							/// 拡大率
 

@@ -2,12 +2,10 @@
 //  SS5Player.cpp
 //
 #include "SS5Player.h"
-#include "common/SS5PlayerLibs/SS5PlayerData.h"
-#include "common/SS5PlayerLibs/SS5PlayerTypes.h"
-#include "common/SS5PlayerLibs/SS5PlayerToPointer.h"
-#include "common/SS5PlayerLibs/SS5PlayerDataArrayReader.h"
+#include "SS5PlayerData.h"
+#include "SS5PlayerTypes.h"
 #include "common/Animator/ssplayer_matrix.h"
-#include "common/Animator/ssplayer_macro.h"
+
 
 namespace ss
 {
@@ -79,8 +77,8 @@ void get_uv_rotation(float *u, float *v, float cu, float cv, float deg)
 	float dx = *u - cu; // 中心からの距離(X)
 	float dy = *v - cv; // 中心からの距離(Y)
 
-	float tmpX = (dx * cosf(DegreeToRadian(deg))) - (dy * sinf(DegreeToRadian(deg))); // 回転
-	float tmpY = (dx * sinf(DegreeToRadian(deg))) + (dy * cosf(DegreeToRadian(deg)));
+	float tmpX = (dx * cosf(SSRadianToDegree(deg))) - (dy * sinf(SSRadianToDegree(deg))); // 回転
+	float tmpY = (dx * sinf(SSRadianToDegree(deg))) + (dy * cosf(SSRadianToDegree(deg)));
 
 	*u = (cu + tmpX); // 元の座標にオフセットする
 	*v = (cv + tmpY);
@@ -99,6 +97,80 @@ unsigned int getRandomSeed()
 
 	return(rc);
 }
+
+
+
+/**
+ * ToPointer
+ */
+class ToPointer
+{
+public:
+	explicit ToPointer(const void* base)
+		: _base(static_cast<const char*>(base)) {}
+	
+	const void* operator()(ss_offset offset) const
+	{
+		return (_base + offset);
+	}
+
+private:
+	const char*	_base;
+};
+
+
+/**
+ * DataArrayReader
+ */
+class DataArrayReader
+{
+public:
+	DataArrayReader(const ss_u16* dataPtr)
+		: _dataPtr(dataPtr)
+	{}
+
+	ss_u16 readU16() { return *_dataPtr++; }
+	ss_s16 readS16() { return static_cast<ss_s16>(*_dataPtr++); }
+
+	unsigned int readU32()
+	{
+		unsigned int l = readU16();
+		unsigned int u = readU16();
+		return static_cast<unsigned int>((u << 16) | l);
+	}
+
+	int readS32()
+	{
+		return static_cast<int>(readU32());
+	}
+
+	float readFloat()
+	{
+		union {
+			float			f;
+			unsigned int	i;
+		} c;
+		c.i = readU32();
+		return c.f;
+	}
+	
+	void readColor(SSColor4B& color)
+	{
+		unsigned int raw = readU32();
+		color.a = static_cast<unsigned char>(raw >> 24);
+		color.r = static_cast<unsigned char>(raw >> 16);
+		color.g = static_cast<unsigned char>(raw >> 8);
+		color.b = static_cast<unsigned char>(raw);
+	}
+	
+	ss_offset readOffset()
+	{
+		return static_cast<ss_offset>(readS32());
+	}
+
+private:
+	const ss_u16*	_dataPtr;
+};
 
 
 /**
@@ -154,15 +226,15 @@ public:
 		bool rc = false;
 
 		ToPointer ptr(data);
-		const Cell* cells = static_cast<const Cell*>(ptr.toCell(data));
+		const Cell* cells = static_cast<const Cell*>(ptr(data->cells));
 
 		//名前からインデックスの取得
 		int cellindex = -1;
 		for (int i = 0; i < data->numCells; i++)
 		{
 			const Cell* cell = &cells[i];
-			const CellMap* cellMap = static_cast<const CellMap*>(ptr.toCellMap(cell));
-			const char* name = ptr.toString(cellMap->name);
+			const CellMap* cellMap = static_cast<const CellMap*>(ptr(cell->cellMap));
+			const char* name = static_cast<const char*>(ptr(cellMap->name));
 			if (strcmp(cellName, name) == 0)
 			{
 				CellRef* ref = getReference(i);
@@ -179,14 +251,20 @@ public:
 	{
 		bool rc = false;
 
+		ToPointer ptr(data);
+		const Cell* cells = static_cast<const Cell*>(ptr(data->cells));
 		for (int i = 0; i < data->numCells; i++)
 		{
-			CellRef* ref = _refs.at(i);
-			if (ref->texture.handle != -1 )
+			const Cell* cell = &cells[i];
+			const CellMap* cellMap = static_cast<const CellMap*>(ptr(cell->cellMap));
 			{
-				SSTextureRelese(ref->texture.handle);
-				ref->texture.handle = -1;
-				rc = true;
+				CellRef* ref = _refs.at(i);
+				if (ref->texture.handle != -1 )
+				{
+					SSTextureRelese(ref->texture.handle);
+					ref->texture.handle = -1;
+					rc = true;
+				}
 			}
 		}
 		return(rc);
@@ -203,16 +281,16 @@ protected:
 		_texname.clear();
 
 		ToPointer ptr(data);
-		const Cell* cells = ptr.toCell(data);
+		const Cell* cells = static_cast<const Cell*>(ptr(data->cells));
 
 		for (int i = 0; i < data->numCells; i++)
 		{
 			const Cell* cell = &cells[i];
-			const CellMap* cellMap = ptr.toCellMap(cell);
+			const CellMap* cellMap = static_cast<const CellMap*>(ptr(cell->cellMap));
 			
 			if (cellMap->index >= (int)_textures.size())
 			{
-				const char* imagePath = ptr.toString(cellMap->imagePath);
+				const char* imagePath = static_cast<const char*>(ptr(cellMap->imagePath));
 				addTexture(imagePath, imageBaseDir, (SsTexWrapMode::_enum)cellMap->wrapmode, (SsTexFilterMode::_enum)cellMap->filtermode);
 			}
 
@@ -833,18 +911,18 @@ protected:
 		SS_ASSERT2(data != NULL, "Invalid data");
 		
 		ToPointer ptr(data);
-		const AnimePackData* animePacks = ptr.toAnimePackData(data);
+		const AnimePackData* animePacks = static_cast<const AnimePackData*>(ptr(data->animePacks));
 
 		for (int packIndex = 0; packIndex < data->numAnimePacks; packIndex++)
 		{
 			const AnimePackData* pack = &animePacks[packIndex];
-			const AnimationData* animations = ptr.toAnimationData(pack);
-			const char* packName = ptr.toString(pack->name);
+			const AnimationData* animations = static_cast<const AnimationData*>(ptr(pack->animations));
+			const char* packName = static_cast<const char*>(ptr(pack->name));
 			
 			for (int animeIndex = 0; animeIndex < pack->numAnimations; animeIndex++)
 			{
 				const AnimationData* anime = &animations[animeIndex];
-				const char* animeName = ptr.toString(anime->name);
+				const char* animeName = static_cast<const char*>(ptr(anime->name));
 				
 				AnimeRef* ref = new AnimeRef();
 				ref->packName = packName;
@@ -979,7 +1057,7 @@ std::string ResourceManager::addData(const std::string& dataKey, const ProjectDa
 	if (imageBaseDir == s_null && data->imageBaseDir)
 	{
 		ToPointer ptr(data);
-		const char* dir = ptr.toString(data->imageBaseDir);
+		const char* dir = static_cast<const char*>(ptr(data->imageBaseDir));
 		baseDir = dir;
 	}
 
@@ -1026,7 +1104,7 @@ std::string ResourceManager::addDataWithKey(const std::string& dataKey, const st
 		{
 			// コンバート時に指定されたパスを使用する
 			ToPointer ptr(data);
-			const char* dir = ptr.toString(data->imageBaseDir);
+			const char* dir = static_cast<const char*>(ptr(data->imageBaseDir));
 			baseDir = dir;
 		}
 		else
@@ -1081,9 +1159,6 @@ void ResourceManager::removeData(const std::string& dataKey)
 {
 	ResourceSet* rs = getData(dataKey);
 
-	//テクスチャの解放
-	releseTexture(dataKey);
-	
 	//バイナリデータの削除
 	delete rs;
 	_dataDic.erase(dataKey);
@@ -1113,7 +1188,7 @@ bool ResourceManager::changeTexture(char* ssbpName, char* ssceName, long texture
 }
 
 //指定したデータのテクスチャを破棄します
-bool ResourceManager::releseTexture(std::string ssbpName)
+bool ResourceManager::releseTexture(char* ssbpName)
 {
 
 	ResourceSet* rs = getData(ssbpName);
@@ -1137,18 +1212,6 @@ int ResourceManager::getMaxFrame(std::string ssbpName, std::string animeName)
 	rc = animeRef->animationData->numFrames;
 
 	return(rc);
-}
-
-//ssbpファイルが登録されているかを調べる
-bool ResourceManager::isDataKeyExists(const std::string& dataKey) {
-	// 登録されている名前か判定する
-	std::map<std::string, ResourceSet*>::iterator it = _dataDic.find(dataKey);
-	if (it != _dataDic.end()) {
-		//登録されている
-		return true;
-	}
-
-	return false;
 }
 
 /**
@@ -1181,7 +1244,6 @@ Player::Player(void)
 	, _seedOffset(0)
 	, _rootPartFunctionAsVer4(false)
 	, _dontUseMatrixForTransform(false)
-	, _draw_count(0)
 {
 	int i;
 	for (i = 0; i < PART_VISIBLE_MAX; i++)
@@ -1375,7 +1437,7 @@ void Player::play(AnimeRef* animeRef, int loop, int startFrameNo)
 	{
 		_currentAnimeRef = animeRef;
 		
-		allocParts(animeRef->animePackData->numParts);
+		allocParts(animeRef->animePackData->numParts, false);
 		setPartsParentage();
 	}
 	_playingFrame = static_cast<float>(startFrameNo);
@@ -1598,7 +1660,7 @@ void Player::updateFrame(float dt)
 }
 
 
-void Player::allocParts(int numParts)
+void Player::allocParts(int numParts, bool useCustomShaderProgram)
 {
 	for (int i = 0; i < _parts.size(); i++)
 	{
@@ -1618,6 +1680,8 @@ void Player::allocParts(int numParts)
 		{
 			CustomSprite* sprite =  CustomSprite::create();
 			sprite->_ssplayer = NULL;
+			sprite->changeShaderProgram(useCustomShaderProgram);
+
 			_parts.push_back(sprite);
 		}
 	}
@@ -1634,7 +1698,7 @@ void Player::releaseParts()
 
 			ToPointer ptr(_currentRs->data);
 			const AnimePackData* packData = _currentAnimeRef->animePackData;
-			const PartData* parts = ptr.toPartData(packData);
+			const PartData* parts = static_cast<const PartData*>(ptr(packData->parts));
 			if (_parts.size() > 0)
 			{
 				for (int partIndex = 0; partIndex < packData->numParts; partIndex++)
@@ -1655,7 +1719,7 @@ void Player::setPartsParentage()
 
 	ToPointer ptr(_currentRs->data);
 	const AnimePackData* packData = _currentAnimeRef->animePackData;
-	const PartData* parts = ptr.toPartData(packData);
+	const PartData* parts = static_cast<const PartData*>(ptr(packData->parts));
 
 	//親子関係を設定
 	for (int partIndex = 0; partIndex < packData->numParts; partIndex++)
@@ -1674,7 +1738,7 @@ void Player::setPartsParentage()
 		}
 
 		//インスタンスパーツの生成
-		std::string refanimeName = ptr.toString(partData->refname);
+		std::string refanimeName = static_cast<const char*>(ptr(partData->refname));
 
 		SS_SAFE_DELETE(sprite->_ssplayer);
 		if (refanimeName != "")
@@ -1693,7 +1757,7 @@ void Player::setPartsParentage()
 			sprite->refEffect = 0;
 		}
 
-		std::string refeffectName = ptr.toString(partData->effectfilename);
+		std::string refeffectName = static_cast<const char*>(ptr(partData->effectfilename));
 		if (refeffectName != "")
 		{
 			SsEffectModel* effectmodel = _currentRs->effectCache->getReference(refeffectName);
@@ -1731,8 +1795,8 @@ const char* Player::getPartName(int partId) const
 	const AnimePackData* packData = _currentAnimeRef->animePackData;
 	SS_ASSERT2(partId >= 0 && partId < packData->numParts, "partId is out of range.");
 
-	const PartData* partData = ptr.toPartData(packData);
-	const char* name = ptr.toString(partData[partId].name);
+	const PartData* partData = static_cast<const PartData*>(ptr(packData->parts));
+	const char* name = static_cast<const char*>(ptr(partData[partId].name));
 	return name;
 }
 
@@ -1781,27 +1845,29 @@ bool Player::getPartState(ResluteState& result, const char* name, int frameNo)
 			ToPointer ptr(_currentRs->data);
 
 			const AnimePackData* packData = _currentAnimeRef->animePackData;
-			const PartData* parts = ptr.toPartData(packData);
+			const PartData* parts = static_cast<const PartData*>(ptr(packData->parts));
 
 			for (int index = 0; index < packData->numParts; index++)
 			{
 				int partIndex = _partIndex[index];
 
 				const PartData* partData = &parts[partIndex];
-				const char* partName = ptr.toString(partData->name);
+				const char* partName = static_cast<const char*>(ptr(partData->name));
 				if (strcmp(partName, name) == 0)
 				{
 					//必要に応じて取得するパラメータを追加してください。
 					//当たり判定などのパーツに付属するフラグを取得する場合は　partData　のメンバを参照してください。
 					//親から継承したスケールを反映させる場合はxスケールは_mat.m[0]、yスケールは_mat.m[5]をかけて使用してください。
 					CustomSprite* sprite = static_cast<CustomSprite*>(_parts.at(partIndex));
-					sprite->_state.mat.getTranslation(&result.x, &result.y);
+					result.x = sprite->_state.mat[12];
+					result.y = sprite->_state.mat[13];
 
 					//パーツアトリビュート
 //					sprite->_state;												//SpriteStudio上のアトリビュートの値は_stateから取得してください
 					result.flags = sprite->_state.flags;						// このフレームで更新が行われるステータスのフラグ
 					result.cellIndex = sprite->_state.cellIndex;				// パーツに割り当てられたセルの番号
-					sprite->_state.mat.getTranslation(&result.x, &result.y);
+					result.x = sprite->_state.mat[12];
+					result.y = sprite->_state.mat[13];
 					result.z = sprite->_state.z;
 					result.pivotX = sprite->_state.pivotX;						// 原点Xオフセット＋セルに設定された原点オフセットX
 					result.pivotY = sprite->_state.pivotY;						// 原点Yオフセット＋セルに設定された原点オフセットY
@@ -1830,7 +1896,7 @@ bool Player::getPartState(ResluteState& result, const char* name, int frameNo)
 					result.part_boundsType = partData->boundsType;				//当たり判定種類
 					result.part_alphaBlendType = partData->alphaBlendType;		// BlendType
 					//ラベルカラー
-					std::string colorName = ptr.toString(partData->colorLabel);
+					std::string colorName = static_cast<const char*>(ptr(partData->colorLabel));
 					if (colorName == COLORLABELSTR_NONE)
 					{
 						result.part_labelcolor = COLORLABEL_NONE;
@@ -1918,7 +1984,7 @@ int Player::getLabelToFrame(char* findLabelName)
 
 		LabelData ldata;
 		ss_offset offset = reader.readOffset();
-		const char* str = str = ptr.toString(offset);
+		const char* str = static_cast<const char*>(ptr(offset));
 		int labelFrame = reader.readU16();
 		ldata.str = str;
 		ldata.frameNo = labelFrame;
@@ -1944,14 +2010,14 @@ void Player::setPartVisible(std::string partsname, bool flg)
 		ToPointer ptr(_currentRs->data);
 
 		const AnimePackData* packData = _currentAnimeRef->animePackData;
-		const PartData* parts = ptr.toPartData(packData);
+		const PartData* parts = static_cast<const PartData*>(ptr(packData->parts));
 
 		for (int index = 0; index < packData->numParts; index++)
 		{
 			int partIndex = _partIndex[index];
 
 			const PartData* partData = &parts[partIndex];
-			const char* partName = ptr.toString(partData->name);
+			const char* partName = static_cast<const char*>(ptr(partData->name));
 			if (strcmp(partName, partsname.c_str()) == 0)
 			{
 				_partVisible[index] = flg;
@@ -1973,16 +2039,16 @@ void Player::setPartCell(std::string partsname, std::string sscename, std::strin
 		if ((sscename != "") && (cellname != ""))
 		{
 			//セルマップIDを取得する
-			const Cell* cells = ptr.toCell(_currentRs->data);
+			const Cell* cells = static_cast<const Cell*>(ptr(_currentRs->data->cells));
 
 			//名前からインデックスの取得
 			int cellindex = -1;
 			for (int i = 0; i < _currentRs->data->numCells; i++)
 			{
 				const Cell* cell = &cells[i];
-				const char* name1 = ptr.toString(cell->name);
-				const CellMap* cellMap = ptr.toCellMap(cell);
-				const char* name2 = ptr.toString(cellMap->name);
+				const char* name1 = static_cast<const char*>(ptr(cell->name));
+				const CellMap* cellMap = static_cast<const CellMap*>(ptr(cell->cellMap));
+				const char* name2 = static_cast<const char*>(ptr(cellMap->name));
 				if (strcmp(cellname.c_str(), name1) == 0)
 				{
 					if (strcmp(sscename.c_str(), name2) == 0)
@@ -1995,14 +2061,14 @@ void Player::setPartCell(std::string partsname, std::string sscename, std::strin
 		}
 
 		const AnimePackData* packData = _currentAnimeRef->animePackData;
-		const PartData* parts = ptr.toPartData(packData);
+		const PartData* parts = static_cast<const PartData*>(ptr(packData->parts));
 
 		for (int index = 0; index < packData->numParts; index++)
 		{
 			int partIndex = _partIndex[index];
 
 			const PartData* partData = &parts[partIndex];
-			const char* partName = ptr.toString(partData->name);
+			const char* partName = static_cast<const char*>(ptr(partData->name));
 			if (strcmp(partName, partsname.c_str()) == 0)
 			{
 				//セル番号を設定
@@ -2023,14 +2089,14 @@ bool Player::changeInstanceAnime(std::string partsname, std::string animename, b
 		ToPointer ptr(_currentRs->data);
 
 		const AnimePackData* packData = _currentAnimeRef->animePackData;
-		const PartData* parts = ptr.toPartData(packData);
+		const PartData* parts = static_cast<const PartData*>(ptr(packData->parts));
 
 		for (int index = 0; index < packData->numParts; index++)
 		{
 			int partIndex = _partIndex[index];
 
 			const PartData* partData = &parts[partIndex];
-			const char* partName = ptr.toString(partData->name);
+			const char* partName = static_cast<const char*>(ptr(partData->name));
 			if (strcmp(partName, partsname.c_str()) == 0)
 			{
 				CustomSprite* sprite = static_cast<CustomSprite*>(_parts.at(partIndex));
@@ -2121,6 +2187,9 @@ CustomSprite* Player::getSpriteData(int partIndex)
 	return(sprite);
 }
 
+/*
+* 表示を行うパーツ数を取得します
+*/
 int Player::getDrawSpriteCount(void)
 {
 	return (_draw_count);
@@ -2149,7 +2218,7 @@ void Player::setFrame(int frameNo, float dt)
 	ToPointer ptr(_currentRs->data);
 
 	const AnimePackData* packData = _currentAnimeRef->animePackData;
-	const PartData* parts = ptr.toPartData(packData);
+	const PartData* parts = static_cast<const PartData*>(ptr(packData->parts));
 
 	const AnimationData* animeData = _currentAnimeRef->animationData;
 	const ss_offset* frameDataIndex = static_cast<const ss_offset*>(ptr(animeData->frameData));
@@ -2157,7 +2226,7 @@ void Player::setFrame(int frameNo, float dt)
 	const ss_u16* frameDataArray = static_cast<const ss_u16*>(ptr(frameDataIndex[frameNo]));
 	DataArrayReader reader(frameDataArray);
 	
-	const AnimationInitialData* initialDataList = ptr.toAnimationInitialData(animeData);
+	const AnimationInitialData* initialDataList = static_cast<const AnimationInitialData*>(ptr(animeData->defaultData));
 
 
 	State state;
@@ -2336,12 +2405,27 @@ void Player::setFrame(int frameNo, float dt)
 		sprite->setFlippedX(flipX);
 		sprite->setFlippedY(flipY);
 
+		bool setBlendEnabled = true;
+
 		if (cellRef)
 		{
 			//各パーツのテクスチャ情報を設定
 			state.texture = cellRef->texture;
 			state.rect = cellRef->rect;
 			state.blendfunc = partData->alphaBlendType;
+
+			if (setBlendEnabled)
+			{
+				if (flags & PART_FLAG_COLOR_BLEND)
+				{
+					//カラーブレンドを行うときはカスタムシェーダーを使用する
+					sprite->changeShaderProgram(true);
+				}
+				else
+				{
+					sprite->changeShaderProgram(false);
+				}
+			}
 		}
 		else
 		{
@@ -2352,52 +2436,96 @@ void Player::setFrame(int frameNo, float dt)
 				state.isVisibled = false;
 			}
 		}
+		sprite->setOpacity(opacity);
 
 		//頂点データの設定
 		//quadにはプリミティブの座標（頂点変形を含む）、UV、カラー値が設定されます。
 		SSV3F_C4B_T2F_Quad quad;
 		memset(&quad, 0, sizeof(quad));
-
-		float width_h = 0;
-		float height_h = 0;
 		if (cellRef)
 		{
 			//頂点を設定する
-			width_h = cellRef->rect.size.width / 2;
-			height_h = cellRef->rect.size.height / 2;
+			float width_h = cellRef->rect.size.width / 2;
+			float height_h = cellRef->rect.size.height / 2;
 			float x1 = -width_h;
 			float y1 = -height_h;
 			float x2 = width_h;
 			float y2 = height_h;
 
 #ifdef UP_MINUS
-			quad.tl.vertices = SSVertex3F(x1, y1, 0);
-			quad.tr.vertices = SSVertex3F(x2, y1, 0);
-			quad.bl.vertices = SSVertex3F(x1, y2, 0);
-			quad.br.vertices = SSVertex3F(x2, y2, 0); 
+			quad.tl.vertices.x = x1;
+			quad.tl.vertices.y = y1;
+			quad.tr.vertices.x = x2;
+			quad.tr.vertices.y = y1;
+			quad.bl.vertices.x = x1;
+			quad.bl.vertices.y = y2;
+			quad.br.vertices.x = x2;
+			quad.br.vertices.y = y2;
 #else
-			quad.tl.vertices = SSVertex3F(x1, y2, 0);
-			quad.tr.vertices = SSVertex3F(x2, y2, 0);
-			quad.bl.vertices = SSVertex3F(x1, y1, 0);
-			quad.br.vertices = SSVertex3F(x2, y1, 0); 
+			quad.tl.vertices.x = x1;
+			quad.tl.vertices.y = y2;
+			quad.tr.vertices.x = x2;
+			quad.tr.vertices.y = y2;
+			quad.bl.vertices.x = x1;
+			quad.bl.vertices.y = y1;
+			quad.br.vertices.x = x2;
+			quad.br.vertices.y = y1;
 #endif
+			//UVを設定する
+			quad.tl.texCoords.u = 0;
+			quad.tl.texCoords.v = 0;
+			quad.tr.texCoords.u = 0;
+			quad.tr.texCoords.v = 0;
+			quad.bl.texCoords.u = 0;
+			quad.bl.texCoords.v = 0;
+			quad.br.texCoords.u = 0;
+			quad.br.texCoords.v = 0;
+			if (cellRef)
+			{
+				quad.tl.texCoords.u = cellRef->cell->u1;
+				quad.tl.texCoords.v = cellRef->cell->v1;
+				quad.tr.texCoords.u = cellRef->cell->u2;
+				quad.tr.texCoords.v = cellRef->cell->v1;
+				quad.bl.texCoords.u = cellRef->cell->u1;
+				quad.bl.texCoords.v = cellRef->cell->v2;
+				quad.br.texCoords.u = cellRef->cell->u2;
+				quad.br.texCoords.v = cellRef->cell->v2;
+			}
 		}
 
 		//サイズ設定
 		//頂点をサイズに合わせて変形させる
 		if (flags & PART_FLAG_SIZE_X)
 		{
-			quad.bl.vertices.x = - (size_X / 2.0f);
-			quad.br.vertices.x = + (size_X / 2.0f);
-			quad.tl.vertices.x = - (size_X / 2.0f);
-			quad.tr.vertices.x = + (size_X / 2.0f);
+			float w = 0;
+			float center = 0;
+			w = (quad.tr.vertices.x - quad.tl.vertices.x) / 2.0f;
+			if (w!= 0.0f)
+			{
+				center = quad.tl.vertices.x + w;
+				float scale = (size_X / 2.0f) / w;
+
+				quad.bl.vertices.x = center - (w * scale);
+				quad.br.vertices.x = center + (w * scale);
+				quad.tl.vertices.x = center - (w * scale);
+				quad.tr.vertices.x = center + (w * scale);
+			}
 		}
 		if (flags & PART_FLAG_SIZE_Y)
 		{
-			quad.bl.vertices.y = - (size_Y / 2.0f);
-			quad.br.vertices.y = - (size_Y / 2.0f);
-			quad.tl.vertices.y = + (size_Y / 2.0f);
-			quad.tr.vertices.y = + (size_Y / 2.0f);
+			float h = 0;
+			float center = 0;
+			h = (quad.bl.vertices.y - quad.tl.vertices.y) / 2.0f;
+			if (h != 0.0f)
+			{
+				center = quad.tl.vertices.y + h;
+				float scale = (size_Y / 2.0f) / h;
+
+				quad.bl.vertices.y = center - (h * scale);
+				quad.br.vertices.y = center - (h * scale);
+				quad.tl.vertices.y = center + (h * scale);
+				quad.tr.vertices.y = center + (h * scale);
+			}
 		}
 		// 頂点変形のオフセット値を反映
 		if (flags & PART_FLAG_VERTEX_TRANSFORM)
@@ -2448,6 +2576,7 @@ void Player::setFrame(int frameNo, float dt)
 			int cb_flags = (typeAndFlags >> 8) & 0xff;
 			float blend_rate = 1.0f;
 
+			sprite->setColorBlendFunc(funcNo);
 			sprite->_state.colorBlendFunc = funcNo;
 			sprite->_state.colorBlendType = cb_flags;
 
@@ -2497,18 +2626,6 @@ void Player::setFrame(int frameNo, float dt)
 				}
 			}
 		}
-		//UVを設定する
-		if (cellRef)
-		{
-			quad.tl.texCoords.u = cellRef->cell->u1;
-			quad.tl.texCoords.v = cellRef->cell->v1;
-			quad.tr.texCoords.u = cellRef->cell->u2;
-			quad.tr.texCoords.v = cellRef->cell->v1;
-			quad.bl.texCoords.u = cellRef->cell->u1;
-			quad.bl.texCoords.v = cellRef->cell->v2;
-			quad.br.texCoords.u = cellRef->cell->u2;
-			quad.br.texCoords.v = cellRef->cell->v2;
-		}
 		//uvスクロール
 		if (flags & PART_FLAG_U_MOVE)
 		{
@@ -2548,6 +2665,15 @@ void Player::setFrame(int frameNo, float dt)
 			//上下反転を行う場合はテクスチャUVを逆にする
 			v_code = -1;
 		}
+		//UV回転
+		if (flags & PART_FLAG_UV_ROTATION)
+		{
+			//頂点位置を回転させる
+			get_uv_rotation(&quad.tl.texCoords.u, &quad.tl.texCoords.v, u_center, v_center, uv_rotation);
+			get_uv_rotation(&quad.tr.texCoords.u, &quad.tr.texCoords.v, u_center, v_center, uv_rotation);
+			get_uv_rotation(&quad.bl.texCoords.u, &quad.bl.texCoords.v, u_center, v_center, uv_rotation);
+			get_uv_rotation(&quad.br.texCoords.u, &quad.br.texCoords.v, u_center, v_center, uv_rotation);
+		}
 
 		//UVスケール || 反転
 		if ((flags & PART_FLAG_U_SCALE) || (flags & PART_FLAG_FLIP_H))
@@ -2563,16 +2689,6 @@ void Player::setFrame(int frameNo, float dt)
 			quad.tr.texCoords.v = v_center - (v_height * uv_scale_Y * v_code);
 			quad.bl.texCoords.v = v_center + (v_height * uv_scale_Y * v_code);
 			quad.br.texCoords.v = v_center + (v_height * uv_scale_Y * v_code);
-		}
-
-		//UV回転
-		if (flags & PART_FLAG_UV_ROTATION)
-		{
-			//頂点位置を回転させる
-			get_uv_rotation(&quad.tl.texCoords.u, &quad.tl.texCoords.v, u_center, v_center, uv_rotation);
-			get_uv_rotation(&quad.tr.texCoords.u, &quad.tr.texCoords.v, u_center, v_center, uv_rotation);
-			get_uv_rotation(&quad.bl.texCoords.u, &quad.bl.texCoords.v, u_center, v_center, uv_rotation);
-			get_uv_rotation(&quad.br.texCoords.u, &quad.br.texCoords.v, u_center, v_center, uv_rotation);
 		}
 		state.quad = quad;
 
@@ -2728,11 +2844,12 @@ void Player::setFrame(int frameNo, float dt)
 	}
 
 	// 行列の更新
+	float mat[16];
+	float t[16];
 	for (int partIndex = 0; partIndex < packData->numParts; partIndex++)
 	{
 		const PartData* partData = &parts[partIndex];
 		CustomSprite* sprite = static_cast<CustomSprite*>(_parts.at(partIndex));
-		SSMatrix parentMatrix;
 
 		if (sprite->_isStateChanged)
 		{
@@ -2750,9 +2867,7 @@ void Player::setFrame(int frameNo, float dt)
 				//インスタンスパーツの親を設定
 				if (sprite->_ssplayer)
 				{
-					float x, y;
-					sprite->_mat.getTranslation(&x, &y);
-					sprite->_ssplayer->setPosition(x, y);
+					sprite->_ssplayer->setPosition(sprite->_mat[12], sprite->_mat[13]);
 					sprite->_ssplayer->setScale(sprite->_state.Calc_scaleX, sprite->_state.Calc_scaleY);
 					sprite->_ssplayer->setRotation(sprite->_state.Calc_rotationX, sprite->_state.Calc_rotationY, sprite->_state.Calc_rotationZ);
 					sprite->_ssplayer->setAlpha(sprite->_state.Calc_opacity);
@@ -2764,11 +2879,11 @@ void Player::setFrame(int frameNo, float dt)
 				{
 					//親のマトリクスを適用
 					CustomSprite* parent = static_cast<CustomSprite*>(_parts.at(partData->parentIndex));
-					parentMatrix = parent->_mat;
+					memcpy(mat, parent->_mat, sizeof(float) * 16);
 				}
 				else
 				{
-					parentMatrix.setupIdentity();
+					IdentityMatrix(mat);
 					//rootパーツはプレイヤーからステータスを引き継ぐ
 					sprite->_state.x += _state.x;
 					sprite->_state.y += _state.y;
@@ -2794,17 +2909,23 @@ void Player::setFrame(int frameNo, float dt)
 					sprite->_state.Calc_scaleX = sprite->_state.scaleX;
 					sprite->_state.Calc_scaleY = sprite->_state.scaleY;
 				}
+				TranslationMatrix(t, sprite->_state.x, sprite->_state.y, 0.0f);
+				MultiplyMatrix(t, mat, mat);
 
-				SSMatrix tmp, mat;
-				mat *= tmp.setupScale(sprite->_state.scaleX, sprite->_state.scaleY);
-				mat *= tmp.setupRotationZ(DegreeToRadian(sprite->_state.rotationZ));
-				mat *= tmp.setupRotationY(DegreeToRadian(sprite->_state.rotationY));
-				mat *= tmp.setupRotationX(DegreeToRadian(sprite->_state.rotationX));
-				mat *= tmp.setupTranslation(sprite->_state.x, sprite->_state.y);
-				mat *= parentMatrix;
+				Matrix4RotationX(t, SSRadianToDegree(sprite->_state.rotationX));
+				MultiplyMatrix(t, mat, mat);
 
-				sprite->_mat = mat;
-				sprite->_state.mat = mat;
+				Matrix4RotationY(t, SSRadianToDegree(sprite->_state.rotationY));
+				MultiplyMatrix(t, mat, mat);
+
+				Matrix4RotationZ(t, SSRadianToDegree(sprite->_state.rotationZ));
+				MultiplyMatrix(t, mat, mat);
+
+				ScaleMatrix(t, sprite->_state.scaleX, sprite->_state.scaleY, 1.0f);
+				MultiplyMatrix(t, mat, mat);
+
+				memcpy(sprite->_mat, mat, sizeof(float) * 16);
+				memcpy(sprite->_state.mat, mat, sizeof(float) * 16);
 
 				if (partIndex > 0)
 				{
@@ -2827,9 +2948,7 @@ void Player::setFrame(int frameNo, float dt)
 					//インスタンスパーツの親を設定
 					if (sprite->_ssplayer)
 					{
-						float x, y;
-						sprite->_mat.getTranslation(&x, &y);
-						sprite->_ssplayer->setPosition(x, y);
+						sprite->_ssplayer->setPosition(sprite->_mat[12], sprite->_mat[13]);
 						sprite->_ssplayer->setScale(sprite->_state.Calc_scaleX, sprite->_state.Calc_scaleY);
 						sprite->_ssplayer->setRotation(sprite->_state.Calc_rotationX, sprite->_state.Calc_rotationY, sprite->_state.Calc_rotationZ);
 						sprite->_ssplayer->setAlpha(sprite->_state.Calc_opacity);
@@ -2921,9 +3040,10 @@ void Player::setFrame(int frameNo, float dt)
 //プレイヤーの描画
 void Player::draw()
 {
+	_draw_count = 0;
+
 	if (!_currentAnimeRef) return;
 
-	_draw_count = 0;	//表示スプライト数クリア
 	ToPointer ptr(_currentRs->data);
 	const AnimePackData* packData = _currentAnimeRef->animePackData;
 
@@ -2938,8 +3058,7 @@ void Player::draw()
 			{
 				//インスタンスパーツの場合は子供のプレイヤーを再生
 				sprite->_ssplayer->draw();
-				_draw_count += sprite->_ssplayer->getDrawSpriteCount();	//表示スプライト数の取得
-
+				_draw_count += sprite->_ssplayer->getDrawSpriteCount();
 			}
 		}
 		else
@@ -2950,7 +3069,7 @@ void Player::draw()
 				{
 					//エフェクトパーツ
 					sprite->refEffect->draw();
-					_draw_count += sprite->refEffect->getDrawSpritecount();
+					_draw_count = sprite->refEffect->getDrawSpriteCount();
 				}
 			}
 			else
@@ -2974,7 +3093,7 @@ void Player::checkUserData(int frameNo)
 
 	const AnimePackData* packData = _currentAnimeRef->animePackData;
 	const AnimationData* animeData = _currentAnimeRef->animationData;
-	const PartData* parts = ptr.toPartData(packData);
+	const PartData* parts = static_cast<const PartData*>(ptr(packData->parts));
 
 	if (!animeData->userData) return;
 	const ss_offset* userDataIndex = static_cast<const ss_offset*>(ptr(animeData->userData));
@@ -3035,7 +3154,7 @@ void Player::checkUserData(int frameNo)
 			_userData.flags |= UserData::FLAG_STRING;
 			int size = reader.readU16();
 			ss_offset offset = reader.readOffset();
-			const char* str = ptr.toString(offset);
+			const char* str = static_cast<const char*>(ptr(offset));
 			_userData.str = str;
 			_userData.strSize = size;
 		}
@@ -3045,7 +3164,7 @@ void Player::checkUserData(int frameNo)
 			_userData.strSize = 0;
 		}
 		
-		_userData.partName = ptr.toString(parts[partIndex].name);
+		_userData.partName = static_cast<const char*>(ptr(parts[partIndex].name));
 		_userData.frameNo = frameNo;
 		
 		SSonUserData(this, &_userData);
@@ -3203,15 +3322,14 @@ void Player::update_matrix_ss4(CustomSprite *sprite, CustomSprite *parent, const
 //	sprite->_temp_scale.y;
 	
 	//単位行列にする
-	SSMatrix mat, t;
-	mat *= t.setupScale(sprite->_temp_scale.x, sprite->_temp_scale.y, 1.0f);
-	mat *= t.setupRotationZ(DegreeToRadian(sprite->_temp_rotation.z * temp));
-//	mat *= t.setupRotationY(DegreeToRadian(0));
-//	mat *= t.setupRotationX(DegreeToRadian(0));
-	mat *= t.setupTranslation(sprite->_temp_position.x, sprite->_temp_position.y, sprite->_temp_position.z);
+	float mat[16];
+	IdentityMatrix(mat);
+	TranslationMatrixM(mat, sprite->_temp_position.x, sprite->_temp_position.y, sprite->_temp_position.z);//
+	RotationXYZMatrixM(mat, DegreeToRadian(0), DegreeToRadian(0), DegreeToRadian(sprite->_temp_rotation.z * temp));
+	ScaleMatrixM(mat, sprite->_temp_scale.x, sprite->_temp_scale.y, 1.0f);
 
-	sprite->_mat = mat;
-	sprite->_state.mat = mat;
+	memcpy(sprite->_mat, mat, sizeof(float) * 16);
+	memcpy(sprite->_state.mat, mat, sizeof(float) * 16);
 	sprite->_state.Calc_rotationX = 0;
 	sprite->_state.Calc_rotationY = 0;
 	sprite->_state.Calc_rotationZ = sprite->_temp_rotation.z * temp;
@@ -3225,6 +3343,10 @@ void Player::update_matrix_ss4(CustomSprite *sprite, CustomSprite *parent, const
  */
  //カラーブレンド用のシェーダー処理は汎用的に使用する事ができないためすべてコメントにしてあります。
  //カラーブレンドを再現するための参考にしてください。
+
+unsigned int CustomSprite::ssSelectorLocation = 0;
+unsigned int CustomSprite::ssAlphaLocation = 0;
+unsigned int CustomSprite::sshasPremultipliedAlpha = 0;
 
 //static const GLchar * ssPositionTextureColor_frag =
 //#include "ssShader_frag.h"
@@ -3253,17 +3375,204 @@ CustomSprite::~CustomSprite()
 	SS_SAFE_DELETE(_ssplayer);
 }
 
+/*
+CCGLProgram* CustomSprite::getCustomShaderProgram()
+{
+	using namespace cocos2d;
+
+	static CCGLProgram* p = NULL;
+	static bool constructFailed = false;
+	if (!p && !constructFailed)
+	{
+		p = new CCGLProgram();
+		p->initWithVertexShaderByteArray(
+			ccPositionTextureColor_vert,
+			ssPositionTextureColor_frag);
+		p->addAttribute(kCCAttributeNamePosition, kCCVertexAttrib_Position);
+		p->addAttribute(kCCAttributeNameColor, kCCVertexAttrib_Color);
+		p->addAttribute(kCCAttributeNameTexCoord, kCCVertexAttrib_TexCoords);
+
+		if (!p->link())
+		{
+			constructFailed = true;
+			return NULL;
+		}
+		
+		p->updateUniforms();
+		
+		ssSelectorLocation = glGetUniformLocation(p->getProgram(), "u_selector");
+		ssAlphaLocation = glGetUniformLocation(p->getProgram(), "u_alpha");
+		sshasPremultipliedAlpha = glGetUniformLocation(p->getProgram(), "u_hasPremultipliedAlpha");
+		if (ssSelectorLocation == GL_INVALID_VALUE
+		 || ssAlphaLocation == GL_INVALID_VALUE)
+		{
+			delete p;
+			p = NULL;
+			constructFailed = true;
+			return NULL;
+		}
+
+		glUniform1i(ssSelectorLocation, 0);
+		glUniform1f(ssAlphaLocation, 1.0f);
+		glUniform1i(sshasPremultipliedAlpha, 0);
+	}
+	return p;
+}
+*/
+
 CustomSprite* CustomSprite::create()
 {
 	CustomSprite *pSprite = new CustomSprite();
 	if (pSprite)
 	{
 		pSprite->initState();
+//		pSprite->_defaultShaderProgram = pSprite->getShaderProgram();
+//		pSprite->autorelease();
 		return pSprite;
 	}
 	SS_SAFE_DELETE(pSprite);
 	return NULL;
 }
+
+void CustomSprite::changeShaderProgram(bool useCustomShaderProgram)
+{
+/*
+	if (useCustomShaderProgram != _useCustomShaderProgram)
+	{
+		if (useCustomShaderProgram)
+		{
+			CCGLProgram *shaderProgram = getCustomShaderProgram();
+			if (shaderProgram == NULL)
+			{
+				// Not use custom shader.
+				shaderProgram = _defaultShaderProgram;
+				useCustomShaderProgram = false;
+			}
+			this->setShaderProgram(shaderProgram);
+			_useCustomShaderProgram = useCustomShaderProgram;
+		}
+		else
+		{
+			this->setShaderProgram(_defaultShaderProgram);
+			_useCustomShaderProgram = false;
+		}
+	}
+*/
+}
+
+void CustomSprite::sethasPremultipliedAlpha(int PremultipliedAlpha)
+{
+	_hasPremultipliedAlpha = PremultipliedAlpha;
+}
+
+bool CustomSprite::isCustomShaderProgramEnabled() const
+{
+	return _useCustomShaderProgram;
+}
+
+void CustomSprite::setColorBlendFunc(int colorBlendFuncNo)
+{
+	_colorBlendFuncNo = colorBlendFuncNo;
+}
+
+SSV3F_C4B_T2F_Quad& CustomSprite::getAttributeRef()
+{
+	return _sQuad;
+}
+
+void CustomSprite::setOpacity(unsigned char opacity)
+{
+//	CCSprite::setOpacity(opacity);
+	_opacity = static_cast<float>(opacity) / 255.0f;
+}
+
+
+#if 1
+void CustomSprite::draw(void)
+{
+/*
+	CC_PROFILER_START_CATEGORY(kCCProfilerCategorySprite, "SSSprite - draw");
+
+
+	if (!_useCustomShaderProgram)
+	{
+		CCSprite::draw();
+		return;
+	}
+
+
+	SS_ASSERT2(!m_pobBatchNode, "If CCSprite is being rendered by CCSpriteBatchNode, CCSprite#draw SHOULD NOT be called");
+
+	CC_NODE_DRAW_SETUP();
+
+	ccGLBlendFunc(m_sBlendFunc.src, m_sBlendFunc.dst);
+
+	if (m_pobTexture != NULL)
+	{
+		ccGLBindTexture2D(m_pobTexture->getName());
+	}
+	else
+	{
+		ccGLBindTexture2D(0);
+	}
+
+	glUniform1i(ssSelectorLocation, _colorBlendFuncNo);
+	glUniform1f(ssAlphaLocation, _opacity);
+	glUniform1i(sshasPremultipliedAlpha, _hasPremultipliedAlpha);
+
+	//
+	// Attributes
+	//
+
+	ccGLEnableVertexAttribs(kCCVertexAttribFlag_PosColorTex);
+
+#define kQuadSize sizeof(m_sQuad.bl)
+	long offset = (long)&m_sQuad;
+
+	// vertex
+	int diff = offsetof(ccV3F_C4B_T2F, vertices);
+	glVertexAttribPointer(kCCVertexAttrib_Position, 3, GL_FLOAT, GL_FALSE, kQuadSize, (void*)(offset + diff));
+
+	// texCoods
+	diff = offsetof(ccV3F_C4B_T2F, texCoords);
+	glVertexAttribPointer(kCCVertexAttrib_TexCoords, 2, GL_FLOAT, GL_FALSE, kQuadSize, (void*)(offset + diff));
+
+	// color
+	diff = offsetof(ccV3F_C4B_T2F, colors);
+	glVertexAttribPointer(kCCVertexAttrib_Color, 4, GL_UNSIGNED_BYTE, GL_TRUE, kQuadSize, (void*)(offset + diff));
+
+
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+//	CHECK_GL_ERROR_DEBUG();
+
+
+#if CC_SPRITE_DEBUG_DRAW == 1
+	// draw bounding box
+	CCPoint vertices[4] = {
+		ccp(m_sQuad.tl.vertices.x, m_sQuad.tl.vertices.y),
+		ccp(m_sQuad.bl.vertices.x, m_sQuad.bl.vertices.y),
+		ccp(m_sQuad.br.vertices.x, m_sQuad.br.vertices.y),
+		ccp(m_sQuad.tr.vertices.x, m_sQuad.tr.vertices.y),
+	};
+	ccDrawPoly(vertices, 4, true);
+#elif CC_SPRITE_DEBUG_DRAW == 2
+	// draw texture box
+	CCSize s = this->getTextureRect().size;
+	CCPoint offsetPix = this->getOffsetPosition();
+	CCPoint vertices[4] = {
+		ccp(offsetPix.x,offsetPix.y), ccp(offsetPix.x+s.width,offsetPix.y),
+		ccp(offsetPix.x+s.width,offsetPix.y+s.height), ccp(offsetPix.x,offsetPix.y+s.height)
+	};
+	ccDrawPoly(vertices, 4, true);
+#endif // CC_SPRITE_DEBUG_DRAW
+
+	CC_INCREMENT_GL_DRAWS(1);
+
+	CC_PROFILER_STOP_CATEGORY(kCCProfilerCategorySprite, "CCSprite - draw");
+*/
+}
+#endif
 
 void CustomSprite::setFlippedX(bool flip)
 {
