@@ -213,11 +213,11 @@ namespace ss
 
 #ifdef USE_VERTEX
 		//原点補正
-		float cx = ((state.rect.size.width) * -(state.pivotX - 0.5f));
+		float cx = ((state.size_X) * -(state.pivotX - 0.5f));
 #ifdef UP_MINUS
-		float cy = ((state.rect.size.height) * -(state.pivotY - 0.5f));
+		float cy = ((state.size_Y) * -(state.pivotY - 0.5f));
 #else
-		float cy = ((state.rect.size.height) * +(state.pivotY - 0.5f));
+		float cy = ((state.size_Y) * +(state.pivotY - 0.5f));
 #endif
 
 		quad.tl.vertices.x += cx;

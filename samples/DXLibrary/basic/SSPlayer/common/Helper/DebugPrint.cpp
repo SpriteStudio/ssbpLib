@@ -19,7 +19,7 @@ void DEBUG_PRINTF( const char* strFormat, ...   )
 	va_list arglist;
 	va_start( arglist, strFormat);
 #if _WIN32
-	sprintf_s(strBuffer, 1024, strFormat, arglist);
+	vsprintf_s(strBuffer, 1024, strFormat, arglist);
 	va_end(arglist);
 	OutputDebugStringA(strBuffer);
 #else

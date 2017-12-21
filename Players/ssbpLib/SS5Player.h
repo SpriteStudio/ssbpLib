@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------
-// ssbpLib v1.3.5
+// ssbpLib v1.3.6
 //
 // Copyright(C) Web Technology Corp.
 // http://www.webtech.co.jp/
