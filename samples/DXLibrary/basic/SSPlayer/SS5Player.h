@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------
-// ssbpLib v1.3.6
+// ssbpLib v1.3.7
 //
 // Copyright(C) Web Technology Corp.
 // http://www.webtech.co.jp/
@@ -492,6 +492,11 @@ public:
 	ResourceSet* getData(const std::string& dataKey);
 
 	/**
+	* ssbpに含まれるアニメーション名を取得します.
+	*/
+	std::vector<std::string> getAnimeName(const std::string& dataKey);
+
+	/**
 	* 指定したセルのテクスチャを変更します.
 	* @param  ssbpName       ssbp名（拡張子を除くファイル名）
 	* @param  ssceName       ssce名（拡張子を除くファイル名）
@@ -861,6 +866,13 @@ public:
 	 * @param  dataKey  再生するデータのdataKey
 	 */
 	void setData(const std::string& dataKey);
+
+	/**
+	* 再生しているssbpデータのdataKeyを取得します.
+	*
+	* @return 再生しているssbp名
+	*/
+	std::string getPlayDataName(void);
 
 	/**
 	 * 設定されているssbpデータを解放します.
