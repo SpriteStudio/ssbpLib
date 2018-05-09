@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------
-// ssbpLib v1.3.7
+// ssbpLib v1.3.8
 //
 // Copyright(C) Web Technology Corp.
 // http://www.webtech.co.jp/
@@ -818,7 +818,7 @@ enum
 //描画に頂点データを使用する場合有効
 //無効にした場合はアフィン変換を使用してスプライトの表示を行います。
 //親パーツにマイナススケールを使用した場合に再現できない場合があります。
-#define USE_VERTEX
+#define USE_MATRIX
 
 //互換性設定の親子の座標変換にマトリクス使用しない（Ver4互換）を設定した場合に動作を再現します。
 //互換性設定はssbp内に出力されており、設定によって処理が分岐します。
@@ -826,7 +826,7 @@ enum
 #define USE_VER4TRANSFORM
 
 //Ver1.2系と同等の挙動にする場合は
-//#define USE_VERTEX
+//#define USE_MATRIX
 //#define USE_VER4TRANSFORM
 //をコメントアウトしてください。
 

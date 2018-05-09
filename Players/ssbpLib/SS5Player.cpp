@@ -2553,10 +2553,17 @@ void Player::setFrame(int frameNo, float dt)
 				center = quad.tl.vertices.y + h;
 				float scale = (size_Y / 2.0f) / h;
 
+#ifdef UP_MINUS
+				quad.bl.vertices.y = center + (h * scale);
+				quad.br.vertices.y = center + (h * scale);
+				quad.tl.vertices.y = center - (h * scale);
+				quad.tr.vertices.y = center - (h * scale);
+#else
 				quad.bl.vertices.y = center - (h * scale);
 				quad.br.vertices.y = center - (h * scale);
 				quad.tl.vertices.y = center + (h * scale);
 				quad.tr.vertices.y = center + (h * scale);
+#endif
 			}
 		}
 		// 頂点変形のオフセット値を反映
@@ -2566,22 +2573,38 @@ void Player::setFrame(int frameNo, float dt)
 			if (vt_flags & VERTEX_FLAG_LT)
 			{
 				quad.tl.vertices.x += reader.readS16();
+#ifdef UP_MINUS
+				quad.tl.vertices.y -= reader.readS16();
+#else
 				quad.tl.vertices.y += reader.readS16();
+#endif
 			}
 			if (vt_flags & VERTEX_FLAG_RT)
 			{
 				quad.tr.vertices.x += reader.readS16();
+#ifdef UP_MINUS
+				quad.tr.vertices.y -= reader.readS16();
+#else
 				quad.tr.vertices.y += reader.readS16();
+#endif
 			}
 			if (vt_flags & VERTEX_FLAG_LB)
 			{
 				quad.bl.vertices.x += reader.readS16();
+#ifdef UP_MINUS
+				quad.bl.vertices.y -= reader.readS16();
+#else
 				quad.bl.vertices.y += reader.readS16();
+#endif
 			}
 			if (vt_flags & VERTEX_FLAG_RB)
 			{
 				quad.br.vertices.x += reader.readS16();
+#ifdef UP_MINUS
+				quad.br.vertices.y -= reader.readS16();
+#else
 				quad.br.vertices.y += reader.readS16();
+#endif
 			}
 		}
 		

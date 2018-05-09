@@ -9,6 +9,11 @@
 */
 #include "DxLib.h"
 
+//DXライブラリのスプライトを使用して描画します。
+//サイズや頂点変形等が使用できないため再限度が低くなります。
+//#define USE_DXLIBSPRITE
+
+
 namespace ss
 {
 	/**
@@ -186,13 +191,18 @@ namespace ss
 
 		}
 
-#ifdef UP_MINUS
+#ifdef USE_DXLIBSPRITE
 		/**
 		* DXライブラリのスプライト表示機能ではXとY同時拡大なので、とりあえずXスケールを使用する
 		* Y反転できないので未対応
 		* DrawRectRotaGraphはxとyが中心になるように、テクスチャの矩形を表示します。
 		* DXライブラリのスプライト表示機能は上方向がマイナスになります。
 		*/
+		float x = state.mat[12];	/// 表示座標はマトリクスから取得します。
+		float y = state.mat[13];	/// 表示座標はマトリクスから取得します。
+		float rotationZ = RadianToDegree(state.rotationZ);		/// 回転値
+		float scaleX = state.scaleX;							/// 拡大率
+		float scaleY = state.scaleY;							/// 拡大率
 		SetDrawBright(state.quad.bl.colors.r, state.quad.bl.colors.g, state.quad.bl.colors.b);
 		DrawRectRotaGraph(
 			(int)x, (int)y,	//この座標が画像の中心になります。
@@ -211,7 +221,7 @@ namespace ss
 		SSV3F_C4B_T2F_Quad quad;
 		quad = state.quad;
 
-#ifdef USE_VERTEX
+#ifdef USE_MATRIX
 		//原点補正
 		float cx = ((state.size_X) * -(state.pivotX - 0.5f));
 #ifdef UP_MINUS
